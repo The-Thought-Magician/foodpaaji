@@ -1,0 +1,6 @@
+Segment,Count_Range,Average_Revenue,Pain_Points,Budget,Priority_Features
+Independent Restaurants (Small),"25,000-30,000",₹10-50 lakhs annually,"Manual operations, no digital integration, inventory wastage","₹10,000-25,000","Basic POS, Swiggy/Zomato integration, GST compliance"
+Mid-size Restaurant Chains (2-5 outlets),"2,000-3,000",₹50 lakhs - 5 crores annually,"Multi-location management, inventory control, staff coordination","₹25,000-75,000","Multi-outlet management, advanced reporting, inventory tracking"
+Cloud Kitchens,"12,830",₹5-25 lakhs annually,"Multiple aggregator management, delivery optimization","₹15,000-40,000","Aggregator integration, delivery management, menu optimization"
+Fine Dining Restaurants,500-800,₹1-10 crores annually,"Customer experience, reservation management, premium service","₹50,000-1,50,000","CRM, table management, advanced analytics, loyalty programs"
+Quick Service Restaurants (QSR),"3,000-5,000",₹25 lakhs - 2 crores annually,"Fast billing, queue management, consistency across outlets","₹20,000-60,000","Fast POS, queue management, standardized operations"

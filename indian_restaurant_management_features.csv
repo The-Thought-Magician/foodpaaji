@@ -1,0 +1,33 @@
+Category,Feature,Priority,Indian_Specific,Description
+Billing & Payment,"Multi-modal billing (Dine-in, Takeaway, Delivery)",Critical,Yes,Support for different service charges and packaging charges based on order type
+Billing & Payment,UPI QR Code Integration,Critical,Yes,"Dynamic QR code generation for UPI payments with multiple payment gateways (Paytm, PhonePe, GPay)"
+Billing & Payment,GST Compliance & Invoicing,Critical,Yes,"Automatic GST calculations, tax reporting, and compliant invoice generation"
+Billing & Payment,Multiple Payment Methods,High,Partially,"Cash, Card, UPI, Wallets, and Credit payment options"
+Online Integration,Swiggy/Zomato Integration,Critical,Yes,Unified dashboard for managing orders from multiple food aggregators
+Online Integration,WhatsApp Order Management,High,Yes,Direct order taking and customer communication via WhatsApp Business API
+Online Integration,Commission-free Online Ordering Website,High,No,Own branded website/app for direct orders without aggregator commissions
+Inventory Management,Multi-unit Ingredient Tracking,Critical,Partially,"Track ingredients in kg, grams, liters, pieces with automatic consumption calculation"
+Inventory Management,Recipe Management with Costing,High,No,Multi-stage recipe management with real-time food cost calculation
+Inventory Management,Supplier Management,Medium,No,Vendor management with purchase orders and price tracking
+Menu Management,Dynamic Menu Pricing,High,Partially,Real-time menu updates across all platforms with availability management
+Menu Management,Multi-language Menu Support,Medium,Yes,Support for local languages (Bengali for Kolkata) alongside English/Hindi
+Menu Management,Combo/Thali Management,High,Yes,Special support for Indian meal combinations and thali pricing
+Table Management,QR Code Menu & Ordering,High,No,Contactless menu viewing and ordering with QR codes on tables
+Table Management,Table Reservation System,Medium,No,Online and phone-based table booking with customer preferences
+Kitchen Operations,Kitchen Display System (KDS),High,No,Digital order displays in kitchen with preparation time tracking
+Kitchen Operations,Station-wise KOT Printing,High,Partially,"Separate kitchen order tickets for different cooking stations (tandoor, curry, etc.)"
+Customer Management,Loyalty & Rewards Program,High,No,Point-based loyalty system with festival/occasion-based rewards
+Customer Management,Customer Database & CRM,Medium,No,"Customer preferences, order history, and personalized marketing"
+Employee Management,Staff Scheduling & Attendance,Medium,No,Shift management with biometric/mobile attendance tracking
+Employee Management,Role-based Access Control,High,No,"Different access levels for owner, manager, cashier, kitchen staff"
+Employee Management,Performance Tracking & Incentives,Low,No,Sales tracking per employee with commission calculation
+Reporting & Analytics,Real-time Business Dashboard,High,No,"Live sales, inventory, and performance metrics"
+Reporting & Analytics,Aggregator Reconciliation Reports,Critical,Yes,Commission analysis and reconciliation with Swiggy/Zomato payments
+Reporting & Analytics,Festival/Seasonal Analytics,Medium,Yes,Special reporting for Indian festivals and seasonal trends
+Technology Features,Offline Capability,Critical,Partially,System works without internet with sync when connection restored
+Technology Features,Multi-device Support,High,No,"Works on tablets, smartphones, and desktop computers"
+Technology Features,Cloud-based with Local Backup,High,No,Cloud storage with local backup for data security
+Marketing & Promotions,Coupon & Discount Management,High,No,Create and manage promotional campaigns and discount codes
+Marketing & Promotions,SMS/WhatsApp Marketing,High,Yes,Bulk messaging for offers and order updates via SMS/WhatsApp
+Compliance & Security,Data Security & Privacy,Critical,No,GDPR compliant data handling with encryption
+Multi-location Support,Central Management Dashboard,Medium,No,Manage multiple outlets from single interface
