@@ -1,0 +1,8 @@
+Repository,Stars,Features,Technology,Target,License,Maturity
+TastyIgniter/TastyIgniter,3300,"Online ordering, table reservation, restaurant management, Laravel-based, multi-location support","PHP, Laravel",Full restaurant management,Open Source,High (established project)
+enatega/food-delivery-multivendor,987,"Multi-vendor food delivery, customer app, rider app, restaurant app, admin dashboard","MERN Stack, React Native",Food delivery platform,"MIT (frontend), Proprietary (backend)","High (1000+ stars, active)"
+olasunkanmi-SE/restaurant,201,"Menu management, orders, restaurants, customers, JWT auth, role-based access","NestJS, React, TypeScript",Comprehensive restaurant system,Open Source,Medium (active development)
+BryanTheLai/RestaurantProject,177,"Website, POS system, bill management, menu management, MySQL integration","PHP, MySQL, HTML/CSS/JS",Restaurant management with POS,Open Source,Medium
+VishnuKumarSS/Food-Management-System-ReactJS-FE,0,"Role-based access, inventory management, order management, OTP authentication","ReactJS, Django Backend",Food management system,Open Source,Low (new project)
+Floreant POS,N/A (External),"Restaurant POS, inventory, reporting, multi-platform, offline support",Java-based,Restaurant POS system,Open Source,High (since 2009)
+harismuneer/Restaurant-Management-System,N/A,"Android-based, ordering, billing, kitchen, hall, inventory management",Android (Java/Kotlin),Mobile restaurant management,Open Source,Educational project
