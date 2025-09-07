@@ -1,0 +1,251 @@
+import { useState, useEffect } from 'react'
+import { invoke } from '@tauri-apps/api/core'
+import { Button } from '@/components/ui/button'
+import { Users, Plus, Search, Filter, Eye, Edit, Trash2 } from 'lucide-react'
+import type { Employee } from '@/types/employee'
+import type { ApiResponse, PaginatedResponse } from '@/types/api'
+
+interface EmployeeListProps {
+  restaurantId: number
+  onEditEmployee: (employee: Employee) => void
+  onViewEmployee: (employee: Employee) => void
+  onDeleteEmployee: (employeeId: number) => void
+  onAddEmployee: () => void
+}
+
+export function EmployeeList({
+  restaurantId,
+  onEditEmployee,
+  onViewEmployee, 
+  onDeleteEmployee,
+  onAddEmployee
+}: EmployeeListProps) {
+  const [employees, setEmployees] = useState<Employee[]>([])
+  const [loading, setLoading] = useState(true)
+  const [searchTerm, setSearchTerm] = useState('')
+  const [filterRole, setFilterRole] = useState('')
+  const [currentPage, setCurrentPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(1)
+  
+  const itemsPerPage = 10
+
+  useEffect(() => {
+    loadEmployees()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [restaurantId, currentPage, searchTerm, filterRole])
+
+  const loadEmployees = async () => {
+    try {
+      setLoading(true)
+      const response = await invoke('get_employees', {
+        restaurantId,
+        page: currentPage,
+        limit: itemsPerPage,
+        search: searchTerm,
+        roleFilter: filterRole
+      }) as ApiResponse<PaginatedResponse<Employee>>
+      
+      if (response.success) {
+        setEmployees(response.data.employees)
+        setTotalPages(Math.ceil(response.data.total / itemsPerPage))
+      }
+    } catch (error) {
+      console.error('Failed to load employees:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleDelete = async (employeeId: number) => {
+    if (window.confirm('Are you sure you want to delete this employee?')) {
+      try {
+        const response = await invoke('delete_employee', {
+          employeeId
+        }) as ApiResponse<void>
+        
+        if (response.success) {
+          loadEmployees()
+          onDeleteEmployee(employeeId)
+        }
+      } catch (error) {
+        console.error('Failed to delete employee:', error)
+      }
+    }
+  }
+
+  const filteredEmployees = employees.filter(emp => 
+    emp.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    emp.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    emp.phone.includes(searchTerm)
+  )
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <div className="text-center">
+          <Users className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+          <p className="text-muted-foreground">Loading employees...</p>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <div>
+          <h2 className="text-2xl font-bold">Employees</h2>
+          <p className="text-muted-foreground">
+            Manage your restaurant staff and their roles
+          </p>
+        </div>
+        <Button onClick={onAddEmployee} className="flex items-center space-x-2">
+          <Plus className="h-4 w-4" />
+          <span>Add Employee</span>
+        </Button>
+      </div>
+
+      <div className="flex space-x-4 items-center">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+          <input
+            type="text"
+            placeholder="Search employees..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10 pr-4 py-2 w-full border border-input rounded-md bg-background"
+          />
+        </div>
+        <select
+          value={filterRole}
+          onChange={(e) => setFilterRole(e.target.value)}
+          className="px-3 py-2 border border-input rounded-md bg-background min-w-[120px]"
+        >
+          <option value="">All Roles</option>
+          <option value="manager">Manager</option>
+          <option value="chef">Chef</option>
+          <option value="waiter">Waiter</option>
+          <option value="cashier">Cashier</option>
+          <option value="cleaner">Cleaner</option>
+        </select>
+        <Button variant="outline" size="icon">
+          <Filter className="h-4 w-4" />
+        </Button>
+      </div>
+
+      <div className="border rounded-lg">
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead className="border-b bg-muted/50">
+              <tr>
+                <th className="text-left p-4 font-medium">Name</th>
+                <th className="text-left p-4 font-medium">Role</th>
+                <th className="text-left p-4 font-medium">Department</th>
+                <th className="text-left p-4 font-medium">Status</th>
+                <th className="text-left p-4 font-medium">Joined</th>
+                <th className="text-right p-4 font-medium">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredEmployees.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="text-center p-8">
+                    <Users className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                    <p className="text-muted-foreground">No employees found</p>
+                    <Button 
+                      variant="outline" 
+                      onClick={onAddEmployee}
+                      className="mt-4"
+                    >
+                      Add First Employee
+                    </Button>
+                  </td>
+                </tr>
+              ) : (
+                filteredEmployees.map((employee) => (
+                  <tr key={employee.id} className="border-b hover:bg-muted/50">
+                    <td className="p-4">
+                      <div>
+                        <div className="font-medium">{employee.name}</div>
+                        <div className="text-sm text-muted-foreground">
+                          {employee.email}
+                        </div>
+                        <div className="text-sm text-muted-foreground">
+                          {employee.phone}
+                        </div>
+                      </div>
+                    </td>
+                    <td className="p-4 capitalize">{employee.role}</td>
+                    <td className="p-4 capitalize">{employee.department}</td>
+                    <td className="p-4">
+                      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                        employee.status === 'active' 
+                          ? 'bg-green-100 text-green-800' 
+                          : 'bg-red-100 text-red-800'
+                      }`}>
+                        {employee.status}
+                      </span>
+                    </td>
+                    <td className="p-4 text-sm text-muted-foreground">
+                      {new Date(employee.joinedDate).toLocaleDateString()}
+                    </td>
+                    <td className="p-4">
+                      <div className="flex items-center justify-end space-x-2">
+                        <Button 
+                          variant="ghost" 
+                          size="icon"
+                          onClick={() => onViewEmployee(employee)}
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="icon"
+                          onClick={() => onEditEmployee(employee)}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="icon"
+                          onClick={() => handleDelete(employee.id)}
+                          className="text-destructive hover:text-destructive"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between">
+          <p className="text-sm text-muted-foreground">
+            Page {currentPage} of {totalPages}
+          </p>
+          <div className="flex space-x-2">
+            <Button 
+              variant="outline"
+              onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+              disabled={currentPage === 1}
+            >
+              Previous
+            </Button>
+            <Button 
+              variant="outline"
+              onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+              disabled={currentPage === totalPages}
+            >
+              Next
+            </Button>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
