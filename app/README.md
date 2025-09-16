@@ -1,69 +1,31 @@
-# React + TypeScript + Vite
+# FoodPaaji App (React + Vite + Tauri)
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Quickstart
+- Install prerequisites
+  - Node.js 20+
+  - Rust toolchain (stable)
+  - Tauri CLI: npm i -g @tauri-apps/cli
+  - Linux build deps (Ubuntu/Debian): sudo apt update && sudo apt install -y pkg-config libgtk-3-dev libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev
+- Dev
+  - npm run dev (starts Tauri with Vite HMR)
+- Build
+  - npm run build
 
-Currently, two official plugins are available:
+Scripts
+- frontend:dev — Vite dev server only
+- frontend:build — Vite build only
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+Environment
+- FOODPAAJI_JWT_SECRET — required for JWT commands
+- FOODPAAJI_DEV_PASSWORD — optional dev seed password (default: devpass123)
 
-## Expanding the ESLint configuration
+Tauri Commands (dev helpers)
+- seed_sample_data — inserts demo restaurant and user
+- backup_database, restore_database — copy DB backups
+- cross_platform_fs_check — validates data-dir R/W
+- generate_jwt, verify_jwt — auth primitives
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default tseslint.config([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      ...tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      ...tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      ...tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
+Notes
+- Logging: tauri-plugin-log enabled (stdout/webview in dev; file in release)
+- CSP: restrictive defaults are set in tauri.conf.json; adjust if loading external resources.
     languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
-
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
-
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default tseslint.config([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
