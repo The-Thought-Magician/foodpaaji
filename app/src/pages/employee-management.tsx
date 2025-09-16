@@ -24,15 +24,6 @@ export function EmployeeManagement() {
     setViewMode('edit')
   }
 
-  const handleViewEmployee = (employee: Employee) => {
-    setSelectedEmployee(employee)
-    setViewMode('view')
-  }
-
-  const handleDeleteEmployee = () => {
-    // Employee deletion is handled in the EmployeeList component
-    // This callback can be used for additional cleanup or notifications
-  }
 
   const handleSaveEmployee = () => {
     // Return to list view after successful save
@@ -57,10 +48,10 @@ export function EmployeeManagement() {
             onCancel={handleCancel}
           />
         )
-      
+
       case 'view':
         return selectedEmployee ? (
-          <EmployeeProfile 
+          <EmployeeProfile
             employee={selectedEmployee}
             onEdit={() => handleEditEmployee(selectedEmployee)}
           />
@@ -72,9 +63,6 @@ export function EmployeeManagement() {
           <EmployeeList
             restaurantId={restaurantId}
             onAddEmployee={handleAddEmployee}
-            onEditEmployee={handleEditEmployee}
-            onViewEmployee={handleViewEmployee}
-            onDeleteEmployee={handleDeleteEmployee}
           />
         )
     }
@@ -135,11 +123,10 @@ function EmployeeProfile({ employee, onEdit }: EmployeeProfileProps) {
           <div>
             <h3 className="text-xl font-semibold">{employee.name}</h3>
             <p className="text-muted-foreground">{employee.role} - {employee.department}</p>
-            <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-              employee.status === 'active' 
-                ? 'bg-green-100 text-green-800' 
+            <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${employee.status === 'active'
+                ? 'bg-green-100 text-green-800'
                 : 'bg-red-100 text-red-800'
-            }`}>
+              }`}>
               {employee.status}
             </span>
           </div>

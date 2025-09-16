@@ -10,5 +10,5 @@ export interface Employee {
   address: string
   emergencyContact: string
   status: 'active' | 'inactive'
-  joinedDate: string
+  last_login?: string
 }

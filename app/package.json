@@ -6,6 +6,8 @@
   "scripts": {
     "dev": "tauri dev",
     "build": "tauri build",
+    "frontend:dev": "vite",
+    "frontend:build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
     "tauri": "tauri"

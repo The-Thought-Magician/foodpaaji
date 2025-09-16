@@ -1,6 +1,6 @@
 use sqlx::{migrate::MigrateDatabase, Pool, Sqlite, SqlitePool};
 use std::path::PathBuf;
-use tauri::api::path::data_dir;
+use tauri::Manager;
 
 pub type DbPool = Pool<Sqlite>;
 
@@ -13,7 +13,20 @@ pub async fn init_database() -> Result<DbPool, Box<dyn std::error::Error>> {
         Sqlite::create_database(&db_url).await?;
     }
     
-    let pool = SqlitePool::connect(&db_url).await?;
+    // Basic retry for initial connection
+    let mut attempts = 0;
+    let pool = loop {
+        match SqlitePool::connect(&db_url).await {
+            Ok(p) => break p,
+            Err(e) if attempts < 3 => {
+                attempts += 1;
+                log::warn!("DB connect attempt {} failed: {}", attempts, e);
+                tokio::time::sleep(std::time::Duration::from_millis(200 * attempts)).await;
+                continue;
+            }
+            Err(e) => return Err(Box::new(e)),
+        }
+    };
     
     log::info!("Running database migrations");
     sqlx::migrate!("./migrations").run(&pool).await?;
@@ -23,11 +36,10 @@ pub async fn init_database() -> Result<DbPool, Box<dyn std::error::Error>> {
 }
 
 fn get_database_path() -> Result<PathBuf, Box<dyn std::error::Error>> {
-    let data_dir = data_dir().ok_or("Could not get data directory")?;
-    let app_dir = data_dir.join("FoodPaaji");
-    
+    // Use OS data directory; avoid tauri v1 path API
+    let base = dirs::data_dir().ok_or("Could not get data directory")?;
+    let app_dir = base.join("FoodPaaji");
     std::fs::create_dir_all(&app_dir)?;
-    
     Ok(app_dir.join("foodpaaji.db"))
 }
 
