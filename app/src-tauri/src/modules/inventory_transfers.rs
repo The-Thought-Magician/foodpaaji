@@ -3,6 +3,7 @@ use crate::types::{CreateStockMovementRequest, ApiResponse};
 use tauri::State;
 use serde::{Deserialize, Serialize};
 use chrono::Utc;
+use sqlx::Row;
 
 #[derive(Debug, Serialize, Deserialize, sqlx::FromRow)]
 pub struct InventoryTransfer {
@@ -106,7 +107,7 @@ pub async fn create_inventory_transfer(
         total_value += cost * item_request.quantity;
     }
 
-    match sqlx::query(
+    match sqlx::query!(
         "INSERT INTO inventory_transfers (restaurant_id, transfer_number, from_location, 
          to_location, status, requested_by, notes, total_items, total_value, requested_at) 
          VALUES (?, ?, ?, ?, 'PENDING', ?, ?, ?, ?, ?)"
@@ -131,7 +132,7 @@ pub async fn create_inventory_transfer(
                 let item_name = get_item_name(item_request.inventory_item_id, &db).await?;
                 let unit = get_item_unit(item_request.inventory_item_id, &db).await?;
 
-                sqlx::query(
+                sqlx::query!(
                     "INSERT INTO transfer_items (transfer_id, inventory_item_id, item_name, 
                      requested_quantity, unit, unit_cost, status, notes) 
                      VALUES (?, ?, ?, ?, ?, ?, 'PENDING', ?)"
@@ -177,7 +178,7 @@ pub async fn approve_transfer(
     request: TransferApprovalRequest,
     db: State<'_, DbPool>,
 ) -> Result<ApiResponse<String>, String> {
-    sqlx::query(
+    sqlx::query!(
         "UPDATE inventory_transfers SET status = 'APPROVED', approved_by = ?, 
          approved_at = ? WHERE id = ?"
     )
@@ -189,7 +190,7 @@ pub async fn approve_transfer(
     .map_err(|e| format!("Failed to approve transfer: {}", e))?;
 
     for approval in &request.item_approvals {
-        sqlx::query(
+        sqlx::query!(
             "UPDATE transfer_items SET approved_quantity = ?, status = 'APPROVED' 
              WHERE id = ?"
         )
@@ -237,7 +238,7 @@ pub async fn complete_transfer(
             ).await?;
         }
 
-        sqlx::query(
+        sqlx::query!(
             "UPDATE transfer_items SET transferred_quantity = ?, status = 'COMPLETED' 
              WHERE id = ?"
         )
@@ -248,7 +249,7 @@ pub async fn complete_transfer(
         .map_err(|e| format!("Failed to update transfer item: {}", e))?;
     }
 
-    sqlx::query(
+    sqlx::query!(
         "UPDATE inventory_transfers SET status = 'COMPLETED', completed_by = ?, 
          completed_at = ? WHERE id = ?"
     )
@@ -430,7 +431,7 @@ async fn create_transfer_stock_movements(
 
     let total_cost = item.unit_cost * quantity;
 
-    sqlx::query(
+    sqlx::query!(
         "INSERT INTO stock_movements (restaurant_id, inventory_item_id, movement_type, 
          quantity, unit_cost, total_cost, reference_type, reference_id, notes, 
          user_id, movement_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
@@ -450,7 +451,7 @@ async fn create_transfer_stock_movements(
     .await
     .map_err(|e| format!("Failed to create OUT movement: {}", e))?;
 
-    sqlx::query(
+    sqlx::query!(
         "INSERT INTO stock_movements (restaurant_id, inventory_item_id, movement_type, 
          quantity, unit_cost, total_cost, reference_type, reference_id, notes, 
          user_id, movement_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"

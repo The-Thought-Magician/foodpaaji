@@ -173,7 +173,7 @@ pub async fn bulk_calculate_prices(
         }
     }
 
-    let mut query_builder = sqlx::query(&query);
+    let mut query_builder = sqlx::query!(&query);
     for binding in bindings {
         query_builder = query_builder.bind(binding);
     }
@@ -220,7 +220,7 @@ pub async fn bulk_calculate_prices(
         calculations.push(calculation);
 
         if request.apply_changes && (suggested_price - current_price).abs() > 0.01 {
-            match sqlx::query("UPDATE menu_items SET price = ? WHERE id = ?")
+            match sqlx::query!("UPDATE menu_items SET price = ? WHERE id = ?")
                 .bind(suggested_price)
                 .bind(id)
                 .execute(&*db)

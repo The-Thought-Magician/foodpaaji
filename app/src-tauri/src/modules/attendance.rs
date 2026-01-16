@@ -4,6 +4,7 @@ use tauri::State;
 use serde::{Deserialize, Serialize};
 use chrono::{Utc, NaiveDateTime, NaiveDate};
 use sqlx::FromRow;
+use sqlx::Row;
 
 #[derive(Debug, FromRow, Serialize, Deserialize, Clone)]
 pub struct AttendanceRecord {
@@ -92,7 +93,7 @@ pub async fn clock_in(
         })
     }
 
-    match sqlx::query(
+    match sqlx::query!(
         "INSERT INTO attendance (employee_id, date, clock_in, status, notes) 
          VALUES (?, ?, ?, 'PRESENT', ?)
          ON CONFLICT(employee_id, date) DO UPDATE SET 
@@ -178,7 +179,7 @@ pub async fn clock_out(
             let clock_in_time = record.clock_in.unwrap();
             let total_hours = (now - clock_in_time).num_seconds() as f64 / 3600.0;
 
-            match sqlx::query(
+            match sqlx::query!(
                 "UPDATE attendance SET clock_out = ?, total_hours = ?, notes = ?, updated_at = CURRENT_TIMESTAMP 
                  WHERE employee_id = ? AND date = ?"
             )
@@ -233,7 +234,7 @@ pub async fn start_break(
     let today = Utc::now().date_naive();
     let now = Utc::now().naive_utc();
 
-    match sqlx::query(
+    match sqlx::query!(
         "UPDATE attendance SET break_start = ?, updated_at = CURRENT_TIMESTAMP 
          WHERE employee_id = ? AND date = ? AND clock_in IS NOT NULL AND clock_out IS NULL"
     )
@@ -292,7 +293,7 @@ pub async fn end_break(
     let today = Utc::now().date_naive();
     let now = Utc::now().naive_utc();
 
-    match sqlx::query(
+    match sqlx::query!(
         "UPDATE attendance SET break_end = ?, updated_at = CURRENT_TIMESTAMP 
          WHERE employee_id = ? AND date = ? AND break_start IS NOT NULL AND break_end IS NULL"
     )

@@ -3,6 +3,7 @@ use crate::types::{StockMovement, CreateStockMovementRequest, ApiResponse};
 use tauri::State;
 use serde::{Deserialize, Serialize};
 use chrono::Utc;
+use sqlx::Row;
 
 #[derive(Debug, Clone)]
 pub enum MovementType {
@@ -95,7 +96,7 @@ pub async fn create_stock_movement(
         None => None,
     };
 
-    match sqlx::query(
+    match sqlx::query!(
         "INSERT INTO stock_movements (restaurant_id, inventory_item_id, movement_type, 
          quantity, unit_cost, total_cost, reference_type, reference_id, batch_number, 
          expiry_date, notes, user_id, movement_date) 

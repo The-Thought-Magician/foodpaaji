@@ -240,8 +240,8 @@ pub async fn get_inventory_analytics(
         WHERE restaurant_id = ? AND is_active = 1 AND category_id IS NOT NULL";
 
     match tokio::try_join!(
-        sqlx::query(analytics_query).bind(restaurant_id).fetch_one(&*db),
-        sqlx::query(categories_query).bind(restaurant_id).fetch_one(&*db)
+        sqlx::query!(analytics_query).bind(restaurant_id).fetch_one(&*db),
+        sqlx::query!(categories_query).bind(restaurant_id).fetch_one(&*db)
     ) {
         Ok((analytics_row, categories_row)) => {
             let analytics = InventoryAnalytics {

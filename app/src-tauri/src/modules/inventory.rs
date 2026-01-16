@@ -2,6 +2,7 @@ use crate::database::DbPool;
 use crate::types::{InventoryItem, InventoryCategory, Supplier, CreateInventoryItemRequest, CreateCategoryRequest, CreateSupplierRequest, ApiResponse};
 use tauri::State;
 use serde::{Deserialize, Serialize};
+use sqlx::Row;
 
 #[derive(Deserialize)]
 pub struct InventorySearchRequest {
@@ -148,7 +149,7 @@ pub async fn create_inventory_item(
     request: CreateInventoryItemRequest,
     db: State<'_, DbPool>,
 ) -> Result<ApiResponse<InventoryItem>, String> {
-    match sqlx::query(
+    match sqlx::query!(
         "INSERT INTO inventory_items (restaurant_id, category_id, supplier_id, name, 
          description, sku, barcode, unit_type, base_unit, conversion_factor, 
          minimum_stock, maximum_stock, reorder_point, cost_price, selling_price, 
@@ -251,7 +252,7 @@ pub async fn create_inventory_category(
     request: CreateCategoryRequest,
     db: State<'_, DbPool>,
 ) -> Result<ApiResponse<InventoryCategory>, String> {
-    match sqlx::query(
+    match sqlx::query!(
         "INSERT INTO inventory_categories (restaurant_id, name, description, parent_id) 
          VALUES (?, ?, ?, ?)"
     )
@@ -333,7 +334,7 @@ pub async fn create_supplier(
     request: CreateSupplierRequest,
     db: State<'_, DbPool>,
 ) -> Result<ApiResponse<Supplier>, String> {
-    match sqlx::query(
+    match sqlx::query!(
         "INSERT INTO suppliers (restaurant_id, name, contact_person, email, phone, 
          address, gstin, payment_terms) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
     )

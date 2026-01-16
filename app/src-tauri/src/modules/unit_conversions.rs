@@ -3,6 +3,7 @@ use crate::types::{UnitConversion, CreateUnitConversionRequest, ApiResponse};
 use tauri::State;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use sqlx::Row;
 
 #[derive(Serialize)]
 pub struct ConversionResult {
@@ -121,7 +122,7 @@ pub async fn create_unit_conversion(
         _ => {}
     }
 
-    match sqlx::query(
+    match sqlx::query!(
         "INSERT INTO unit_conversions (restaurant_id, from_unit, to_unit, conversion_factor) 
          VALUES (?, ?, ?, ?)"
     )
@@ -173,7 +174,7 @@ async fn create_reverse_conversion(
     request: CreateUnitConversionRequest,
     db: &DbPool,
 ) -> Result<(), String> {
-    sqlx::query(
+    sqlx::query!(
         "INSERT INTO unit_conversions (restaurant_id, from_unit, to_unit, conversion_factor) 
          VALUES (?, ?, ?, ?)"
     )
