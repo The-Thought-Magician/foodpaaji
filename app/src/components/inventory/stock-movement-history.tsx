@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Search, Filter, Download, TrendingUp, TrendingDown, RotateCcw, Trash2, RefreshCw } from 'lucide-react';
+import { Search, Filter, Download, TrendingUp, TrendingDown, RotateCcw, RefreshCw } from 'lucide-react';
 import { invoke } from '@tauri-apps/api/tauri';
 
 interface StockMovement {
@@ -66,6 +66,7 @@ export default function StockMovementHistory() {
   useEffect(() => {
     loadInventoryItems();
     loadMovements();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filters]);
 
   const loadInventoryItems = async () => {
@@ -114,7 +115,7 @@ export default function StockMovementHistory() {
     }
   };
 
-  const handleFilterChange = (key: keyof MovementSearchFilters, value: any) => {
+  const handleFilterChange = (key: keyof MovementSearchFilters, value: string | number | undefined) => {
     setFilters(prev => ({
       ...prev,
       [key]: value,
@@ -186,7 +187,7 @@ export default function StockMovementHistory() {
 
   const exportMovements = async () => {
     // This would typically export to CSV/Excel
-    console.log('Export functionality to be implemented');
+    // console.log('Export functionality to be implemented');
   };
 
   return (

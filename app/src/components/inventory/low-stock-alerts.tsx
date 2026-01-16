@@ -68,6 +68,7 @@ export default function LowStockAlerts() {
       loadAlertSummary();
     }, 60000);
     return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filters]);
 
   const loadAlerts = async () => {

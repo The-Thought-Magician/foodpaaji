@@ -7,15 +7,12 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { 
-  DollarSign, 
-  TrendingUp, 
-  Calculator, 
+import {
+  DollarSign,
+  TrendingUp,
+  Calculator,
   BarChart3,
-  RefreshCw,
-  AlertCircle,
-  CheckCircle,
-  Target
+  RefreshCw
 } from 'lucide-react';
 import { invoke } from '@tauri-apps/api/tauri';
 
@@ -90,6 +87,7 @@ export default function PricingManagement({ restaurantId, categories, onPricesCh
   useEffect(() => {
     loadAnalytics();
     loadMenuItems();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [restaurantId]);
 
   const loadAnalytics = async () => {

@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import { invoke } from '@tauri-apps/api/core'
 import { Button } from '@/components/ui/button'
 import {
   Utensils,
@@ -33,11 +32,11 @@ const spiceLabels = {
 
 export function MenuManagement() {
   const [activeTab, setActiveTab] = useState<'dashboard' | 'items' | 'categories'>('dashboard')
-  const [items, setItems] = useState<MenuItem[]>([])
-  const [categories, setCategories] = useState<MenuCategory[]>([])
+  // const [items, setItems] = useState<MenuItem[]>([])
+  // const [categories, setCategories] = useState<MenuCategory[]>([])
   const [selectedCategory, setSelectedCategory] = useState<string>('all')
   const [searchTerm, setSearchTerm] = useState('')
-  const [loading, setLoading] = useState(false)
+  // const [loading, setLoading] = useState(false)
   const [showItemModal, setShowItemModal] = useState(false)
   const [showCategoryModal, setShowCategoryModal] = useState(false)
   const [editingItem, setEditingItem] = useState<MenuItem | null>(null)
@@ -192,7 +191,7 @@ export function MenuManagement() {
       </div>
 
       {activeTab === 'dashboard' && (
-        <MenuDashboard onNavigate={(tab) => setActiveTab(tab as any)} />
+        <MenuDashboard onNavigate={(tab) => setActiveTab(tab as 'dashboard' | 'items' | 'categories')} />
       )}
 
       {activeTab === 'items' && (
@@ -620,7 +619,7 @@ function ItemModal({ item, categories, onClose, onSave }: ItemModalProps) {
               <label className="block text-sm font-medium mb-2">Spice Level</label>
               <select
                 value={formData.spice_level}
-                onChange={(e) => setFormData({ ...formData, spice_level: e.target.value as any })}
+                onChange={(e) => setFormData({ ...formData, spice_level: e.target.value as 'mild' | 'medium' | 'hot' | 'extra_hot' })}
                 className="w-full px-4 py-2.5 bg-card border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20"
               >
                 <option value="mild">Mild</option>

@@ -50,6 +50,7 @@ export function EmployeeDashboard({
 
   useEffect(() => {
     loadEmployeeStats()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [employee.id])
 
   const loadEmployeeStats = async () => {
