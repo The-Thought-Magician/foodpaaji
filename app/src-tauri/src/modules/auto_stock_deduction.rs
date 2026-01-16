@@ -3,6 +3,7 @@ use crate::types::{CreateStockMovementRequest, ApiResponse};
 use tauri::State;
 use serde::{Deserialize, Serialize};
 use chrono::Utc;
+use sqlx::Row;
 
 #[derive(Debug, Serialize, Deserialize, sqlx::FromRow)]
 pub struct MenuItemIngredient {
@@ -218,7 +219,7 @@ async fn deduct_inventory_stock(
         user_id: Some(user_id),
     };
 
-    match sqlx::query(
+    match sqlx::query!(
         "INSERT INTO stock_movements (restaurant_id, inventory_item_id, movement_type, 
          quantity, unit_cost, total_cost, reference_type, reference_id, notes, 
          user_id, movement_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
@@ -309,7 +310,7 @@ pub async fn create_menu_recipe(
     request: CreateRecipeRequest,
     db: State<'_, DbPool>,
 ) -> Result<ApiResponse<String>, String> {
-    sqlx::query("DELETE FROM menu_item_ingredients WHERE menu_item_id = ?")
+    sqlx::query!("DELETE FROM menu_item_ingredients WHERE menu_item_id = ?")
         .bind(request.menu_item_id)
         .execute(&*db)
         .await
@@ -324,7 +325,7 @@ pub async fn create_menu_recipe(
         .await
         .map_err(|e| format!("Database error: {}", e))?;
 
-        sqlx::query(
+        sqlx::query!(
             "INSERT INTO menu_item_ingredients (menu_item_id, inventory_item_id, 
              quantity_required, unit, cost_per_unit) VALUES (?, ?, ?, ?, ?)"
         )

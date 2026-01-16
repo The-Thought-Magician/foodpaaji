@@ -3,6 +3,7 @@ use crate::types::{LowStockAlert, ApiResponse};
 use tauri::State;
 use serde::{Deserialize, Serialize};
 use chrono::Utc;
+use sqlx::Row;
 
 #[derive(Deserialize)]
 pub struct AlertSearchRequest {
@@ -144,7 +145,7 @@ pub async fn get_alert_summary(
         FROM low_stock_alerts 
         WHERE restaurant_id = ?";
 
-    match sqlx::query(summary_query)
+    match sqlx::query!(summary_query)
         .bind(restaurant_id)
         .fetch_one(&*db)
         .await
@@ -186,7 +187,7 @@ pub async fn acknowledge_alert(
     request: AcknowledgeAlertRequest,
     db: State<'_, DbPool>,
 ) -> Result<ApiResponse<String>, String> {
-    match sqlx::query(
+    match sqlx::query!(
         "UPDATE low_stock_alerts 
          SET is_acknowledged = 1, acknowledged_by = ?, acknowledged_at = ? 
          WHERE id = ? AND restaurant_id = ?"
@@ -253,7 +254,7 @@ pub async fn bulk_acknowledge_alerts(
         placeholders
     );
 
-    let mut query_builder = sqlx::query(&query)
+    let mut query_builder = sqlx::query!(&query)
         .bind(request.user_id)
         .bind(Utc::now().naive_utc());
 
@@ -286,7 +287,7 @@ pub async fn clear_acknowledged_alerts(
     restaurant_id: i64,
     db: State<'_, DbPool>,
 ) -> Result<ApiResponse<String>, String> {
-    match sqlx::query(
+    match sqlx::query!(
         "DELETE FROM low_stock_alerts 
          WHERE restaurant_id = ? AND is_acknowledged = 1"
     )
@@ -335,7 +336,7 @@ pub async fn check_and_create_alerts(
         AND current_stock <= reorder_point 
         AND is_active = 1";
 
-    match sqlx::query(check_query)
+    match sqlx::query!(check_query)
         .bind(restaurant_id)
         .execute(&*db)
         .await

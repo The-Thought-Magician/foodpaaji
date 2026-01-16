@@ -3,6 +3,7 @@ use crate::types::ApiResponse;
 use tauri::State;
 use serde::{Deserialize, Serialize};
 use chrono::Utc;
+use sqlx::Row;
 
 #[derive(Debug, Serialize, Deserialize, sqlx::FromRow)]
 pub struct MenuCategory {
@@ -170,7 +171,7 @@ pub async fn get_menu_categories(
     restaurant_id: i64,
     db: State<'_, DbPool>,
 ) -> Result<ApiResponse<Vec<MenuCategory>>, String> {
-    let categories = sqlx::query_as!(
+    let categories = sqlx::query_as(
         MenuCategory,
         "SELECT * FROM menu_categories WHERE restaurant_id = ? ORDER BY sort_order, name",
         restaurant_id
@@ -192,7 +193,7 @@ pub async fn get_menu_category_by_id(
     id: i64,
     db: State<'_, DbPool>,
 ) -> Result<ApiResponse<MenuCategory>, String> {
-    let category = sqlx::query_as!(MenuCategory, "SELECT * FROM menu_categories WHERE id = ?", id)
+    let category = sqlx::query_as::<_, MenuCategory>("SELECT * FROM menu_categories WHERE id = ?", id)
         .fetch_optional(&*db)
         .await
         .map_err(|e| format!("Database error: {}", e))?;
@@ -252,7 +253,7 @@ pub async fn update_menu_category(
 
     let query_str = format!("UPDATE menu_categories SET {} WHERE id = ?", query_parts.join(", "));
     
-    let mut query = sqlx::query(&query_str);
+    let mut query = sqlx::query!(&query_str);
     for value in values {
         query = query.bind(value);
     }
@@ -352,7 +353,7 @@ pub async fn get_menu_items_by_category(
     category_id: i64,
     db: State<'_, DbPool>,
 ) -> Result<ApiResponse<Vec<MenuItem>>, String> {
-    let items = sqlx::query_as!(
+    let items = sqlx::query_as(
         MenuItem,
         "SELECT * FROM menu_items WHERE category_id = ? ORDER BY sort_order, name",
         category_id
@@ -374,7 +375,7 @@ pub async fn get_menu_item_by_id(
     id: i64,
     db: State<'_, DbPool>,
 ) -> Result<ApiResponse<MenuItem>, String> {
-    let item = sqlx::query_as!(MenuItem, "SELECT * FROM menu_items WHERE id = ?", id)
+    let item = sqlx::query_as::<_, MenuItem>("SELECT * FROM menu_items WHERE id = ?", id)
         .fetch_optional(&*db)
         .await
         .map_err(|e| format!("Database error: {}", e))?;

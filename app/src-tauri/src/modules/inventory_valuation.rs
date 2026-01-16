@@ -3,6 +3,7 @@ use crate::types::ApiResponse;
 use tauri::State;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use sqlx::Row;
 
 #[derive(Debug, Clone)]
 pub enum ValuationMethod {

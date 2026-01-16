@@ -7,6 +7,7 @@ use chrono::Utc;
 use std::path::PathBuf;
 use std::fs;
 use base64::{Engine as _, engine::general_purpose};
+use sqlx::Row;
 
 #[derive(Deserialize)]
 pub struct EmployeeSearchRequest {
@@ -150,7 +151,7 @@ pub async fn create_employee(
         .map_err(|e| format!("Hash error: {}", e))?;
     let role = request.role.to_uppercase();
     
-    match sqlx::query(
+    match sqlx::query!(
     "INSERT INTO users (restaurant_id, email, phone, password_hash, 
      first_name, last_name, role, salary, hire_date) 
      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"
@@ -239,7 +240,7 @@ pub async fn authenticate_employee(
             if let Some(stored_hash) = &user_with_hash.password_hash {
                 match verify(&request.password, stored_hash) {
                     Ok(true) => {
-                        sqlx::query("UPDATE users SET last_login = ? WHERE id = ?")
+                        sqlx::query!("UPDATE users SET last_login = ? WHERE id = ?")
                             .bind(Utc::now().naive_utc())
                             .bind(user_with_hash.id)
                             .execute(&*db)
@@ -335,7 +336,7 @@ pub async fn update_employee_password(
                     let new_hash = hash(&request.new_password, DEFAULT_COST)
                         .map_err(|e| format!("Hash error: {}", e))?;
 
-                    match sqlx::query("UPDATE users SET password_hash = ? WHERE id = ?")
+                    match sqlx::query!("UPDATE users SET password_hash = ? WHERE id = ?")
                         .bind(&new_hash)
                         .bind(request.employee_id)
                         .execute(&*db)

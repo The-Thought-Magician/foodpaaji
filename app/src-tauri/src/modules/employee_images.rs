@@ -6,6 +6,7 @@ use chrono::Utc;
 use std::path::PathBuf;
 use std::fs;
 use base64::{Engine as _, engine::general_purpose};
+use sqlx::Row;
 
 #[derive(Deserialize)]
 pub struct EmployeeImageUploadRequest {
@@ -45,7 +46,7 @@ pub async fn upload_employee_image(
 
     let relative_path = format!("employee_images/{}", image_filename);
 
-    match sqlx::query("UPDATE users SET profile_image = ? WHERE id = ?")
+    match sqlx::query!("UPDATE users SET profile_image = ? WHERE id = ?")
         .bind(&relative_path)
         .bind(request.employee_id)
         .execute(&*db)
@@ -80,7 +81,7 @@ pub async fn get_employee_image(
     {
         Ok(Some(image_path)) => {
             let app_data_dir = get_app_data_dir()
-                .ok_or("Failed to get app data directory")?;
+                ?;
             
             let full_path = app_data_dir.join(&image_path);
             
@@ -143,7 +144,7 @@ pub async fn delete_employee(
         });
     }
 
-    match sqlx::query("UPDATE users SET is_active = 0 WHERE id = ?")
+    match sqlx::query!("UPDATE users SET is_active = 0 WHERE id = ?")
         .bind(request.employee_id)
         .execute(&*db)
         .await
