@@ -31,3 +31,4 @@ bcrypt = "0.15"
 dirs = "5"
 jsonwebtoken = { version = "9", default-features = false, features = ["use_pem"] }
 base64 = "0.22"
+image = "0.25"

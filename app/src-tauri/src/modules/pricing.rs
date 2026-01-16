@@ -3,6 +3,7 @@ use crate::types::ApiResponse;
 use tauri::State;
 use serde::{Deserialize, Serialize};
 use chrono::Utc;
+use sqlx::Row;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub enum PricingStrategy {
@@ -109,7 +110,7 @@ pub async fn calculate_menu_item_price(
         "SELECT name, price, cost_price FROM menu_items WHERE id = ?",
         request.menu_item_id
     )
-    .fetch_optional(&**db)
+    .fetch_optional(&*db)
     .await
     .map_err(|e| format!("Database error: {}", e))?;
 
@@ -178,7 +179,7 @@ pub async fn bulk_calculate_prices(
     }
 
     let items = query_builder
-        .fetch_all(&**db)
+        .fetch_all(&*db)
         .await
         .map_err(|e| format!("Database error: {}", e))?;
 
@@ -187,9 +188,9 @@ pub async fn bulk_calculate_prices(
     let mut total_revenue_impact = 0.0;
 
     for item in items.iter() {
-        let id: i64 = item.get("id");
-        let name: String = item.get("name");
-        let current_price: f64 = item.get("price");
+        let id: i64 = item.try_get("id");
+        let name: String = item.try_get("name");
+        let current_price: f64 = item.try_get("price");
         let cost_price: f64 = item.get::<Option<f64>, _>("cost_price").unwrap_or(0.0);
 
         let suggested_price = calculate_price_by_strategy(
@@ -222,7 +223,7 @@ pub async fn bulk_calculate_prices(
             match sqlx::query("UPDATE menu_items SET price = ? WHERE id = ?")
                 .bind(suggested_price)
                 .bind(id)
-                .execute(&**db)
+                .execute(&*db)
                 .await
             {
                 Ok(_) => updated_items += 1,
@@ -265,7 +266,7 @@ pub async fn update_menu_item_price(
         request.menu_item_id,
         request.restaurant_id
     )
-    .execute(&**db)
+    .execute(&*db)
     .await
     .map_err(|e| format!("Database error: {}", e))?;
 
@@ -282,7 +283,7 @@ pub async fn update_menu_item_price(
         Utc::now().naive_utc(),
         request.menu_item_id
     )
-    .execute(&**db)
+    .execute(&*db)
     .await
     .map_err(|e| format!("Failed to log price change: {}", e))?;
 
@@ -311,7 +312,7 @@ pub async fn get_pricing_analytics(
          WHERE restaurant_id = ? AND is_active = 1",
         restaurant_id
     )
-    .fetch_one(&**db)
+    .fetch_one(&*db)
     .await
     .map_err(|e| format!("Database error: {}", e))?;
 
@@ -352,7 +353,7 @@ pub async fn sync_cost_prices_from_recipes(
          )",
         restaurant_id
     )
-    .execute(&**db)
+    .execute(&*db)
     .await
     .map_err(|e| format!("Database error: {}", e))?;
 

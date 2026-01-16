@@ -311,7 +311,7 @@ pub async fn create_menu_recipe(
 ) -> Result<ApiResponse<String>, String> {
     sqlx::query("DELETE FROM menu_item_ingredients WHERE menu_item_id = ?")
         .bind(request.menu_item_id)
-        .execute(&**db)
+        .execute(&*db)
         .await
         .map_err(|e| format!("Failed to clear existing recipe: {}", e))?;
 
@@ -320,7 +320,7 @@ pub async fn create_menu_recipe(
             "SELECT cost_price FROM inventory_items WHERE id = ?",
             ingredient.inventory_item_id
         )
-        .fetch_optional(&**db)
+        .fetch_optional(&*db)
         .await
         .map_err(|e| format!("Database error: {}", e))?;
 
@@ -333,7 +333,7 @@ pub async fn create_menu_recipe(
         .bind(ingredient.quantity)
         .bind(&ingredient.unit)
         .bind(cost_per_unit)
-        .execute(&**db)
+        .execute(&*db)
         .await
         .map_err(|e| format!("Failed to add ingredient: {}", e))?;
     }

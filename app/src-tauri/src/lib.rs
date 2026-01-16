@@ -60,14 +60,7 @@ pub fn run() {
     .setup(|app| {
       // Enable logging in all builds with sensible defaults
       let level = if cfg!(debug_assertions) { log::LevelFilter::Debug } else { log::LevelFilter::Info };
-      #[allow(unused_imports)]
-      use tauri_plugin_log::LogTarget;
-      let mut builder = tauri_plugin_log::Builder::default().level(level);
-      if cfg!(debug_assertions) {
-        builder = builder.targets([LogTarget::Stdout, LogTarget::Webview, LogTarget::LogDir]);
-      } else {
-        builder = builder.targets([LogTarget::LogDir]);
-      }
+      let builder = tauri_plugin_log::Builder::default().level(level);
       app.handle().plugin(builder.build())?;
       
       let app_handle = app.handle();

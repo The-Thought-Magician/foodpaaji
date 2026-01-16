@@ -1,5 +1,5 @@
 use crate::database::DbPool;
-use crate::types::{User, CreateUserRequest, ApiResponse};
+use crate::types::{User, UserWithHash, CreateUserRequest, ApiResponse};
 use tauri::State;
 use bcrypt::{hash, verify, DEFAULT_COST};
 use serde::{Deserialize, Serialize};
@@ -38,7 +38,7 @@ pub async fn get_employees(
          FROM users WHERE restaurant_id = ? ORDER BY created_at DESC"
     )
     .bind(restaurant_id)
-    .fetch_all(&**db)
+    .fetch_all(&*db)
     .await
     {
         Ok(employees) => Ok(ApiResponse {
@@ -118,8 +118,8 @@ pub async fn search_employees(
     }
 
     match tokio::try_join!(
-        total_query.fetch_one(&**db),
-        employees_query.fetch_all(&**db)
+        total_query.fetch_one(&*db),
+        employees_query.fetch_all(&*db)
     ) {
         Ok((total, employees)) => Ok(ApiResponse {
             success: true,
@@ -164,7 +164,7 @@ pub async fn create_employee(
     .bind(&role)
     .bind(request.salary)
     .bind(&request.hire_date)
-    .execute(&**db)
+    .execute(&*db)
     .await
     {
         Ok(result) => {
@@ -224,30 +224,44 @@ pub async fn authenticate_employee(
     request: EmployeeLoginRequest,
     db: State<'_, DbPool>,
 ) -> Result<ApiResponse<EmployeeLoginResponse>, String> {
-    match sqlx::query_as::<_, User>(
-        "SELECT id, restaurant_id, email, phone, first_name, last_name, 
-         role, permissions, salary, hire_date, is_active, 
+    match sqlx::query_as::<_, UserWithHash>(
+        "SELECT id, restaurant_id, email, phone, first_name, last_name,
+         role, permissions, salary, hire_date, is_active,
          last_login, created_at, updated_at, password_hash
          FROM users WHERE email = ? AND restaurant_id = ? AND is_active = 1"
     )
     .bind(&request.email)
     .bind(request.restaurant_id)
-    .fetch_optional(&**db)
+    .fetch_optional(&*db)
     .await
     {
-        Ok(Some(mut user)) => {
-            if let Some(stored_hash) = user.password_hash.as_ref() {
+        Ok(Some(user_with_hash)) => {
+            if let Some(stored_hash) = &user_with_hash.password_hash {
                 match verify(&request.password, stored_hash) {
                     Ok(true) => {
                         sqlx::query("UPDATE users SET last_login = ? WHERE id = ?")
                             .bind(Utc::now().naive_utc())
-                            .bind(user.id)
-                            .execute(&**db)
+                            .bind(user_with_hash.id)
+                            .execute(&*db)
                             .await
                             .ok();
 
-                        user.last_login = Some(Utc::now().naive_utc());
-                        user.password_hash = None;
+                        let user = User {
+                            id: user_with_hash.id,
+                            restaurant_id: user_with_hash.restaurant_id,
+                            email: user_with_hash.email,
+                            phone: user_with_hash.phone,
+                            first_name: user_with_hash.first_name,
+                            last_name: user_with_hash.last_name,
+                            role: user_with_hash.role,
+                            permissions: user_with_hash.permissions,
+                            salary: user_with_hash.salary,
+                            hire_date: user_with_hash.hire_date,
+                            is_active: user_with_hash.is_active,
+                            last_login: Some(Utc::now().naive_utc()),
+                            created_at: user_with_hash.created_at,
+                            updated_at: user_with_hash.updated_at,
+                        };
 
                         let token = crate::modules::auth::generate_jwt(user.id, &user.role)
                             .map_err(|e| format!("Token generation error: {}", e))?;
@@ -312,7 +326,7 @@ pub async fn update_employee_password(
         "SELECT password_hash FROM users WHERE id = ? AND is_active = 1"
     )
     .bind(request.employee_id)
-    .fetch_optional(&**db)
+    .fetch_optional(&*db)
     .await
     {
         Ok(Some(stored_hash)) => {
@@ -324,7 +338,7 @@ pub async fn update_employee_password(
                     match sqlx::query("UPDATE users SET password_hash = ? WHERE id = ?")
                         .bind(&new_hash)
                         .bind(request.employee_id)
-                        .execute(&**db)
+                        .execute(&*db)
                         .await
                     {
                         Ok(_) => Ok(ApiResponse {

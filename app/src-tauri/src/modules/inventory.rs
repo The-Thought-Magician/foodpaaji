@@ -36,7 +36,7 @@ pub async fn get_inventory_items(
          AND is_active = 1 ORDER BY name ASC"
     )
     .bind(restaurant_id)
-    .fetch_all(&**db)
+    .fetch_all(&*db)
     .await
     {
         Ok(items) => Ok(ApiResponse {
@@ -120,8 +120,8 @@ pub async fn search_inventory_items(
     }
 
     match tokio::try_join!(
-        total_query.fetch_one(&**db),
-        items_query.fetch_all(&**db)
+        total_query.fetch_one(&*db),
+        items_query.fetch_all(&*db)
     ) {
         Ok((total, items)) => Ok(ApiResponse {
             success: true,
@@ -174,7 +174,7 @@ pub async fn create_inventory_item(
     .bind(request.expiry_tracking.unwrap_or(false))
     .bind(request.batch_tracking.unwrap_or(false))
     .bind(&request.location)
-    .execute(&**db)
+    .execute(&*db)
     .await
     {
         Ok(result) => {
@@ -228,7 +228,7 @@ pub async fn get_inventory_categories(
          AND is_active = 1 ORDER BY name ASC"
     )
     .bind(restaurant_id)
-    .fetch_all(&**db)
+    .fetch_all(&*db)
     .await
     {
         Ok(categories) => Ok(ApiResponse {
@@ -259,7 +259,7 @@ pub async fn create_inventory_category(
     .bind(&request.name)
     .bind(&request.description)
     .bind(request.parent_id)
-    .execute(&**db)
+    .execute(&*db)
     .await
     {
         Ok(result) => {
@@ -310,7 +310,7 @@ pub async fn get_suppliers(
          WHERE restaurant_id = ? AND is_active = 1 ORDER BY name ASC"
     )
     .bind(restaurant_id)
-    .fetch_all(&**db)
+    .fetch_all(&*db)
     .await
     {
         Ok(suppliers) => Ok(ApiResponse {
@@ -345,7 +345,7 @@ pub async fn create_supplier(
     .bind(&request.address)
     .bind(&request.gstin)
     .bind(&request.payment_terms)
-    .execute(&**db)
+    .execute(&*db)
     .await
     {
         Ok(result) => {

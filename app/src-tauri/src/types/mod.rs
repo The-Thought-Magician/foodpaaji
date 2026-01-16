@@ -34,6 +34,25 @@ pub struct User {
     pub updated_at: Option<DateTime<Utc>>,
 }
 
+#[derive(Debug, sqlx::FromRow)]
+pub struct UserWithHash {
+    pub id: Option<i64>,
+    pub restaurant_id: i64,
+    pub email: String,
+    pub phone: Option<String>,
+    pub first_name: String,
+    pub last_name: String,
+    pub role: String,
+    pub permissions: String,
+    pub salary: Option<f64>,
+    pub hire_date: Option<String>,
+    pub is_active: bool,
+    pub last_login: Option<DateTime<Utc>>,
+    pub created_at: Option<DateTime<Utc>>,
+    pub updated_at: Option<DateTime<Utc>>,
+    pub password_hash: Option<String>,
+}
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct CreateUserRequest {
     pub restaurant_id: i64,

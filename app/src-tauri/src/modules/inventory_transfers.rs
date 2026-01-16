@@ -120,7 +120,7 @@ pub async fn create_inventory_transfer(
     .bind(request.items.len() as i32)
     .bind(total_value)
     .bind(Utc::now().naive_utc())
-    .execute(&**db)
+    .execute(&*db)
     .await
     {
         Ok(result) => {
@@ -143,7 +143,7 @@ pub async fn create_inventory_transfer(
                 .bind(&unit)
                 .bind(item_cost)
                 .bind(&item_request.notes)
-                .execute(&**db)
+                .execute(&*db)
                 .await
                 .map_err(|e| format!("Failed to create transfer item: {}", e))?;
             }
@@ -184,7 +184,7 @@ pub async fn approve_transfer(
     .bind(request.approved_by)
     .bind(Utc::now().naive_utc())
     .bind(request.transfer_id)
-    .execute(&**db)
+    .execute(&*db)
     .await
     .map_err(|e| format!("Failed to approve transfer: {}", e))?;
 
@@ -195,7 +195,7 @@ pub async fn approve_transfer(
         )
         .bind(approval.approved_quantity)
         .bind(approval.transfer_item_id)
-        .execute(&**db)
+        .execute(&*db)
         .await
         .map_err(|e| format!("Failed to approve transfer item: {}", e))?;
     }
@@ -243,7 +243,7 @@ pub async fn complete_transfer(
         )
         .bind(completion.transferred_quantity)
         .bind(completion.transfer_item_id)
-        .execute(&**db)
+        .execute(&*db)
         .await
         .map_err(|e| format!("Failed to update transfer item: {}", e))?;
     }
@@ -255,7 +255,7 @@ pub async fn complete_transfer(
     .bind(request.completed_by)
     .bind(Utc::now().naive_utc())
     .bind(request.transfer_id)
-    .execute(&**db)
+    .execute(&*db)
     .await
     .map_err(|e| format!("Failed to complete transfer: {}", e))?;
 
@@ -343,8 +343,8 @@ pub async fn get_inventory_transfers(
     }
 
     match tokio::try_join!(
-        total_query.fetch_one(&**db),
-        transfers_query.fetch_all(&**db)
+        total_query.fetch_one(&*db),
+        transfers_query.fetch_all(&*db)
     ) {
         Ok((total, transfers)) => Ok(ApiResponse {
             success: true,

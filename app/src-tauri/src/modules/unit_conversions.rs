@@ -41,7 +41,7 @@ pub async fn get_unit_conversions(
          ORDER BY from_unit, to_unit"
     )
     .bind(restaurant_id)
-    .fetch_all(&**db)
+    .fetch_all(&*db)
     .await
     {
         Ok(conversions) => Ok(ApiResponse {
@@ -98,7 +98,7 @@ pub async fn create_unit_conversion(
     .bind(request.restaurant_id)
     .bind(&request.from_unit)
     .bind(&request.to_unit)
-    .fetch_one(&**db)
+    .fetch_one(&*db)
     .await;
 
     match existing_check {
@@ -129,7 +129,7 @@ pub async fn create_unit_conversion(
     .bind(&request.from_unit)
     .bind(&request.to_unit)
     .bind(request.conversion_factor)
-    .execute(&**db)
+    .execute(&*db)
     .await
     {
         Ok(result) => {
@@ -216,7 +216,7 @@ pub async fn convert_units(
     .bind(request.restaurant_id)
     .bind(&request.from_unit)
     .bind(&request.to_unit)
-    .fetch_optional(&**db)
+    .fetch_optional(&*db)
     .await
     {
         Ok(Some(conversion)) => {

@@ -106,8 +106,8 @@ pub async fn get_low_stock_alerts(
     }
 
     match tokio::try_join!(
-        total_query.fetch_one(&**db),
-        alerts_query.fetch_all(&**db)
+        total_query.fetch_one(&*db),
+        alerts_query.fetch_all(&*db)
     ) {
         Ok((total, alerts)) => Ok(ApiResponse {
             success: true,
@@ -146,16 +146,16 @@ pub async fn get_alert_summary(
 
     match sqlx::query(summary_query)
         .bind(restaurant_id)
-        .fetch_one(&**db)
+        .fetch_one(&*db)
         .await
     {
         Ok(row) => {
             let summary = AlertSummary {
-                total_alerts: row.get("total_alerts"),
-                critical_alerts: row.get("critical_alerts"),
-                low_alerts: row.get("low_alerts"),
-                out_of_stock_alerts: row.get("out_of_stock_alerts"),
-                unacknowledged_alerts: row.get("unacknowledged_alerts"),
+                total_alerts: row.try_get("total_alerts"),
+                critical_alerts: row.try_get("critical_alerts"),
+                low_alerts: row.try_get("low_alerts"),
+                out_of_stock_alerts: row.try_get("out_of_stock_alerts"),
+                unacknowledged_alerts: row.try_get("unacknowledged_alerts"),
             };
 
             Ok(ApiResponse {
@@ -195,7 +195,7 @@ pub async fn acknowledge_alert(
     .bind(Utc::now().naive_utc())
     .bind(request.alert_id)
     .bind(request.restaurant_id)
-    .execute(&**db)
+    .execute(&*db)
     .await
     {
         Ok(result) => {
@@ -262,7 +262,7 @@ pub async fn bulk_acknowledge_alerts(
     }
     query_builder = query_builder.bind(request.restaurant_id);
 
-    match query_builder.execute(&**db).await {
+    match query_builder.execute(&*db).await {
         Ok(result) => {
             let acknowledged_count = result.rows_affected();
             Ok(ApiResponse {
@@ -291,7 +291,7 @@ pub async fn clear_acknowledged_alerts(
          WHERE restaurant_id = ? AND is_acknowledged = 1"
     )
     .bind(restaurant_id)
-    .execute(&**db)
+    .execute(&*db)
     .await
     {
         Ok(result) => {
@@ -337,7 +337,7 @@ pub async fn check_and_create_alerts(
 
     match sqlx::query(check_query)
         .bind(restaurant_id)
-        .execute(&**db)
+        .execute(&*db)
         .await
     {
         Ok(result) => {

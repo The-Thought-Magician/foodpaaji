@@ -1,58 +1,41 @@
 import { useState } from 'react'
-import { MainLayout } from '@/components/layout/main-layout'
-import { Header } from '@/components/layout/header'
-import { Button } from '@/components/ui/button'
-import { Users, Database } from 'lucide-react'
-import { invoke } from '@tauri-apps/api/core'
+import { AppLayout } from '@/components/layout/app-layout'
+import { Dashboard } from '@/components/dashboard/dashboard'
 import { EmployeeManagement } from '@/pages/employee-management'
 
 function App() {
-  const [view, setView] = useState<'home' | 'employees'>('home')
+  const [activeView, setActiveView] = useState<string>('dashboard')
 
-  if (view === 'employees') {
-    return <EmployeeManagement />
+  const renderView = () => {
+    switch (activeView) {
+      case 'dashboard':
+        return <Dashboard />
+      case 'employees':
+        return <EmployeeManagement />
+      case 'inventory':
+        return <div className="text-center py-20">
+          <h2 className="text-2xl font-bold text-muted-foreground">Inventory Management</h2>
+          <p className="text-muted-foreground">Coming soon...</p>
+        </div>
+      case 'menu':
+        return <div className="text-center py-20">
+          <h2 className="text-2xl font-bold text-muted-foreground">Menu Management</h2>
+          <p className="text-muted-foreground">Coming soon...</p>
+        </div>
+      case 'pos':
+        return <div className="text-center py-20">
+          <h2 className="text-2xl font-bold text-muted-foreground">Point of Sale</h2>
+          <p className="text-muted-foreground">Coming soon...</p>
+        </div>
+      default:
+        return <Dashboard />
+    }
   }
 
   return (
-    <MainLayout>
-      <Header title="FoodPaaji - Restaurant Management" />
-      <div className="container mx-auto p-6">
-        <div className="flex flex-col items-center justify-center space-y-4">
-          <h1 className="text-4xl font-bold text-center">
-            Welcome to FoodPaaji
-          </h1>
-          <p className="text-xl text-muted-foreground text-center max-w-2xl">
-            Complete restaurant management system designed for Indian restaurants
-          </p>
-          <div className="flex space-x-4">
-            <Button className="flex items-center space-x-2" onClick={() => setView('employees')}>
-              <Users className="h-4 w-4" />
-              <span>Manage Employees</span>
-            </Button>
-            <Button variant="outline">
-              View Dashboard
-            </Button>
-            <Button
-              variant="outline"
-              onClick={async () => {
-                try {
-                  await invoke('seed_sample_data')
-                  // eslint-disable-next-line no-alert
-                  alert('Seeded sample data')
-                } catch (e) {
-                  // eslint-disable-next-line no-alert
-                  alert('Seeding failed: ' + (e as any)?.toString?.())
-                }
-              }}
-              className="flex items-center space-x-2"
-            >
-              <Database className="h-4 w-4" />
-              <span>Seed Data</span>
-            </Button>
-          </div>
-        </div>
-      </div>
-    </MainLayout>
+    <AppLayout activeView={activeView} onViewChange={setActiveView}>
+      {renderView()}
+    </AppLayout>
   )
 }
 
