@@ -1,3 +1,4 @@
 fn main() {
-  tauri_build::build()
+    println!("cargo:rerun-if-changed=.env");
+    println!("cargo:rustc-env=SQLX_OFFLINE=true");
 }
