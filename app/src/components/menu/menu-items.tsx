@@ -9,15 +9,13 @@ import { Switch } from '@/components/ui/switch';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { 
-  ChefHat, 
-  Plus, 
-  Edit, 
-  Trash2, 
+import {
+  ChefHat,
+  Plus,
+  Edit,
+  Trash2,
   Star,
-  Upload,
   Image as ImageIcon,
-  DollarSign,
   Clock,
   Leaf
 } from 'lucide-react';
@@ -101,6 +99,7 @@ export default function MenuItems({ restaurantId, categories, onItemsChange }: M
 
   useEffect(() => {
     filterItems();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [items, searchTerm]);
 
   const loadMenuItems = async (categoryId: number) => {

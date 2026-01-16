@@ -78,6 +78,7 @@ export default function InventorySearch() {
 
   useEffect(() => {
     searchItems();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filters]);
 
   const loadCategories = async () => {
@@ -141,7 +142,7 @@ export default function InventorySearch() {
     }
   };
 
-  const handleFilterChange = (key: keyof SearchFilters, value: any) => {
+  const handleFilterChange = (key: keyof SearchFilters, value: string | number | boolean | undefined) => {
     setFilters(prev => ({
       ...prev,
       [key]: value,

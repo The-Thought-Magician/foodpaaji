@@ -59,7 +59,7 @@ interface StockMovementProps {
   time: string
 }
 
-function StockMovement({ id, item, type, quantity, supplier, time }: StockMovementProps) {
+function StockMovement({ item, type, quantity, supplier, time }: StockMovementProps) {
   const isIn = type === 'in'
 
   return (

@@ -126,7 +126,7 @@ export default function InventoryItemForm({ initialData, onSubmit, onCancel, isE
     }
   };
 
-  const handleInputChange = (field: keyof InventoryItemFormData, value: any) => {
+  const handleInputChange = (field: keyof InventoryItemFormData, value: string | number | boolean) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: '' }));

@@ -11,8 +11,7 @@ import {
   Edit,
   Trash2,
   X,
-  Filter,
-  ArrowUpDown
+  Filter
 } from 'lucide-react'
 import type { ApiResponse } from '@/types/api'
 import { cn } from '@/lib/utils'
@@ -71,8 +70,8 @@ export function InventoryManagement() {
   const [filterStatus, setFilterStatus] = useState<'all' | 'in_stock' | 'low_stock' | 'out_of_stock'>('all')
   const [currentPage, setCurrentPage] = useState(1)
   const [showAddForm, setShowAddForm] = useState(false)
-  const [sortBy, setSortBy] = useState<'name' | 'stock' | 'price'>('name')
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc')
+  // const [sortBy, setSortBy] = useState<'name' | 'stock' | 'price'>('name')
+  // const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc')
 
   const itemsPerPage = 12
 
@@ -152,6 +151,7 @@ export function InventoryManagement() {
     })
 
     return result
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [items, searchTerm, filterCategory, filterSupplier, filterStatus, sortBy, sortOrder])
 
   const totalPages = Math.max(1, Math.ceil(filteredItems.length / itemsPerPage))
@@ -160,14 +160,14 @@ export function InventoryManagement() {
     return filteredItems.slice(start, start + itemsPerPage)
   }, [filteredItems, currentPage])
 
-  const handleSort = (column: 'name' | 'stock' | 'price') => {
-    if (sortBy === column) {
-      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')
-    } else {
-      setSortBy(column)
-      setSortOrder('asc')
-    }
-  }
+  // const handleSort = (column: 'name' | 'stock' | 'price') => {
+  //   if (sortBy === column) {
+  //     setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')
+  //   } else {
+  //     setSortBy(column)
+  //     setSortOrder('asc')
+  //   }
+  // }
 
   if (loading) {
     return (
@@ -292,9 +292,15 @@ export function InventoryManagement() {
                 key={item.id}
                 item={item}
                 delay={index * 50}
-                onEdit={() => console.log('Edit', item.id)}
-                onDelete={() => console.log('Delete', item.id)}
-                onRestock={() => console.log('Restock', item.id)}
+                onEdit={() => {
+                  // console.log('Edit', item.id)
+                }}
+                onDelete={() => {
+                  // console.log('Delete', item.id)
+                }}
+                onRestock={() => {
+                  // console.log('Restock', item.id)
+                }}
               />
             ))}
           </div>

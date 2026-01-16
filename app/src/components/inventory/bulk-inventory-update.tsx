@@ -7,8 +7,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { CheckSquare, Square, Edit, DollarSign, Package, Calculator, Save, X, Filter } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Calculator, Save, X } from 'lucide-react';
 import { invoke } from '@tauri-apps/api/tauri';
 
 interface InventoryItem {
@@ -158,7 +158,7 @@ export default function BulkInventoryUpdate() {
   const executeUpdate = async () => {
     setUpdating(true);
     try {
-      const updates = updateItems.filter(item => item.selected).map(item => ({
+      updateItems.filter(item => item.selected).map(item => ({
         item_id: item.id,
         new_value: item.new_value,
         operation_type: operation.type,
@@ -167,8 +167,8 @@ export default function BulkInventoryUpdate() {
 
       // This would call a backend command to perform bulk update
       // For now, we'll simulate the update process
-      console.log('Executing bulk update:', updates);
-      
+      // console.log('Executing bulk update:', updates);
+
       // Reload items after update
       await loadItems();
       setShowPreview(false);
@@ -185,16 +185,19 @@ export default function BulkInventoryUpdate() {
     switch (operation.type) {
       case 'PRICE_UPDATE':
         return `Update ${operation.field === 'cost_price' ? 'cost prices' : 'selling prices'} to ₹${operation.value || 0}`;
-      case 'STOCK_ADJUSTMENT':
+      case 'STOCK_ADJUSTMENT': {
         const adjustment = operation.value || 0;
         return `${adjustment >= 0 ? 'Increase' : 'Decrease'} stock by ${Math.abs(adjustment)} units`;
-      case 'REORDER_LEVELS':
-        const field = operation.field === 'minimum_stock' ? 'minimum stock' : 
+      }
+      case 'REORDER_LEVELS': {
+        const field = operation.field === 'minimum_stock' ? 'minimum stock' :
                      operation.field === 'maximum_stock' ? 'maximum stock' : 'reorder point';
         return `Update ${field} to ${operation.value || 0}`;
-      case 'PERCENTAGE_MARKUP':
+      }
+      case 'PERCENTAGE_MARKUP': {
         const priceType = operation.field === 'cost_price' ? 'cost prices' : 'selling prices';
         return `Apply ${operation.percentage || 0}% markup to ${priceType}`;
+      }
       default:
         return 'Select an operation';
     }
@@ -228,7 +231,7 @@ export default function BulkInventoryUpdate() {
               <Label htmlFor="operation_type">Operation Type</Label>
               <Select
                 value={operation.type}
-                onValueChange={(value: any) => setOperation({ type: value })}
+                onValueChange={(value: 'PRICE_UPDATE' | 'STOCK_ADJUSTMENT' | 'REORDER_LEVELS' | 'PERCENTAGE_MARKUP') => setOperation({ type: value })}
               >
                 <SelectTrigger>
                   <SelectValue />

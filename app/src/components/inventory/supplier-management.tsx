@@ -6,8 +6,8 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Building2, Phone, Mail, MapPin, CreditCard, Plus, Edit, Eye, Search, Filter, Users } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Building2, Phone, Mail, MapPin, CreditCard, Plus, Edit, Eye, Search, Users } from 'lucide-react';
 import { invoke } from '@tauri-apps/api/tauri';
 
 interface Supplier {
@@ -62,6 +62,7 @@ export default function SupplierManagement() {
 
   useEffect(() => {
     filterSuppliers();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [suppliers, searchTerm]);
 
   const loadSuppliers = async () => {

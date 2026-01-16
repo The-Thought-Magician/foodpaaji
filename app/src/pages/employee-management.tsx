@@ -82,6 +82,7 @@ export function EmployeeManagement() {
 
   useMemo(() => {
     loadEmployees()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const normalizeRoleForUi = (role: string) => role.toLowerCase().replace(/ /g, '_')

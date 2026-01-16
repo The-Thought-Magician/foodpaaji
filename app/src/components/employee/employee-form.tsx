@@ -135,7 +135,7 @@ export function EmployeeForm({ employee, restaurantId, onSave, onCancel }: Emplo
           salary: formData.salary,
           hire_date: formData.joiningDate,
         }
-      }) as ApiResponse<any>
+      }) as ApiResponse<{ id: number; email: string; phone?: string; first_name: string; last_name: string }>
 
       if (response.success) {
         // Minimal echo-back mapping to UI shape
