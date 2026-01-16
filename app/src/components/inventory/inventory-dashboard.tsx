@@ -1,329 +1,263 @@
-import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { AlertTriangle, Package, TrendingDown, TrendingUp, DollarSign, BarChart3, RefreshCw } from 'lucide-react';
-import { invoke } from '@tauri-apps/api/tauri';
+import {
+  Package,
+  AlertTriangle,
+  IndianRupee,
+  Truck,
+  TrendingUp,
+  TrendingDown,
+  ArrowUpRight,
+  ArrowDownRight,
+  Plus,
+  MoreVertical
+} from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { cn } from '@/lib/utils'
 
-interface InventoryAnalytics {
-  total_items: number;
-  total_inventory_value: number;
-  low_stock_items: number;
-  out_of_stock_items: number;
-  overstocked_items: number;
-  total_categories: number;
-  average_stock_level: number;
+interface StatCardProps {
+  title: string
+  value: string
+  change: string
+  trend: 'up' | 'down' | 'neutral'
+  icon: React.ElementType
+  gradient: string
+  delay?: number
 }
 
-interface LowStockItem {
-  item_id: number;
-  item_name: string;
-  sku?: string;
-  current_stock: number;
-  reorder_point: number;
-  shortage: number;
-  days_of_stock?: number;
-  supplier_name?: string;
-}
-
-interface TopMovingItem {
-  item_id: number;
-  item_name: string;
-  total_quantity_out: number;
-  total_value_out: number;
-  movement_frequency: number;
-  rank: number;
-}
-
-interface AlertSummary {
-  total_alerts: number;
-  critical_alerts: number;
-  low_alerts: number;
-  out_of_stock_alerts: number;
-  unacknowledged_alerts: number;
-}
-
-export default function InventoryDashboard() {
-  const [analytics, setAnalytics] = useState<InventoryAnalytics | null>(null);
-  const [lowStockItems, setLowStockItems] = useState<LowStockItem[]>([]);
-  const [topMovingItems, setTopMovingItems] = useState<TopMovingItem[]>([]);
-  const [alertSummary, setAlertSummary] = useState<AlertSummary | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-
-  const restaurantId = 1;
-
-  useEffect(() => {
-    loadDashboardData();
-    const interval = setInterval(loadDashboardData, 30000);
-    return () => clearInterval(interval);
-  }, []);
-
-  const loadDashboardData = async () => {
-    setRefreshing(true);
-    try {
-      const [analyticsResponse, lowStockResponse, topMovingResponse, alertsResponse] = await Promise.all([
-        invoke('get_inventory_analytics', { restaurantId }) as Promise<{ success: boolean; data?: InventoryAnalytics }>,
-        invoke('get_low_stock_report', { restaurantId }) as Promise<{ success: boolean; data?: LowStockItem[] }>,
-        invoke('get_top_moving_items_report', { 
-          request: { restaurant_id: restaurantId, start_date: null, end_date: null },
-          limit: 5
-        }) as Promise<{ success: boolean; data?: TopMovingItem[] }>,
-        invoke('get_alert_summary', { restaurantId }) as Promise<{ success: boolean; data?: AlertSummary }>
-      ]);
-
-      if (analyticsResponse.success && analyticsResponse.data) {
-        setAnalytics(analyticsResponse.data);
-      }
-
-      if (lowStockResponse.success && lowStockResponse.data) {
-        setLowStockItems(lowStockResponse.data.slice(0, 5));
-      }
-
-      if (topMovingResponse.success && topMovingResponse.data) {
-        setTopMovingItems(topMovingResponse.data);
-      }
-
-      if (alertsResponse.success && alertsResponse.data) {
-        setAlertSummary(alertsResponse.data);
-      }
-    } catch (error) {
-      console.error('Failed to load dashboard data:', error);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  };
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-IN', {
-      style: 'currency',
-      currency: 'INR'
-    }).format(amount);
-  };
-
-  const getStockStatusColor = (current: number, reorder: number): string => {
-    if (current <= 0) return 'bg-red-500';
-    if (current <= reorder) return 'bg-orange-500';
-    return 'bg-green-500';
-  };
-
-  const getAlertLevelColor = (level: number): string => {
-    if (level === 0) return 'text-green-600';
-    if (level < 5) return 'text-orange-600';
-    return 'text-red-600';
-  };
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+function StatCard({ title, value, change, trend, icon: Icon, gradient, delay = 0 }: StatCardProps) {
+  return (
+    <div
+      className="stat-card card-hover bg-card rounded-2xl p-6 border border-border"
+      style={{ animationDelay: `${delay}ms`, opacity: 0 }}
+    >
+      <div className="flex items-start justify-between mb-4">
+        <div className={cn('p-3 rounded-xl', gradient)}>
+          <Icon className="w-5 h-5 text-white" />
+        </div>
+        <div className={cn('flex items-center gap-1 text-sm font-medium',
+          trend === 'up' ? 'text-accent' : trend === 'down' ? 'text-destructive' : 'text-muted-foreground'
+        )}>
+          {trend === 'up' ? <ArrowUpRight className="w-4 h-4" /> : trend === 'down' ? <ArrowDownRight className="w-4 h-4" /> : null}
+          {change}
+        </div>
       </div>
-    );
+      <div>
+        <p className="text-2xl font-bold text-foreground" style={{ fontFamily: 'Outfit, sans-serif' }}>
+          {value}
+        </p>
+        <p className="text-sm text-muted-foreground mt-1">{title}</p>
+      </div>
+    </div>
+  )
+}
+
+interface StockMovementProps {
+  id: string
+  item: string
+  type: 'in' | 'out'
+  quantity: number
+  supplier?: string
+  time: string
+}
+
+function StockMovement({ id, item, type, quantity, supplier, time }: StockMovementProps) {
+  const isIn = type === 'in'
+
+  return (
+    <div className="flex items-center justify-between p-4 rounded-xl hover:bg-muted/50 transition-colors cursor-pointer">
+      <div className="flex items-center gap-4">
+        <div className={cn('p-2.5 rounded-xl', isIn ? 'bg-accent/10' : 'bg-rose-500/10')}>
+          {isIn ? (
+            <TrendingUp className="w-4 h-4 text-accent" />
+          ) : (
+            <TrendingDown className="w-4 h-4 text-rose-600" />
+          )}
+        </div>
+        <div>
+          <p className="font-medium text-sm">{item}</p>
+          <p className="text-xs text-muted-foreground">{supplier || 'Internal'} • {time}</p>
+        </div>
+      </div>
+      <div className="flex items-center gap-4">
+        <span className={cn(
+          'text-sm font-medium',
+          isIn ? 'text-accent' : 'text-rose-600'
+        )}>
+          {isIn ? '+' : '-'}{quantity}
+        </span>
+      </div>
+    </div>
+  )
+}
+
+interface LowStockAlertProps {
+  id: string
+  item: string
+  currentStock: number
+  minStock: number
+  unit: string
+  category: string
+  onRestock: (id: string) => void
+}
+
+function LowStockAlert({ id, item, currentStock, minStock, unit, category, onRestock }: LowStockAlertProps) {
+  const stockPercentage = (currentStock / minStock) * 100
+  const isCritical = stockPercentage < 50
+
+  return (
+    <div className="card-hover bg-card rounded-2xl p-5 border border-border">
+      <div className="flex items-start justify-between mb-4">
+        <div className="flex items-center gap-3">
+          <div className={cn(
+            'p-2.5 rounded-xl',
+            isCritical ? 'bg-rose-500/10' : 'bg-amber-500/10'
+          )}>
+            <AlertTriangle className={cn(
+              'w-4 h-4',
+              isCritical ? 'text-rose-600' : 'text-amber-600'
+            )} />
+          </div>
+          <div>
+            <h4 className="font-semibold text-foreground">{item}</h4>
+            <p className="text-sm text-muted-foreground">{category}</p>
+          </div>
+        </div>
+        <button className="p-2 hover:bg-muted rounded-lg transition-colors">
+          <MoreVertical className="w-4 h-4 text-muted-foreground" />
+        </button>
+      </div>
+
+      <div className="space-y-3 mb-4">
+        <div className="flex items-center justify-between text-sm">
+          <span className="text-muted-foreground">Current Stock</span>
+          <span className={cn(
+            'font-medium',
+            isCritical ? 'text-rose-600' : 'text-amber-600'
+          )}>
+            {currentStock} {unit}
+          </span>
+        </div>
+        <div className="flex items-center justify-between text-sm">
+          <span className="text-muted-foreground">Minimum Level</span>
+          <span className="font-medium">{minStock} {unit}</span>
+        </div>
+        <div className="w-full h-2 bg-muted rounded-full overflow-hidden">
+          <div
+            className={cn(
+              'h-full rounded-full transition-all',
+              isCritical ? 'bg-rose-500' : 'bg-amber-500'
+            )}
+            style={{ width: `${Math.max(5, stockPercentage)}%` }}
+          />
+        </div>
+      </div>
+
+      <Button
+        onClick={() => onRestock(id)}
+        className={cn(
+          'w-full text-white shadow-lg',
+          isCritical ? 'bg-rose-500 hover:bg-rose-600' : 'gradient-spice'
+        )}
+      >
+        <Plus className="w-4 h-4 mr-2" />
+        Restock Item
+      </Button>
+    </div>
+  )
+}
+
+interface InventoryDashboardProps {
+  onRestock?: (itemId: string) => void
+  onViewAll?: () => void
+}
+
+export function InventoryDashboard({ onRestock, onViewAll }: InventoryDashboardProps) {
+  const stats = [
+    { title: 'Total Items', value: '248', change: '+12', trend: 'up' as const, icon: Package, gradient: 'gradient-spice' },
+    { title: 'Low Stock', value: '8', change: '-3', trend: 'down' as const, icon: AlertTriangle, gradient: 'bg-gradient-to-br from-rose-500 to-rose-600' },
+    { title: 'Total Value', value: '₹1.2L', change: '+8.5%', trend: 'up' as const, icon: IndianRupee, gradient: 'gradient-accent' },
+    { title: 'Suppliers', value: '15', change: '+2', trend: 'up' as const, icon: Truck, gradient: 'bg-gradient-to-br from-purple-500 to-purple-600' },
+  ]
+
+  const stockMovements: StockMovementProps[] = [
+    { id: '1', item: 'Tomato Puree', type: 'in', quantity: 50, supplier: 'Fresh Farms', time: '10 min ago' },
+    { id: '2', item: 'Cooking Oil', type: 'out', quantity: 5, supplier: 'Internal', time: '25 min ago' },
+    { id: '3', item: 'Basmati Rice', type: 'in', quantity: 100, supplier: 'Agro Supplies', time: '1 hour ago' },
+    { id: '4', item: 'Paneer', type: 'out', quantity: 8, supplier: 'Internal', time: '2 hours ago' },
+    { id: '5', item: 'Chicken Breast', type: 'in', quantity: 30, supplier: 'Meat Masters', time: '3 hours ago' },
+  ]
+
+  const lowStockAlerts = [
+    { id: '1', item: 'Tomato Ketchup', currentStock: 2, minStock: 10, unit: 'bottles', category: 'Condiments' },
+    { id: '2', item: 'Butter', currentStock: 3, minStock: 15, unit: 'kg', category: 'Dairy' },
+    { id: '3', item: 'Green Chilies', currentStock: 1, minStock: 5, unit: 'kg', category: 'Vegetables' },
+    { id: '4', item: 'Ginger Garlic Paste', currentStock: 4, minStock: 8, unit: 'packs', category: 'Condiments' },
+  ]
+
+  const handleRestock = (id: string) => {
+    onRestock?.(id)
   }
 
   return (
-    <div className="space-y-6 p-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold">Inventory Dashboard</h1>
-        <Button 
-          onClick={loadDashboardData} 
-          disabled={refreshing}
-          variant="outline"
-          size="sm"
-        >
-          <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
-          Refresh
+    <div className="space-y-6 animate-fade-in">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h2 className="text-2xl font-bold" style={{ fontFamily: 'Outfit, sans-serif' }}>
+            Inventory Overview
+          </h2>
+          <p className="text-muted-foreground">
+            Track your stock levels and movements
+          </p>
+        </div>
+        <Button className="gradient-spice text-white shadow-lg">
+          <Plus className="w-4 h-4 mr-2" />
+          Add Item
         </Button>
       </div>
 
-      {analytics && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Items</CardTitle>
-              <Package className="h-4 w-4 text-blue-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{analytics.total_items}</div>
-              <p className="text-xs text-gray-600">
-                {analytics.total_categories} categories
-              </p>
-            </CardContent>
-          </Card>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {stats.map((stat, index) => (
+          <StatCard key={stat.title} {...stat} delay={index * 100} />
+        ))}
+      </div>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Value</CardTitle>
-              <DollarSign className="h-4 w-4 text-green-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {formatCurrency(analytics.total_inventory_value)}
-              </div>
-              <p className="text-xs text-gray-600">
-                Avg: {formatCurrency(analytics.total_inventory_value / analytics.total_items)}
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Low Stock</CardTitle>
-              <TrendingDown className="h-4 w-4 text-orange-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-orange-600">
-                {analytics.low_stock_items}
-              </div>
-              <p className="text-xs text-gray-600">
-                {analytics.out_of_stock_items} out of stock
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Overstocked</CardTitle>
-              <TrendingUp className="h-4 w-4 text-purple-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-purple-600">
-                {analytics.overstocked_items}
-              </div>
-              <p className="text-xs text-gray-600">
-                Above maximum levels
-              </p>
-            </CardContent>
-          </Card>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2 bg-card rounded-2xl border border-border overflow-hidden">
+          <div className="p-6 border-b border-border">
+            <h3 className="font-semibold text-lg" style={{ fontFamily: 'Outfit, sans-serif' }}>
+              Recent Stock Movements
+            </h3>
+            <p className="text-sm text-muted-foreground">Latest stock in and out transactions</p>
+          </div>
+          <div className="p-4 space-y-2">
+            {stockMovements.map((movement) => (
+              <StockMovement key={movement.id} {...movement} />
+            ))}
+          </div>
+          <div className="p-4 border-t border-border">
+            <Button variant="outline" className="w-full" onClick={onViewAll}>
+              View All Movements
+            </Button>
+          </div>
         </div>
-      )}
 
-      {alertSummary && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5" />
-              Stock Alerts
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-              <div className="text-center">
-                <div className="text-2xl font-bold">{alertSummary.total_alerts}</div>
-                <div className="text-sm text-gray-600">Total</div>
-              </div>
-              <div className="text-center">
-                <div className={`text-2xl font-bold ${getAlertLevelColor(alertSummary.critical_alerts)}`}>
-                  {alertSummary.critical_alerts}
-                </div>
-                <div className="text-sm text-gray-600">Critical</div>
-              </div>
-              <div className="text-center">
-                <div className={`text-2xl font-bold ${getAlertLevelColor(alertSummary.low_alerts)}`}>
-                  {alertSummary.low_alerts}
-                </div>
-                <div className="text-sm text-gray-600">Low</div>
-              </div>
-              <div className="text-center">
-                <div className={`text-2xl font-bold ${getAlertLevelColor(alertSummary.out_of_stock_alerts)}`}>
-                  {alertSummary.out_of_stock_alerts}
-                </div>
-                <div className="text-sm text-gray-600">Out of Stock</div>
-              </div>
-              <div className="text-center">
-                <div className={`text-2xl font-bold ${getAlertLevelColor(alertSummary.unacknowledged_alerts)}`}>
-                  {alertSummary.unacknowledged_alerts}
-                </div>
-                <div className="text-sm text-gray-600">Unacknowledged</div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Low Stock Items</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {lowStockItems.length > 0 ? (
-                lowStockItems.map((item) => (
-                  <div key={item.item_id} className="flex items-center justify-between p-3 border rounded-lg">
-                    <div className="flex-1">
-                      <div className="font-medium">{item.item_name}</div>
-                      {item.sku && <div className="text-sm text-gray-600">SKU: {item.sku}</div>}
-                      {item.supplier_name && (
-                        <div className="text-sm text-gray-600">Supplier: {item.supplier_name}</div>
-                      )}
-                    </div>
-                    <div className="text-center">
-                      <div className="flex items-center gap-2">
-                        <div className={`w-2 h-2 rounded-full ${getStockStatusColor(item.current_stock, item.reorder_point)}`}></div>
-                        <span className="font-medium">{item.current_stock}</span>
-                      </div>
-                      <div className="text-xs text-gray-600">
-                        Reorder: {item.reorder_point}
-                      </div>
-                      {item.days_of_stock && (
-                        <div className="text-xs text-orange-600">
-                          {Math.round(item.days_of_stock)} days left
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <div className="text-center py-8 text-gray-500">
-                  No low stock items found
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <BarChart3 className="h-5 w-5" />
-              Top Moving Items
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {topMovingItems.length > 0 ? (
-                topMovingItems.map((item, index) => (
-                  <div key={item.item_id} className="flex items-center justify-between p-3 border rounded-lg">
-                    <div className="flex items-center gap-3">
-                      <Badge variant="secondary" className="w-8 h-8 rounded-full flex items-center justify-center">
-                        {index + 1}
-                      </Badge>
-                      <div>
-                        <div className="font-medium">{item.item_name}</div>
-                        <div className="text-sm text-gray-600">
-                          {item.movement_frequency} movements
-                        </div>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <div className="font-medium">{item.total_quantity_out} units</div>
-                      <div className="text-sm text-gray-600">
-                        {formatCurrency(item.total_value_out)}
-                      </div>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <div className="text-center py-8 text-gray-500">
-                  No movement data available
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
+        <div className="bg-card rounded-2xl border border-border overflow-hidden">
+          <div className="p-6 border-b border-border">
+            <h3 className="font-semibold text-lg" style={{ fontFamily: 'Outfit, sans-serif' }}>
+              Low Stock Alerts
+            </h3>
+            <p className="text-sm text-muted-foreground">Items that need restocking</p>
+          </div>
+          <div className="p-4 space-y-4 max-h-96 overflow-y-auto">
+            {lowStockAlerts.map((alert) => (
+              <LowStockAlert
+                key={alert.id}
+                {...alert}
+                onRestock={handleRestock}
+              />
+            ))}
+          </div>
+        </div>
       </div>
     </div>
-  );
+  )
 }
