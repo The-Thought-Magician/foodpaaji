@@ -3,6 +3,7 @@ use crate::types::ApiResponse;
 use tauri::State;
 use serde::{Deserialize, Serialize};
 use chrono::{DateTime, Utc, NaiveDate};
+use sqlx::Row;
 
 #[derive(Serialize, sqlx::FromRow)]
 pub struct StockSummaryReport {
@@ -98,7 +99,7 @@ pub async fn get_stock_summary_report(
         query_builder = query_builder.bind(param);
     }
 
-    match query_builder.fetch_all(&**db).await {
+    match query_builder.fetch_all(&*db).await {
         Ok(report) => Ok(ApiResponse {
             success: true,
             data: Some(report),
@@ -152,7 +153,7 @@ pub async fn get_movement_report(
         query_builder = query_builder.bind(param);
     }
 
-    match query_builder.fetch_all(&**db).await {
+    match query_builder.fetch_all(&*db).await {
         Ok(report) => Ok(ApiResponse {
             success: true,
             data: Some(report),
@@ -199,7 +200,7 @@ pub async fn get_low_stock_report(
 
     match sqlx::query_as::<_, LowStockReport>(query)
         .bind(restaurant_id)
-        .fetch_all(&**db)
+        .fetch_all(&*db)
         .await
     {
         Ok(report) => Ok(ApiResponse {
@@ -239,18 +240,18 @@ pub async fn get_inventory_analytics(
         WHERE restaurant_id = ? AND is_active = 1 AND category_id IS NOT NULL";
 
     match tokio::try_join!(
-        sqlx::query(analytics_query).bind(restaurant_id).fetch_one(&**db),
-        sqlx::query(categories_query).bind(restaurant_id).fetch_one(&**db)
+        sqlx::query(analytics_query).bind(restaurant_id).fetch_one(&*db),
+        sqlx::query(categories_query).bind(restaurant_id).fetch_one(&*db)
     ) {
         Ok((analytics_row, categories_row)) => {
             let analytics = InventoryAnalytics {
-                total_items: analytics_row.get("total_items"),
-                total_inventory_value: analytics_row.get::<Option<f64>, _>("total_inventory_value").unwrap_or(0.0),
-                low_stock_items: analytics_row.get("low_stock_items"),
-                out_of_stock_items: analytics_row.get("out_of_stock_items"),
-                overstocked_items: analytics_row.get("overstocked_items"),
-                total_categories: categories_row.get("total_categories"),
-                average_stock_level: analytics_row.get::<Option<f64>, _>("average_stock_level").unwrap_or(0.0),
+                total_items: analytics_row.try_get("total_items"),
+                total_inventory_value: analytics_row.try_get("total_inventory_value").unwrap_or(0.0),
+                low_stock_items: analytics_row.try_get("low_stock_items"),
+                out_of_stock_items: analytics_row.try_get("out_of_stock_items"),
+                overstocked_items: analytics_row.try_get("overstocked_items"),
+                total_categories: categories_row.try_get("total_categories"),
+                average_stock_level: analytics_row.try_get("average_stock_level").unwrap_or(0.0),
             };
 
             Ok(ApiResponse {
@@ -317,7 +318,7 @@ pub async fn get_top_moving_items_report(
         query_builder = query_builder.bind(param);
     }
 
-    match query_builder.fetch_all(&**db).await {
+    match query_builder.fetch_all(&*db).await {
         Ok(report) => Ok(ApiResponse {
             success: true,
             data: Some(report),
@@ -366,7 +367,7 @@ pub async fn get_slow_moving_items_report(
     match sqlx::query_as::<_, SlowMovingItemsReport>(query)
         .bind(restaurant_id)
         .bind(days_threshold)
-        .fetch_all(&**db)
+        .fetch_all(&*db)
         .await
     {
         Ok(report) => Ok(ApiResponse {

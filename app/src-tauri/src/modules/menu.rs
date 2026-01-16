@@ -135,7 +135,7 @@ pub async fn create_menu_category(
         "SELECT id FROM menu_categories WHERE restaurant_id = ? AND slug = ?",
         request.restaurant_id, slug
     )
-    .fetch_optional(&**db)
+    .fetch_optional(&*db)
     .await
     .map_err(|e| format!("Database error: {}", e))?;
 
@@ -157,7 +157,7 @@ pub async fn create_menu_category(
         request.is_active.unwrap_or(true),
         request.display_in_menu.unwrap_or(true)
     )
-    .execute(&**db)
+    .execute(&*db)
     .await
     .map_err(|e| format!("Failed to create category: {}", e))?;
 
@@ -175,7 +175,7 @@ pub async fn get_menu_categories(
         "SELECT * FROM menu_categories WHERE restaurant_id = ? ORDER BY sort_order, name",
         restaurant_id
     )
-    .fetch_all(&**db)
+    .fetch_all(&*db)
     .await
     .map_err(|e| format!("Failed to fetch categories: {}", e))?;
 
@@ -193,7 +193,7 @@ pub async fn get_menu_category_by_id(
     db: State<'_, DbPool>,
 ) -> Result<ApiResponse<MenuCategory>, String> {
     let category = sqlx::query_as!(MenuCategory, "SELECT * FROM menu_categories WHERE id = ?", id)
-        .fetch_optional(&**db)
+        .fetch_optional(&*db)
         .await
         .map_err(|e| format!("Database error: {}", e))?;
 
@@ -258,7 +258,7 @@ pub async fn update_menu_category(
     }
     query = query.bind(id);
 
-    query.execute(&**db)
+    query.execute(&*db)
         .await
         .map_err(|e| format!("Failed to update category: {}", e))?;
 
@@ -273,7 +273,7 @@ pub async fn delete_menu_category(
     let has_items = sqlx::query_scalar!(
         "SELECT COUNT(*) FROM menu_items WHERE category_id = ?", id
     )
-    .fetch_one(&**db)
+    .fetch_one(&*db)
     .await
     .map_err(|e| format!("Database error: {}", e))?;
 
@@ -282,7 +282,7 @@ pub async fn delete_menu_category(
     }
 
     sqlx::query!("DELETE FROM menu_categories WHERE id = ?", id)
-        .execute(&**db)
+        .execute(&*db)
         .await
         .map_err(|e| format!("Failed to delete category: {}", e))?;
 
@@ -305,7 +305,7 @@ pub async fn create_menu_item(
         "SELECT id FROM menu_items WHERE restaurant_id = ? AND slug = ?",
         request.restaurant_id, slug
     )
-    .fetch_optional(&**db)
+    .fetch_optional(&*db)
     .await
     .map_err(|e| format!("Database error: {}", e))?;
 
@@ -339,7 +339,7 @@ pub async fn create_menu_item(
         request.is_featured.unwrap_or(false),
         request.sort_order.unwrap_or(0)
     )
-    .execute(&**db)
+    .execute(&*db)
     .await
     .map_err(|e| format!("Failed to create menu item: {}", e))?;
 
@@ -357,7 +357,7 @@ pub async fn get_menu_items_by_category(
         "SELECT * FROM menu_items WHERE category_id = ? ORDER BY sort_order, name",
         category_id
     )
-    .fetch_all(&**db)
+    .fetch_all(&*db)
     .await
     .map_err(|e| format!("Failed to fetch menu items: {}", e))?;
 
@@ -375,7 +375,7 @@ pub async fn get_menu_item_by_id(
     db: State<'_, DbPool>,
 ) -> Result<ApiResponse<MenuItem>, String> {
     let item = sqlx::query_as!(MenuItem, "SELECT * FROM menu_items WHERE id = ?", id)
-        .fetch_optional(&**db)
+        .fetch_optional(&*db)
         .await
         .map_err(|e| format!("Database error: {}", e))?;
 
@@ -396,7 +396,7 @@ pub async fn delete_menu_item(
     db: State<'_, DbPool>,
 ) -> Result<ApiResponse<String>, String> {
     sqlx::query!("DELETE FROM menu_items WHERE id = ?", id)
-        .execute(&**db)
+        .execute(&*db)
         .await
         .map_err(|e| format!("Failed to delete menu item: {}", e))?;
 

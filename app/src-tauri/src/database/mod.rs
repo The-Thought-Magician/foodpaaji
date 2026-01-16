@@ -43,6 +43,13 @@ fn get_database_path() -> Result<PathBuf, Box<dyn std::error::Error>> {
     Ok(app_dir.join("foodpaaji.db"))
 }
 
+pub fn get_app_data_dir() -> Result<PathBuf, Box<dyn std::error::Error>> {
+    let base = dirs::data_dir().ok_or("Could not get data directory")?;
+    let app_dir = base.join("FoodPaaji");
+    std::fs::create_dir_all(&app_dir)?;
+    Ok(app_dir)
+}
+
 pub async fn get_connection() -> Result<DbPool, Box<dyn std::error::Error>> {
     let db_path = get_database_path()?;
     let db_url = format!("sqlite://{}", db_path.display());

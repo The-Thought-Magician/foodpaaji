@@ -114,7 +114,7 @@ pub async fn create_stock_movement(
     .bind(&request.notes)
     .bind(request.user_id)
     .bind(Utc::now().naive_utc())
-    .execute(&**db)
+    .execute(&*db)
     .await
     {
         Ok(result) => {
@@ -208,8 +208,8 @@ pub async fn get_stock_movements(
     }
 
     match tokio::try_join!(
-        total_query.fetch_one(&**db),
-        movements_query.fetch_all(&**db)
+        total_query.fetch_one(&*db),
+        movements_query.fetch_all(&*db)
     ) {
         Ok((total, movements)) => Ok(ApiResponse {
             success: true,
@@ -250,7 +250,7 @@ pub async fn adjust_stock_level(
     )
     .bind(request.inventory_item_id)
     .bind(request.restaurant_id)
-    .fetch_optional(&**db)
+    .fetch_optional(&*db)
     .await;
 
     match current_stock_result {

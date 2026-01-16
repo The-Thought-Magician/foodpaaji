@@ -1,4 +1,4 @@
-use crate::database::DbPool;
+use crate::database::{DbPool, get_app_data_dir};
 use crate::types::ApiResponse;
 use tauri::State;
 use serde::{Deserialize, Serialize};
@@ -26,8 +26,7 @@ pub async fn upload_employee_image(
     let decoded_data = general_purpose::STANDARD.decode(&image_data)
         .map_err(|e| format!("Invalid base64 data: {}", e))?;
 
-    let app_data_dir = tauri::api::path::app_data_dir(&tauri::Config::default())
-        .ok_or("Failed to get app data directory")?;
+    let app_data_dir = get_app_data_dir()?;
     
     let images_dir = app_data_dir.join("employee_images");
     fs::create_dir_all(&images_dir)
@@ -49,7 +48,7 @@ pub async fn upload_employee_image(
     match sqlx::query("UPDATE users SET profile_image = ? WHERE id = ?")
         .bind(&relative_path)
         .bind(request.employee_id)
-        .execute(&**db)
+        .execute(&*db)
         .await
     {
         Ok(_) => Ok(ApiResponse {
@@ -76,11 +75,11 @@ pub async fn get_employee_image(
         "SELECT profile_image FROM users WHERE id = ?"
     )
     .bind(employee_id)
-    .fetch_optional(&**db)
+    .fetch_optional(&*db)
     .await
     {
         Ok(Some(image_path)) => {
-            let app_data_dir = tauri::api::path::app_data_dir(&tauri::Config::default())
+            let app_data_dir = get_app_data_dir()
                 .ok_or("Failed to get app data directory")?;
             
             let full_path = app_data_dir.join(&image_path);
@@ -146,7 +145,7 @@ pub async fn delete_employee(
 
     match sqlx::query("UPDATE users SET is_active = 0 WHERE id = ?")
         .bind(request.employee_id)
-        .execute(&**db)
+        .execute(&*db)
         .await
     {
         Ok(result) => {

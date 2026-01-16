@@ -70,7 +70,7 @@ pub async fn clock_in(
     )
     .bind(request.employee_id)
     .bind(today)
-    .fetch_optional(&**db)
+    .fetch_optional(&*db)
     .await
     {
         Ok(Some(existing)) => {
@@ -105,7 +105,7 @@ pub async fn clock_in(
     .bind(today)
     .bind(now)
     .bind(&request.notes)
-    .execute(&**db)
+    .execute(&*db)
     .await
     {
         Ok(_) => {
@@ -114,7 +114,7 @@ pub async fn clock_in(
             )
             .bind(request.employee_id)
             .bind(today)
-            .fetch_one(&**db)
+            .fetch_one(&*db)
             .await
             {
                 Ok(record) => Ok(ApiResponse {
@@ -153,7 +153,7 @@ pub async fn clock_out(
     )
     .bind(request.employee_id)
     .bind(today)
-    .fetch_optional(&**db)
+    .fetch_optional(&*db)
     .await
     {
         Ok(Some(mut record)) => {
@@ -187,7 +187,7 @@ pub async fn clock_out(
             .bind(&request.notes)
             .bind(request.employee_id)
             .bind(today)
-            .execute(&**db)
+            .execute(&*db)
             .await
             {
                 Ok(_) => {
@@ -240,7 +240,7 @@ pub async fn start_break(
     .bind(now)
     .bind(request.employee_id)
     .bind(today)
-    .execute(&**db)
+    .execute(&*db)
     .await
     {
         Ok(result) => {
@@ -250,7 +250,7 @@ pub async fn start_break(
                 )
                 .bind(request.employee_id)
                 .bind(today)
-                .fetch_one(&**db)
+                .fetch_one(&*db)
                 .await
                 {
                     Ok(record) => Ok(ApiResponse {
@@ -299,7 +299,7 @@ pub async fn end_break(
     .bind(now)
     .bind(request.employee_id)
     .bind(today)
-    .execute(&**db)
+    .execute(&*db)
     .await
     {
         Ok(result) => {
@@ -309,7 +309,7 @@ pub async fn end_break(
                 )
                 .bind(request.employee_id)
                 .bind(today)
-                .fetch_one(&**db)
+                .fetch_one(&*db)
                 .await
                 {
                     Ok(record) => Ok(ApiResponse {
@@ -370,7 +370,7 @@ pub async fn get_attendance_report(
         sql_query = sql_query.bind(param);
     }
 
-    match sql_query.fetch_all(&**db).await {
+    match sql_query.fetch_all(&*db).await {
         Ok(records) => {
             let total_hours: f64 = records.iter()
                 .filter_map(|r| r.total_hours)

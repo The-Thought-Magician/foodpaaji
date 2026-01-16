@@ -1,181 +1,374 @@
-import { useState } from 'react'
-import { MainLayout } from '@/components/layout/main-layout'
-import { Header } from '@/components/layout/header'
-import { EmployeeList } from '@/components/employee/employee-list'
-import { EmployeeForm } from '@/components/employee/employee-form'
+import { useState, useMemo } from 'react'
+import { invoke } from '@tauri-apps/api/core'
 import { Button } from '@/components/ui/button'
-import { ArrowLeft, Users } from 'lucide-react'
+import {
+  Users,
+  Plus,
+  Search,
+  MoreVertical,
+  Phone,
+  Calendar,
+  Crown,
+  Shield,
+  Utensils,
+  Coffee,
+  X
+} from 'lucide-react'
 import type { Employee } from '@/types/employee'
+import type { ApiResponse } from '@/types/api'
+import { cn } from '@/lib/utils'
 
-type ViewMode = 'list' | 'add' | 'edit' | 'view'
+interface UserDto {
+  id: number | null
+  restaurant_id: number
+  email: string
+  phone?: string | null
+  first_name: string
+  last_name: string
+  role: string
+  salary?: number | null
+  hire_date?: string | null
+  is_active: boolean
+}
+
+const roleConfig = {
+  restaurant_owner: { icon: Crown, color: 'gradient-spice', label: 'Owner' },
+  manager: { icon: Shield, color: 'gradient-accent', label: 'Manager' },
+  cashier: { icon: Coffee, color: 'bg-gradient-to-br from-blue-500 to-blue-600', label: 'Cashier' },
+  kitchen_staff: { icon: Utensils, color: 'bg-gradient-to-br from-orange-500 to-orange-600', label: 'Kitchen Staff' },
+  waiter: { icon: Coffee, color: 'bg-gradient-to-br from-purple-500 to-purple-600', label: 'Waiter' },
+}
 
 export function EmployeeManagement() {
-  const [viewMode, setViewMode] = useState<ViewMode>('list')
-  const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null)
-  const restaurantId = 1 // This would come from auth context in real app
+  const [employees, setEmployees] = useState<Employee[]>([])
+  const [loading, setLoading] = useState(true)
+  const [searchTerm, setSearchTerm] = useState('')
+  const [filterRole, setFilterRole] = useState('')
+  const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'inactive'>('all')
+  const [currentPage, setCurrentPage] = useState(1)
+  const [showAddForm, setShowAddForm] = useState(false)
 
-  const handleAddEmployee = () => {
-    setSelectedEmployee(null)
-    setViewMode('add')
-  }
+  const itemsPerPage = 12
 
-  const handleEditEmployee = (employee: Employee) => {
-    setSelectedEmployee(employee)
-    setViewMode('edit')
-  }
+  const loadEmployees = async () => {
+    try {
+      setLoading(true)
+      const response = await invoke('get_employees', {
+        restaurant_id: 1,
+      }) as ApiResponse<UserDto[]>
 
-
-  const handleSaveEmployee = () => {
-    // Return to list view after successful save
-    setViewMode('list')
-    setSelectedEmployee(null)
-  }
-
-  const handleCancel = () => {
-    setViewMode('list')
-    setSelectedEmployee(null)
-  }
-
-  const renderContent = () => {
-    switch (viewMode) {
-      case 'add':
-      case 'edit':
-        return (
-          <EmployeeForm
-            employee={viewMode === 'edit' ? selectedEmployee || undefined : undefined}
-            restaurantId={restaurantId}
-            onSave={handleSaveEmployee}
-            onCancel={handleCancel}
-          />
-        )
-
-      case 'view':
-        return selectedEmployee ? (
-          <EmployeeProfile
-            employee={selectedEmployee}
-            onEdit={() => handleEditEmployee(selectedEmployee)}
-          />
-        ) : null
-
-      case 'list':
-      default:
-        return (
-          <EmployeeList
-            restaurantId={restaurantId}
-            onAddEmployee={handleAddEmployee}
-          />
-        )
+      if (response.success && Array.isArray(response.data)) {
+        const mapped = response.data.map((u) => ({
+          id: u.id ?? 0,
+          name: `${u.first_name} ${u.last_name}`.trim(),
+          email: u.email,
+          phone: u.phone ?? '',
+          role: normalizeRoleForUi(u.role),
+          department: '',
+          salary: Number(u.salary ?? 0),
+          joiningDate: u.hire_date ?? '',
+          address: '',
+          emergencyContact: '',
+          status: u.is_active ? 'active' : 'inactive',
+        })) as Employee[]
+        setEmployees(mapped)
+      }
+    } catch (error) {
+      console.error('Failed to load employees:', error)
+    } finally {
+      setLoading(false)
     }
   }
 
-  const getPageTitle = () => {
-    switch (viewMode) {
-      case 'add':
-        return 'Add New Employee'
-      case 'edit':
-        return 'Edit Employee'
-      case 'view':
-        return 'Employee Profile'
-      default:
-        return 'Employee Management'
+  useMemo(() => {
+    loadEmployees()
+  }, [])
+
+  const normalizeRoleForUi = (role: string) => role.toLowerCase().replace(/ /g, '_')
+
+  const filteredEmployees = useMemo(() => {
+    let result = employees
+
+    if (searchTerm) {
+      result = result.filter(emp =>
+        emp.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        emp.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        emp.phone.includes(searchTerm)
+      )
     }
+
+    if (filterRole) {
+      result = result.filter(emp => emp.role === filterRole)
+    }
+
+    if (filterStatus !== 'all') {
+      result = result.filter(emp => emp.status === filterStatus)
+    }
+
+    return result
+  }, [employees, searchTerm, filterRole, filterStatus])
+
+  const totalPages = Math.max(1, Math.ceil(filteredEmployees.length / itemsPerPage))
+  const paginatedEmployees = useMemo(() => {
+    const start = (currentPage - 1) * itemsPerPage
+    return filteredEmployees.slice(start, start + itemsPerPage)
+  }, [filteredEmployees, currentPage])
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <div className="text-center animate-fade-in">
+          <div className="w-16 h-16 gradient-spice rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
+            <Users className="w-8 h-8 text-white animate-pulse" />
+          </div>
+          <p className="text-muted-foreground">Loading employees...</p>
+        </div>
+      </div>
+    )
   }
 
   return (
-    <MainLayout>
-      <Header title={`FoodPaaji - ${getPageTitle()}`} />
-      <div className="container mx-auto p-6">
-        {viewMode !== 'list' && (
-          <div className="mb-4">
-            <Button variant="ghost" onClick={handleCancel} className="flex items-center space-x-2">
-              <ArrowLeft className="h-4 w-4" />
-              <span>Back to Employee List</span>
-            </Button>
-          </div>
-        )}
-        {renderContent()}
+    <div className="space-y-6 animate-fade-in">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h2 className="text-2xl font-bold" style={{ fontFamily: 'Outfit, sans-serif' }}>
+            Employee Management
+          </h2>
+          <p className="text-muted-foreground">
+            Manage your restaurant staff and their roles
+          </p>
+        </div>
+        <Button onClick={() => setShowAddForm(true)} className="gradient-spice text-white shadow-lg">
+          <Plus className="w-4 h-4 mr-2" />
+          Add Employee
+        </Button>
       </div>
-    </MainLayout>
+
+      <div className="flex flex-col lg:flex-row gap-4">
+        <div className="relative flex-1 max-w-md">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-4 h-4" />
+          <input
+            type="text"
+            placeholder="Search employees..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pl-10 pr-4 py-2.5 bg-card border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+          />
+          {searchTerm && (
+            <button
+              onClick={() => setSearchTerm('')}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          )}
+        </div>
+
+        <div className="flex items-center gap-3">
+          <select
+            value={filterRole}
+            onChange={(e) => setFilterRole(e.target.value)}
+            className="px-4 py-2.5 bg-card border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer"
+          >
+            <option value="">All Roles</option>
+            <option value="restaurant_owner">Owner</option>
+            <option value="manager">Manager</option>
+            <option value="cashier">Cashier</option>
+            <option value="kitchen_staff">Kitchen Staff</option>
+            <option value="waiter">Waiter</option>
+          </select>
+
+          <select
+            value={filterStatus}
+            onChange={(e) => setFilterStatus(e.target.value as typeof filterStatus)}
+            className="px-4 py-2.5 bg-card border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer"
+          >
+            <option value="all">All Status</option>
+            <option value="active">Active</option>
+            <option value="inactive">Inactive</option>
+          </select>
+        </div>
+      </div>
+
+      {filteredEmployees.length === 0 ? (
+        <div className="text-center py-20 bg-card rounded-2xl border border-border">
+          <div className="w-20 h-20 bg-muted rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <Users className="w-10 h-10 text-muted-foreground" />
+          </div>
+          <h3 className="text-lg font-semibold mb-2">No employees found</h3>
+          <p className="text-muted-foreground mb-6">
+            {searchTerm || filterRole || filterStatus !== 'all'
+              ? 'Try adjusting your filters'
+              : 'Add your first employee to get started'}
+          </p>
+          {!searchTerm && !filterRole && filterStatus === 'all' && (
+            <Button onClick={() => setShowAddForm(true)} className="gradient-spice text-white">
+              <Plus className="w-4 h-4 mr-2" />
+              Add First Employee
+            </Button>
+          )}
+        </div>
+      ) : (
+        <>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {paginatedEmployees.map((employee, index) => (
+              <EmployeeCard
+                key={employee.id}
+                employee={employee}
+                delay={index * 50}
+              />
+            ))}
+          </div>
+
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-muted-foreground">
+                Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, filteredEmployees.length)} of {filteredEmployees.length} employees
+              </p>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                >
+                  Previous
+                </Button>
+                <div className="flex items-center gap-1">
+                  {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                    let pageNum: number
+                    if (totalPages <= 5) {
+                      pageNum = i + 1
+                    } else if (currentPage <= 3) {
+                      pageNum = i + 1
+                    } else if (currentPage >= totalPages - 2) {
+                      pageNum = totalPages - 4 + i
+                    } else {
+                      pageNum = currentPage - 2 + i
+                    }
+
+                    return (
+                      <button
+                        key={pageNum}
+                        onClick={() => setCurrentPage(pageNum)}
+                        className={cn(
+                          'w-9 h-9 rounded-lg text-sm font-medium transition-all',
+                          currentPage === pageNum
+                            ? 'gradient-spice text-white shadow-md'
+                            : 'hover:bg-muted'
+                        )}
+                      >
+                        {pageNum}
+                      </button>
+                    )
+                  })}
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                  disabled={currentPage === totalPages}
+                >
+                  Next
+                </Button>
+              </div>
+            </div>
+          )}
+        </>
+      )}
+
+      {showAddForm && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-card rounded-2xl shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto animate-scale-in">
+            <div className="p-6 border-b border-border flex items-center justify-between">
+              <h3 className="text-lg font-semibold">Add New Employee</h3>
+              <button
+                onClick={() => setShowAddForm(false)}
+                className="p-2 hover:bg-muted rounded-lg transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="p-6">
+              <p className="text-muted-foreground text-center py-8">Employee form will be implemented here</p>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
   )
 }
 
-interface EmployeeProfileProps {
+interface EmployeeCardProps {
   employee: Employee
-  onEdit: () => void
+  delay?: number
 }
 
-function EmployeeProfile({ employee, onEdit }: EmployeeProfileProps) {
+function EmployeeCard({ employee, delay = 0 }: EmployeeCardProps) {
+  const config = roleConfig[employee.role as keyof typeof roleConfig] || roleConfig.waiter
+  const RoleIcon = config.icon
+
+  const initials = employee.name
+    .split(' ')
+    .map(n => n[0])
+    .join('')
+    .toUpperCase()
+    .slice(0, 2)
+
   return (
-    <div className="max-w-2xl mx-auto p-6">
-      <div className="mb-6 flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold">Employee Profile</h2>
-          <p className="text-muted-foreground">View employee details</p>
+    <div
+      className="card-hover bg-card rounded-2xl p-5 border border-border animate-fade-in"
+      style={{ animationDelay: `${delay}ms`, opacity: 0 }}
+    >
+      <div className="flex items-start justify-between mb-4">
+        <div className="flex items-center gap-3">
+          <div className={`w-12 h-12 ${config.color} rounded-xl flex items-center justify-center text-white font-bold shadow-md`}>
+            {initials}
+          </div>
+          <div>
+            <h4 className="font-semibold text-foreground">{employee.name}</h4>
+            <p className="text-sm text-muted-foreground">{employee.email}</p>
+          </div>
         </div>
-        <Button onClick={onEdit}>Edit Employee</Button>
+        <button className="p-2 hover:bg-muted rounded-lg transition-colors">
+          <MoreVertical className="w-4 h-4 text-muted-foreground" />
+        </button>
       </div>
 
-      <div className="bg-card border rounded-lg p-6 space-y-6">
-        <div className="flex items-center space-x-4">
-          <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center">
-            <Users className="h-8 w-8 text-muted-foreground" />
+      <div className="space-y-3 mb-4">
+        <div className="flex items-center gap-2 text-sm">
+          <div className={`p-1.5 rounded-lg ${config.color} bg-opacity-10`}>
+            <RoleIcon className="w-3.5 h-3.5" />
           </div>
-          <div>
-            <h3 className="text-xl font-semibold">{employee.name}</h3>
-            <p className="text-muted-foreground">{employee.role} - {employee.department}</p>
-            <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${employee.status === 'active'
-                ? 'bg-green-100 text-green-800'
-                : 'bg-red-100 text-red-800'
-              }`}>
-              {employee.status}
-            </span>
-          </div>
+          <span className="capitalize">{employee.role.replace('_', ' ')}</span>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="space-y-3">
-            <div>
-              <label className="text-sm font-medium text-muted-foreground">Email</label>
-              <p className="text-sm">{employee.email}</p>
-            </div>
-            <div>
-              <label className="text-sm font-medium text-muted-foreground">Phone</label>
-              <p className="text-sm">{employee.phone}</p>
-            </div>
-            <div>
-              <label className="text-sm font-medium text-muted-foreground">Department</label>
-              <p className="text-sm capitalize">{employee.department}</p>
-            </div>
-          </div>
-          <div className="space-y-3">
-            <div>
-              <label className="text-sm font-medium text-muted-foreground">Role</label>
-              <p className="text-sm capitalize">{employee.role}</p>
-            </div>
-            <div>
-              <label className="text-sm font-medium text-muted-foreground">Salary</label>
-              <p className="text-sm">₹{employee.salary.toLocaleString()}</p>
-            </div>
-            <div>
-              <label className="text-sm font-medium text-muted-foreground">Joining Date</label>
-              <p className="text-sm">{new Date(employee.joiningDate).toLocaleDateString()}</p>
-            </div>
-          </div>
-        </div>
-
-        {employee.address && (
-          <div>
-            <label className="text-sm font-medium text-muted-foreground">Address</label>
-            <p className="text-sm">{employee.address}</p>
+        {employee.phone && (
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Phone className="w-3.5 h-3.5" />
+            <span>{employee.phone}</span>
           </div>
         )}
 
-        {employee.emergencyContact && (
-          <div>
-            <label className="text-sm font-medium text-muted-foreground">Emergency Contact</label>
-            <p className="text-sm">{employee.emergencyContact}</p>
+        {employee.joiningDate && (
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Calendar className="w-3.5 h-3.5" />
+            <span>Joined {new Date(employee.joiningDate).toLocaleDateString('en-IN', { month: 'short', year: 'numeric' })}</span>
           </div>
         )}
+      </div>
+
+      <div className="flex items-center justify-between pt-4 border-t border-border">
+        <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${
+          employee.status === 'active'
+            ? 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20'
+            : 'bg-rose-500/10 text-rose-600 border border-rose-500/20'
+        }`}>
+          {employee.status}
+        </span>
+        <Button variant="ghost" size="sm" className="text-xs">
+          View Details
+        </Button>
       </div>
     </div>
   )

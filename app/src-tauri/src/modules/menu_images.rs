@@ -1,4 +1,4 @@
-use crate::database::DbPool;
+use crate::database::{DbPool, get_app_data_dir};
 use crate::types::ApiResponse;
 use tauri::State;
 use serde::{Deserialize, Serialize};
@@ -7,6 +7,7 @@ use std::path::PathBuf;
 use std::fs;
 use base64::{Engine as _, engine::general_purpose};
 use std::io::Cursor;
+use image::GenericImageView;
 
 #[derive(Deserialize)]
 pub struct MenuItemImageUploadRequest {
@@ -59,8 +60,8 @@ fn compress_image(
     };
 
     let mut output = Cursor::new(Vec::new());
-    
-    final_img.write_to(&mut output, image::ImageOutputFormat::Jpeg(quality))
+
+    final_img.write_to(&mut output, image::ImageFormat::Jpeg)
         .map_err(|e| format!("Failed to compress image: {}", e))?;
 
     Ok(output.into_inner())
@@ -71,7 +72,7 @@ fn save_image_file(
     directory: &str,
     filename: &str,
 ) -> Result<(String, PathBuf), String> {
-    let app_data_dir = tauri::api::path::app_data_dir(&tauri::Config::default())
+    let app_data_dir = get_app_data_dir()
         .ok_or("Failed to get app data directory")?;
     
     let images_dir = app_data_dir.join(directory);
@@ -132,7 +133,7 @@ pub async fn upload_menu_item_image(
         .bind(&relative_path)
         .bind(request.menu_item_id)
         .bind(request.restaurant_id)
-        .execute(&**db)
+        .execute(&*db)
         .await
     {
         Ok(result) => {
@@ -202,7 +203,7 @@ pub async fn upload_menu_category_image(
         .bind(&relative_path)
         .bind(request.category_id)
         .bind(request.restaurant_id)
-        .execute(&**db)
+        .execute(&*db)
         .await
     {
         Ok(result) => {
@@ -230,7 +231,7 @@ pub async fn upload_menu_category_image(
 pub async fn get_menu_image(
     image_path: String,
 ) -> Result<ApiResponse<String>, String> {
-    let app_data_dir = tauri::api::path::app_data_dir(&tauri::Config::default())
+    let app_data_dir = get_app_data_dir()
         .ok_or("Failed to get app data directory")?;
     
     let full_path = app_data_dir.join(&image_path);
@@ -268,12 +269,12 @@ pub async fn delete_menu_item_image(
     )
     .bind(menu_item_id)
     .bind(restaurant_id)
-    .fetch_optional(&**db)
+    .fetch_optional(&*db)
     .await
     .map_err(|e| format!("Database error: {}", e))?;
 
     if let Some(Some(path)) = image_path {
-        let app_data_dir = tauri::api::path::app_data_dir(&tauri::Config::default())
+        let app_data_dir = get_app_data_dir()
             .ok_or("Failed to get app data directory")?;
         
         let full_path = app_data_dir.join(&path);
@@ -283,7 +284,7 @@ pub async fn delete_menu_item_image(
     match sqlx::query("UPDATE menu_items SET image_path = NULL WHERE id = ? AND restaurant_id = ?")
         .bind(menu_item_id)
         .bind(restaurant_id)
-        .execute(&**db)
+        .execute(&*db)
         .await
     {
         Ok(result) => {
@@ -313,12 +314,12 @@ pub async fn delete_menu_category_image(
     )
     .bind(category_id)
     .bind(restaurant_id)
-    .fetch_optional(&**db)
+    .fetch_optional(&*db)
     .await
     .map_err(|e| format!("Database error: {}", e))?;
 
     if let Some(Some(path)) = image_path {
-        let app_data_dir = tauri::api::path::app_data_dir(&tauri::Config::default())
+        let app_data_dir = get_app_data_dir()
             .ok_or("Failed to get app data directory")?;
         
         let full_path = app_data_dir.join(&path);
@@ -328,7 +329,7 @@ pub async fn delete_menu_category_image(
     match sqlx::query("UPDATE menu_categories SET image_path = NULL WHERE id = ? AND restaurant_id = ?")
         .bind(category_id)
         .bind(restaurant_id)
-        .execute(&**db)
+        .execute(&*db)
         .await
     {
         Ok(result) => {
