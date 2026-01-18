@@ -151,9 +151,9 @@ pub async fn create_employee(
         .map_err(|e| format!("Hash error: {}", e))?;
     let role = request.role.to_uppercase();
     
-    match sqlx::query!(
-    "INSERT INTO users (restaurant_id, email, phone, password_hash, 
-     first_name, last_name, role, salary, hire_date) 
+    match sqlx::query(
+    "INSERT INTO users (restaurant_id, email, phone, password_hash,
+     first_name, last_name, role, salary, hire_date)
      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"
     )
     .bind(request.restaurant_id)
@@ -240,7 +240,7 @@ pub async fn authenticate_employee(
             if let Some(stored_hash) = &user_with_hash.password_hash {
                 match verify(&request.password, stored_hash) {
                     Ok(true) => {
-                        sqlx::query!("UPDATE users SET last_login = ? WHERE id = ?")
+                        sqlx::query("UPDATE users SET last_login = ? WHERE id = ?")
                             .bind(Utc::now().naive_utc())
                             .bind(user_with_hash.id)
                             .execute(&*db)
@@ -259,12 +259,13 @@ pub async fn authenticate_employee(
                             salary: user_with_hash.salary,
                             hire_date: user_with_hash.hire_date,
                             is_active: user_with_hash.is_active,
-                            last_login: Some(Utc::now().naive_utc()),
+                            last_login: Some(Utc::now()),
                             created_at: user_with_hash.created_at,
                             updated_at: user_with_hash.updated_at,
                         };
 
-                        let token = crate::modules::auth::generate_jwt(user.id, &user.role)
+                        let user_id = user.id.ok_or("User ID is missing")?;
+                        let token = crate::modules::auth::generate_jwt(user_id.to_string(), 86400)
                             .map_err(|e| format!("Token generation error: {}", e))?;
 
                         Ok(ApiResponse {
@@ -336,7 +337,7 @@ pub async fn update_employee_password(
                     let new_hash = hash(&request.new_password, DEFAULT_COST)
                         .map_err(|e| format!("Hash error: {}", e))?;
 
-                    match sqlx::query!("UPDATE users SET password_hash = ? WHERE id = ?")
+                    match sqlx::query("UPDATE users SET password_hash = ? WHERE id = ?")
                         .bind(&new_hash)
                         .bind(request.employee_id)
                         .execute(&*db)

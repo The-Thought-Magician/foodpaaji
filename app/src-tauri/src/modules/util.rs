@@ -33,7 +33,7 @@ pub async fn restore_database(source_path: String) -> Result<bool, String> {
 pub async fn seed_sample_data() -> Result<bool, String> {
     let pool = get_connection().await.map_err(|e| e.to_string())?;
     // Simple idempotent inserts for development only
-    let _ = sqlx::query!(
+    let _ = sqlx::query(
         "INSERT OR IGNORE INTO restaurants (id, name, slug, email, phone, address) VALUES (1, 'FoodPaaji Demo', 'foodpaaji-demo', 'demo@foodpaaji.com', '+919876543210', 'Kolkata')"
     ).execute(&pool).await.map_err(|e| e.to_string())?;
 
@@ -42,7 +42,7 @@ pub async fn seed_sample_data() -> Result<bool, String> {
     let salt = bcrypt::DEFAULT_COST;
     let hashed = bcrypt::hash(dev_password, salt).map_err(|e| e.to_string())?;
 
-    let _ = sqlx::query!(
+    let _ = sqlx::query(
         "INSERT OR IGNORE INTO users (restaurant_id, email, phone, password_hash, first_name, last_name, role, permissions) VALUES (1, 'dev@foodpaaji.com', '+919876500000', ?, 'Dev', 'User', 'MANAGER', '[]')"
     )
     .bind(hashed)

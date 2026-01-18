@@ -63,7 +63,7 @@ pub fn run() {
       let builder = tauri_plugin_log::Builder::default().level(level);
       app.handle().plugin(builder.build())?;
       
-      let app_handle = app.handle();
+      let app_handle = app.handle().clone();
       tauri::async_runtime::spawn(async move {
         match init_database().await {
           Ok(pool) => {

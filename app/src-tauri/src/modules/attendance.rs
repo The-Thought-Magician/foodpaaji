@@ -93,11 +93,11 @@ pub async fn clock_in(
         })
     }
 
-    match sqlx::query!(
-        "INSERT INTO attendance (employee_id, date, clock_in, status, notes) 
+    match sqlx::query(
+        "INSERT INTO attendance (employee_id, date, clock_in, status, notes)
          VALUES (?, ?, ?, 'PRESENT', ?)
-         ON CONFLICT(employee_id, date) DO UPDATE SET 
-         clock_in = excluded.clock_in, 
+         ON CONFLICT(employee_id, date) DO UPDATE SET
+         clock_in = excluded.clock_in,
          status = excluded.status,
          notes = excluded.notes,
          updated_at = CURRENT_TIMESTAMP"
@@ -179,8 +179,8 @@ pub async fn clock_out(
             let clock_in_time = record.clock_in.unwrap();
             let total_hours = (now - clock_in_time).num_seconds() as f64 / 3600.0;
 
-            match sqlx::query!(
-                "UPDATE attendance SET clock_out = ?, total_hours = ?, notes = ?, updated_at = CURRENT_TIMESTAMP 
+            match sqlx::query(
+                "UPDATE attendance SET clock_out = ?, total_hours = ?, notes = ?, updated_at = CURRENT_TIMESTAMP
                  WHERE employee_id = ? AND date = ?"
             )
             .bind(now)
@@ -234,8 +234,8 @@ pub async fn start_break(
     let today = Utc::now().date_naive();
     let now = Utc::now().naive_utc();
 
-    match sqlx::query!(
-        "UPDATE attendance SET break_start = ?, updated_at = CURRENT_TIMESTAMP 
+    match sqlx::query(
+        "UPDATE attendance SET break_start = ?, updated_at = CURRENT_TIMESTAMP
          WHERE employee_id = ? AND date = ? AND clock_in IS NOT NULL AND clock_out IS NULL"
     )
     .bind(now)
@@ -293,8 +293,8 @@ pub async fn end_break(
     let today = Utc::now().date_naive();
     let now = Utc::now().naive_utc();
 
-    match sqlx::query!(
-        "UPDATE attendance SET break_end = ?, updated_at = CURRENT_TIMESTAMP 
+    match sqlx::query(
+        "UPDATE attendance SET break_end = ?, updated_at = CURRENT_TIMESTAMP
          WHERE employee_id = ? AND date = ? AND break_start IS NOT NULL AND break_end IS NULL"
     )
     .bind(now)

@@ -52,6 +52,7 @@ pub async fn get_low_stock_alerts(
     request: AlertSearchRequest,
     db: State<'_, DbPool>,
 ) -> Result<ApiResponse<AlertResponse>, String> {
+    let pool = &*db;
     let page = request.page.unwrap_or(1);
     let limit = request.limit.unwrap_or(20);
     let offset = (page - 1) * limit;
@@ -107,8 +108,8 @@ pub async fn get_low_stock_alerts(
     }
 
     match tokio::try_join!(
-        total_query.fetch_one(&*db),
-        alerts_query.fetch_all(&*db)
+        total_query.fetch_one(pool),
+        alerts_query.fetch_all(pool)
     ) {
         Ok((total, alerts)) => Ok(ApiResponse {
             success: true,
@@ -135,6 +136,7 @@ pub async fn get_alert_summary(
     restaurant_id: i64,
     db: State<'_, DbPool>,
 ) -> Result<ApiResponse<AlertSummary>, String> {
+    let pool = &*db;
     let summary_query = "
         SELECT 
             COUNT(*) as total_alerts,
@@ -145,18 +147,29 @@ pub async fn get_alert_summary(
         FROM low_stock_alerts 
         WHERE restaurant_id = ?";
 
-    match sqlx::query!(summary_query)
+    match sqlx::query(summary_query)
         .bind(restaurant_id)
-        .fetch_one(&*db)
+        .fetch_one(pool)
         .await
     {
         Ok(row) => {
+            let total_alerts: i64 = row.try_get("total_alerts")
+                .map_err(|e| format!("Failed to get total_alerts: {}", e))?;
+            let critical_alerts: i64 = row.try_get("critical_alerts")
+                .map_err(|e| format!("Failed to get critical_alerts: {}", e))?;
+            let low_alerts: i64 = row.try_get("low_alerts")
+                .map_err(|e| format!("Failed to get low_alerts: {}", e))?;
+            let out_of_stock_alerts: i64 = row.try_get("out_of_stock_alerts")
+                .map_err(|e| format!("Failed to get out_of_stock_alerts: {}", e))?;
+            let unacknowledged_alerts: i64 = row.try_get("unacknowledged_alerts")
+                .map_err(|e| format!("Failed to get unacknowledged_alerts: {}", e))?;
+
             let summary = AlertSummary {
-                total_alerts: row.try_get("total_alerts"),
-                critical_alerts: row.try_get("critical_alerts"),
-                low_alerts: row.try_get("low_alerts"),
-                out_of_stock_alerts: row.try_get("out_of_stock_alerts"),
-                unacknowledged_alerts: row.try_get("unacknowledged_alerts"),
+                total_alerts,
+                critical_alerts,
+                low_alerts,
+                out_of_stock_alerts,
+                unacknowledged_alerts,
             };
 
             Ok(ApiResponse {
@@ -187,16 +200,17 @@ pub async fn acknowledge_alert(
     request: AcknowledgeAlertRequest,
     db: State<'_, DbPool>,
 ) -> Result<ApiResponse<String>, String> {
-    match sqlx::query!(
-        "UPDATE low_stock_alerts 
-         SET is_acknowledged = 1, acknowledged_by = ?, acknowledged_at = ? 
+    let pool = &*db;
+    match sqlx::query(
+        "UPDATE low_stock_alerts
+         SET is_acknowledged = 1, acknowledged_by = ?, acknowledged_at = ?
          WHERE id = ? AND restaurant_id = ?"
     )
     .bind(request.user_id)
     .bind(Utc::now().naive_utc())
     .bind(request.alert_id)
     .bind(request.restaurant_id)
-    .execute(&*db)
+    .execute(pool)
     .await
     {
         Ok(result) => {
@@ -237,6 +251,7 @@ pub async fn bulk_acknowledge_alerts(
     request: BulkAcknowledgeRequest,
     db: State<'_, DbPool>,
 ) -> Result<ApiResponse<String>, String> {
+    let pool = &*db;
     if request.alert_ids.is_empty() {
         return Ok(ApiResponse {
             success: false,
@@ -254,7 +269,7 @@ pub async fn bulk_acknowledge_alerts(
         placeholders
     );
 
-    let mut query_builder = sqlx::query!(&query)
+    let mut query_builder = sqlx::query(&query)
         .bind(request.user_id)
         .bind(Utc::now().naive_utc());
 
@@ -263,7 +278,7 @@ pub async fn bulk_acknowledge_alerts(
     }
     query_builder = query_builder.bind(request.restaurant_id);
 
-    match query_builder.execute(&*db).await {
+    match query_builder.execute(pool).await {
         Ok(result) => {
             let acknowledged_count = result.rows_affected();
             Ok(ApiResponse {
@@ -287,12 +302,13 @@ pub async fn clear_acknowledged_alerts(
     restaurant_id: i64,
     db: State<'_, DbPool>,
 ) -> Result<ApiResponse<String>, String> {
-    match sqlx::query!(
-        "DELETE FROM low_stock_alerts 
+    let pool = &*db;
+    match sqlx::query(
+        "DELETE FROM low_stock_alerts
          WHERE restaurant_id = ? AND is_acknowledged = 1"
     )
     .bind(restaurant_id)
-    .execute(&*db)
+    .execute(pool)
     .await
     {
         Ok(result) => {
@@ -318,6 +334,7 @@ pub async fn check_and_create_alerts(
     restaurant_id: i64,
     db: State<'_, DbPool>,
 ) -> Result<ApiResponse<String>, String> {
+    let pool = &*db;
     let check_query = "
         INSERT OR REPLACE INTO low_stock_alerts (
             restaurant_id, inventory_item_id, alert_level, 
@@ -336,9 +353,9 @@ pub async fn check_and_create_alerts(
         AND current_stock <= reorder_point 
         AND is_active = 1";
 
-    match sqlx::query!(check_query)
+    match sqlx::query(check_query)
         .bind(restaurant_id)
-        .execute(&*db)
+        .execute(pool)
         .await
     {
         Ok(result) => {

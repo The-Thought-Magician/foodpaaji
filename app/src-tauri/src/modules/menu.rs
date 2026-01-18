@@ -132,10 +132,11 @@ pub async fn create_menu_category(
 ) -> Result<ApiResponse<MenuCategory>, String> {
     let slug = generate_slug(&request.name);
     
-    let existing = sqlx::query!(
-        "SELECT id FROM menu_categories WHERE restaurant_id = ? AND slug = ?",
-        request.restaurant_id, slug
+    let existing = sqlx::query(
+        "SELECT id FROM menu_categories WHERE restaurant_id = ? AND slug = ?"
     )
+    .bind(request.restaurant_id)
+    .bind(&slug)
     .fetch_optional(&*db)
     .await
     .map_err(|e| format!("Database error: {}", e))?;
@@ -144,20 +145,20 @@ pub async fn create_menu_category(
         return Err("Category with this name already exists".to_string());
     }
 
-    let result = sqlx::query!(
-        "INSERT INTO menu_categories (restaurant_id, name, description, parent_id, slug, 
-         image_path, sort_order, is_active, display_in_menu) 
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-        request.restaurant_id,
-        request.name,
-        request.description,
-        request.parent_id,
-        slug,
-        request.image_path,
-        request.sort_order.unwrap_or(0),
-        request.is_active.unwrap_or(true),
-        request.display_in_menu.unwrap_or(true)
+    let result = sqlx::query(
+        "INSERT INTO menu_categories (restaurant_id, name, description, parent_id, slug,
+         image_path, sort_order, is_active, display_in_menu)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"
     )
+    .bind(request.restaurant_id)
+    .bind(&request.name)
+    .bind(&request.description)
+    .bind(request.parent_id)
+    .bind(&slug)
+    .bind(&request.image_path)
+    .bind(request.sort_order.unwrap_or(0))
+    .bind(request.is_active.unwrap_or(true))
+    .bind(request.display_in_menu.unwrap_or(true))
     .execute(&*db)
     .await
     .map_err(|e| format!("Failed to create category: {}", e))?;
@@ -171,11 +172,10 @@ pub async fn get_menu_categories(
     restaurant_id: i64,
     db: State<'_, DbPool>,
 ) -> Result<ApiResponse<Vec<MenuCategory>>, String> {
-    let categories = sqlx::query_as(
-        MenuCategory,
-        "SELECT * FROM menu_categories WHERE restaurant_id = ? ORDER BY sort_order, name",
-        restaurant_id
+    let categories = sqlx::query_as::<_, MenuCategory>(
+        "SELECT * FROM menu_categories WHERE restaurant_id = ? ORDER BY sort_order, name"
     )
+    .bind(restaurant_id)
     .fetch_all(&*db)
     .await
     .map_err(|e| format!("Failed to fetch categories: {}", e))?;
@@ -193,7 +193,8 @@ pub async fn get_menu_category_by_id(
     id: i64,
     db: State<'_, DbPool>,
 ) -> Result<ApiResponse<MenuCategory>, String> {
-    let category = sqlx::query_as::<_, MenuCategory>("SELECT * FROM menu_categories WHERE id = ?", id)
+    let category = sqlx::query_as::<_, MenuCategory>("SELECT * FROM menu_categories WHERE id = ?")
+        .bind(id)
         .fetch_optional(&*db)
         .await
         .map_err(|e| format!("Database error: {}", e))?;
@@ -215,53 +216,81 @@ pub async fn update_menu_category(
     request: UpdateMenuCategoryRequest,
     db: State<'_, DbPool>,
 ) -> Result<ApiResponse<MenuCategory>, String> {
-    let mut query_parts = Vec::new();
-    let mut values: Vec<&dyn sqlx::Encode<sqlx::Sqlite>> = Vec::new();
+    let mut set_clauses = Vec::new();
 
     if let Some(ref name) = request.name {
-        query_parts.push("name = ?");
-        values.push(name);
-    }
-    if let Some(ref description) = request.description {
-        query_parts.push("description = ?");
-        values.push(description);
-    }
-    if request.parent_id.is_some() {
-        query_parts.push("parent_id = ?");
-        values.push(&request.parent_id);
-    }
-    if let Some(ref image_path) = request.image_path {
-        query_parts.push("image_path = ?");
-        values.push(image_path);
-    }
-    if let Some(ref sort_order) = request.sort_order {
-        query_parts.push("sort_order = ?");
-        values.push(sort_order);
-    }
-    if let Some(ref is_active) = request.is_active {
-        query_parts.push("is_active = ?");
-        values.push(is_active);
-    }
-    if let Some(ref display_in_menu) = request.display_in_menu {
-        query_parts.push("display_in_menu = ?");
-        values.push(display_in_menu);
+        sqlx::query("UPDATE menu_categories SET name = ? WHERE id = ?")
+            .bind(name)
+            .bind(id)
+            .execute(&*db)
+            .await
+            .map_err(|e| format!("Failed to update category: {}", e))?;
+        set_clauses.push("name");
     }
 
-    if query_parts.is_empty() {
+    if let Some(ref description) = request.description {
+        sqlx::query("UPDATE menu_categories SET description = ? WHERE id = ?")
+            .bind(description)
+            .bind(id)
+            .execute(&*db)
+            .await
+            .map_err(|e| format!("Failed to update category: {}", e))?;
+        set_clauses.push("description");
+    }
+
+    if let Some(parent_id) = request.parent_id {
+        sqlx::query("UPDATE menu_categories SET parent_id = ? WHERE id = ?")
+            .bind(parent_id)
+            .bind(id)
+            .execute(&*db)
+            .await
+            .map_err(|e| format!("Failed to update category: {}", e))?;
+        set_clauses.push("parent_id");
+    }
+
+    if let Some(ref image_path) = request.image_path {
+        sqlx::query("UPDATE menu_categories SET image_path = ? WHERE id = ?")
+            .bind(image_path)
+            .bind(id)
+            .execute(&*db)
+            .await
+            .map_err(|e| format!("Failed to update category: {}", e))?;
+        set_clauses.push("image_path");
+    }
+
+    if let Some(sort_order) = request.sort_order {
+        sqlx::query("UPDATE menu_categories SET sort_order = ? WHERE id = ?")
+            .bind(sort_order)
+            .bind(id)
+            .execute(&*db)
+            .await
+            .map_err(|e| format!("Failed to update category: {}", e))?;
+        set_clauses.push("sort_order");
+    }
+
+    if let Some(is_active) = request.is_active {
+        sqlx::query("UPDATE menu_categories SET is_active = ? WHERE id = ?")
+            .bind(is_active)
+            .bind(id)
+            .execute(&*db)
+            .await
+            .map_err(|e| format!("Failed to update category: {}", e))?;
+        set_clauses.push("is_active");
+    }
+
+    if let Some(display_in_menu) = request.display_in_menu {
+        sqlx::query("UPDATE menu_categories SET display_in_menu = ? WHERE id = ?")
+            .bind(display_in_menu)
+            .bind(id)
+            .execute(&*db)
+            .await
+            .map_err(|e| format!("Failed to update category: {}", e))?;
+        set_clauses.push("display_in_menu");
+    }
+
+    if set_clauses.is_empty() {
         return get_menu_category_by_id(id, db).await;
     }
-
-    let query_str = format!("UPDATE menu_categories SET {} WHERE id = ?", query_parts.join(", "));
-    
-    let mut query = sqlx::query!(&query_str);
-    for value in values {
-        query = query.bind(value);
-    }
-    query = query.bind(id);
-
-    query.execute(&*db)
-        .await
-        .map_err(|e| format!("Failed to update category: {}", e))?;
 
     get_menu_category_by_id(id, db).await
 }
@@ -271,9 +300,10 @@ pub async fn delete_menu_category(
     id: i64,
     db: State<'_, DbPool>,
 ) -> Result<ApiResponse<String>, String> {
-    let has_items = sqlx::query_scalar!(
-        "SELECT COUNT(*) FROM menu_items WHERE category_id = ?", id
+    let has_items = sqlx::query_scalar::<_, i64>(
+        "SELECT COUNT(*) FROM menu_items WHERE category_id = ?"
     )
+    .bind(id)
     .fetch_one(&*db)
     .await
     .map_err(|e| format!("Database error: {}", e))?;
@@ -282,7 +312,8 @@ pub async fn delete_menu_category(
         return Err("Cannot delete category with existing menu items".to_string());
     }
 
-    sqlx::query!("DELETE FROM menu_categories WHERE id = ?", id)
+    sqlx::query("DELETE FROM menu_categories WHERE id = ?")
+        .bind(id)
         .execute(&*db)
         .await
         .map_err(|e| format!("Failed to delete category: {}", e))?;
@@ -302,10 +333,11 @@ pub async fn create_menu_item(
 ) -> Result<ApiResponse<MenuItem>, String> {
     let slug = generate_slug(&request.name);
     
-    let existing = sqlx::query!(
-        "SELECT id FROM menu_items WHERE restaurant_id = ? AND slug = ?",
-        request.restaurant_id, slug
+    let existing = sqlx::query(
+        "SELECT id FROM menu_items WHERE restaurant_id = ? AND slug = ?"
     )
+    .bind(request.restaurant_id)
+    .bind(&slug)
     .fetch_optional(&*db)
     .await
     .map_err(|e| format!("Database error: {}", e))?;
@@ -314,32 +346,32 @@ pub async fn create_menu_item(
         return Err("Menu item with this name already exists".to_string());
     }
 
-    let result = sqlx::query!(
+    let result = sqlx::query(
         "INSERT INTO menu_items (restaurant_id, category_id, name, description, short_description,
          price, preparation_time, calories, image_path, slug, sku, is_vegetarian, is_vegan,
          is_gluten_free, is_spicy, spice_level, is_available, is_active, is_featured, sort_order)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-        request.restaurant_id,
-        request.category_id,
-        request.name,
-        request.description,
-        request.short_description,
-        request.price,
-        request.preparation_time,
-        request.calories,
-        request.image_path,
-        slug,
-        request.sku,
-        request.is_vegetarian.unwrap_or(false),
-        request.is_vegan.unwrap_or(false),
-        request.is_gluten_free.unwrap_or(false),
-        request.is_spicy.unwrap_or(false),
-        request.spice_level.unwrap_or(0),
-        request.is_available.unwrap_or(true),
-        request.is_active.unwrap_or(true),
-        request.is_featured.unwrap_or(false),
-        request.sort_order.unwrap_or(0)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
     )
+    .bind(request.restaurant_id)
+    .bind(request.category_id)
+    .bind(&request.name)
+    .bind(&request.description)
+    .bind(&request.short_description)
+    .bind(request.price)
+    .bind(request.preparation_time)
+    .bind(request.calories)
+    .bind(&request.image_path)
+    .bind(&slug)
+    .bind(&request.sku)
+    .bind(request.is_vegetarian.unwrap_or(false))
+    .bind(request.is_vegan.unwrap_or(false))
+    .bind(request.is_gluten_free.unwrap_or(false))
+    .bind(request.is_spicy.unwrap_or(false))
+    .bind(request.spice_level.unwrap_or(0))
+    .bind(request.is_available.unwrap_or(true))
+    .bind(request.is_active.unwrap_or(true))
+    .bind(request.is_featured.unwrap_or(false))
+    .bind(request.sort_order.unwrap_or(0))
     .execute(&*db)
     .await
     .map_err(|e| format!("Failed to create menu item: {}", e))?;
@@ -353,11 +385,10 @@ pub async fn get_menu_items_by_category(
     category_id: i64,
     db: State<'_, DbPool>,
 ) -> Result<ApiResponse<Vec<MenuItem>>, String> {
-    let items = sqlx::query_as(
-        MenuItem,
-        "SELECT * FROM menu_items WHERE category_id = ? ORDER BY sort_order, name",
-        category_id
+    let items = sqlx::query_as::<_, MenuItem>(
+        "SELECT * FROM menu_items WHERE category_id = ? ORDER BY sort_order, name"
     )
+    .bind(category_id)
     .fetch_all(&*db)
     .await
     .map_err(|e| format!("Failed to fetch menu items: {}", e))?;
@@ -375,7 +406,8 @@ pub async fn get_menu_item_by_id(
     id: i64,
     db: State<'_, DbPool>,
 ) -> Result<ApiResponse<MenuItem>, String> {
-    let item = sqlx::query_as::<_, MenuItem>("SELECT * FROM menu_items WHERE id = ?", id)
+    let item = sqlx::query_as::<_, MenuItem>("SELECT * FROM menu_items WHERE id = ?")
+        .bind(id)
         .fetch_optional(&*db)
         .await
         .map_err(|e| format!("Database error: {}", e))?;
@@ -396,7 +428,8 @@ pub async fn delete_menu_item(
     id: i64,
     db: State<'_, DbPool>,
 ) -> Result<ApiResponse<String>, String> {
-    sqlx::query!("DELETE FROM menu_items WHERE id = ?", id)
+    sqlx::query("DELETE FROM menu_items WHERE id = ?")
+        .bind(id)
         .execute(&*db)
         .await
         .map_err(|e| format!("Failed to delete menu item: {}", e))?;
