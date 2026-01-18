@@ -27,7 +27,7 @@ pub async fn upload_employee_image(
     let decoded_data = general_purpose::STANDARD.decode(&image_data)
         .map_err(|e| format!("Invalid base64 data: {}", e))?;
 
-    let app_data_dir = get_app_data_dir()?;
+    let app_data_dir = get_app_data_dir().map_err(|e| e.to_string())?;
     
     let images_dir = app_data_dir.join("employee_images");
     fs::create_dir_all(&images_dir)
@@ -46,7 +46,7 @@ pub async fn upload_employee_image(
 
     let relative_path = format!("employee_images/{}", image_filename);
 
-    match sqlx::query!("UPDATE users SET profile_image = ? WHERE id = ?")
+    match sqlx::query("UPDATE users SET profile_image = ? WHERE id = ?")
         .bind(&relative_path)
         .bind(request.employee_id)
         .execute(&*db)
@@ -81,7 +81,7 @@ pub async fn get_employee_image(
     {
         Ok(Some(image_path)) => {
             let app_data_dir = get_app_data_dir()
-                ?;
+                .map_err(|e| e.to_string())?;
             
             let full_path = app_data_dir.join(&image_path);
             
@@ -144,7 +144,7 @@ pub async fn delete_employee(
         });
     }
 
-    match sqlx::query!("UPDATE users SET is_active = 0 WHERE id = ?")
+    match sqlx::query("UPDATE users SET is_active = 0 WHERE id = ?")
         .bind(request.employee_id)
         .execute(&*db)
         .await

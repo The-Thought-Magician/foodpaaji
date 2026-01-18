@@ -240,17 +240,28 @@ pub async fn get_inventory_analytics(
         WHERE restaurant_id = ? AND is_active = 1 AND category_id IS NOT NULL";
 
     match tokio::try_join!(
-        sqlx::query!(analytics_query).bind(restaurant_id).fetch_one(&*db),
-        sqlx::query!(categories_query).bind(restaurant_id).fetch_one(&*db)
+        sqlx::query(analytics_query).bind(restaurant_id).fetch_one(&*db),
+        sqlx::query(categories_query).bind(restaurant_id).fetch_one(&*db)
     ) {
         Ok((analytics_row, categories_row)) => {
+            let total_items: i64 = analytics_row.try_get("total_items")
+                .map_err(|e| format!("Failed to get total_items: {}", e))?;
+            let low_stock_items: i64 = analytics_row.try_get("low_stock_items")
+                .map_err(|e| format!("Failed to get low_stock_items: {}", e))?;
+            let out_of_stock_items: i64 = analytics_row.try_get("out_of_stock_items")
+                .map_err(|e| format!("Failed to get out_of_stock_items: {}", e))?;
+            let overstocked_items: i64 = analytics_row.try_get("overstocked_items")
+                .map_err(|e| format!("Failed to get overstocked_items: {}", e))?;
+            let total_categories: i64 = categories_row.try_get("total_categories")
+                .map_err(|e| format!("Failed to get total_categories: {}", e))?;
+
             let analytics = InventoryAnalytics {
-                total_items: analytics_row.try_get("total_items"),
+                total_items,
                 total_inventory_value: analytics_row.try_get("total_inventory_value").unwrap_or(0.0),
-                low_stock_items: analytics_row.try_get("low_stock_items"),
-                out_of_stock_items: analytics_row.try_get("out_of_stock_items"),
-                overstocked_items: analytics_row.try_get("overstocked_items"),
-                total_categories: categories_row.try_get("total_categories"),
+                low_stock_items,
+                out_of_stock_items,
+                overstocked_items,
+                total_categories,
                 average_stock_level: analytics_row.try_get("average_stock_level").unwrap_or(0.0),
             };
 

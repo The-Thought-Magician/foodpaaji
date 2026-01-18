@@ -106,17 +106,20 @@ pub async fn calculate_menu_item_price(
     request: CalculatePriceRequest,
     db: State<'_, DbPool>,
 ) -> Result<ApiResponse<PriceCalculation>, String> {
-    let item = sqlx::query!(
-        "SELECT name, price, cost_price FROM menu_items WHERE id = ?",
-        request.menu_item_id
+    let item = sqlx::query(
+        "SELECT name, price, cost_price FROM menu_items WHERE id = ?"
     )
+    .bind(request.menu_item_id)
     .fetch_optional(&*db)
     .await
     .map_err(|e| format!("Database error: {}", e))?;
 
     let item = item.ok_or("Menu item not found")?;
-    let cost_price = item.cost_price.unwrap_or(0.0);
-    let current_price = item.price;
+    let cost_price = item.try_get::<Option<f64>, _>("cost_price")
+        .map_err(|e| format!("Failed to get cost_price: {}", e))?
+        .unwrap_or(0.0);
+    let current_price = item.try_get::<f64, _>("price")
+        .map_err(|e| format!("Failed to get price: {}", e))?;
 
     let suggested_price = calculate_price_by_strategy(
         cost_price,
@@ -130,9 +133,12 @@ pub async fn calculate_menu_item_price(
     let (markup_amount, markup_percentage, profit_margin) = 
         calculate_metrics(cost_price, suggested_price);
 
+    let item_name = item.try_get::<String, _>("name")
+        .map_err(|e| format!("Failed to get name: {}", e))?;
+
     let calculation = PriceCalculation {
         menu_item_id: request.menu_item_id,
-        item_name: item.name,
+        item_name,
         cost_price,
         current_price,
         suggested_price,
@@ -173,7 +179,7 @@ pub async fn bulk_calculate_prices(
         }
     }
 
-    let mut query_builder = sqlx::query!(&query);
+    let mut query_builder = sqlx::query(&query);
     for binding in bindings {
         query_builder = query_builder.bind(binding);
     }
@@ -188,9 +194,12 @@ pub async fn bulk_calculate_prices(
     let mut total_revenue_impact = 0.0;
 
     for item in items.iter() {
-        let id: i64 = item.try_get("id");
-        let name: String = item.try_get("name");
-        let current_price: f64 = item.try_get("price");
+        let id: i64 = item.try_get("id")
+            .map_err(|e| format!("Failed to get id: {}", e))?;
+        let name: String = item.try_get("name")
+            .map_err(|e| format!("Failed to get name: {}", e))?;
+        let current_price: f64 = item.try_get("price")
+            .map_err(|e| format!("Failed to get price: {}", e))?;
         let cost_price: f64 = item.get::<Option<f64>, _>("cost_price").unwrap_or(0.0);
 
         let suggested_price = calculate_price_by_strategy(
@@ -220,7 +229,7 @@ pub async fn bulk_calculate_prices(
         calculations.push(calculation);
 
         if request.apply_changes && (suggested_price - current_price).abs() > 0.01 {
-            match sqlx::query!("UPDATE menu_items SET price = ? WHERE id = ?")
+            match sqlx::query("UPDATE menu_items SET price = ? WHERE id = ?")
                 .bind(suggested_price)
                 .bind(id)
                 .execute(&*db)
@@ -232,8 +241,9 @@ pub async fn bulk_calculate_prices(
         }
     }
 
+    let total_items = calculations.len();
     let result = BulkPriceUpdateResult {
-        total_items: calculations.len(),
+        total_items,
         updated_items,
         calculations,
         total_revenue_impact,
@@ -245,7 +255,7 @@ pub async fn bulk_calculate_prices(
         message: if request.apply_changes {
             Some(format!("Updated prices for {} items", updated_items))
         } else {
-            Some(format!("Calculated prices for {} items", result.total_items))
+            Some(format!("Calculated prices for {} items", total_items))
         },
         error: None,
     })
@@ -260,12 +270,12 @@ pub async fn update_menu_item_price(
         return Err("Price cannot be negative".to_string());
     }
 
-    let result = sqlx::query!(
-        "UPDATE menu_items SET price = ? WHERE id = ? AND restaurant_id = ?",
-        request.new_price,
-        request.menu_item_id,
-        request.restaurant_id
+    let result = sqlx::query(
+        "UPDATE menu_items SET price = ? WHERE id = ? AND restaurant_id = ?"
     )
+    .bind(request.new_price)
+    .bind(request.menu_item_id)
+    .bind(request.restaurant_id)
     .execute(&*db)
     .await
     .map_err(|e| format!("Database error: {}", e))?;
@@ -274,15 +284,15 @@ pub async fn update_menu_item_price(
         return Err("Menu item not found or access denied".to_string());
     }
 
-    sqlx::query!(
-        "INSERT INTO price_history (menu_item_id, old_price, new_price, reason, changed_at) 
-         SELECT ?, price, ?, ?, ? FROM menu_items WHERE id = ?",
-        request.menu_item_id,
-        request.new_price,
-        request.reason,
-        Utc::now().naive_utc(),
-        request.menu_item_id
+    sqlx::query(
+        "INSERT INTO price_history (menu_item_id, old_price, new_price, reason, changed_at)
+         SELECT ?, price, ?, ?, ? FROM menu_items WHERE id = ?"
     )
+    .bind(request.menu_item_id)
+    .bind(request.new_price)
+    .bind(&request.reason)
+    .bind(Utc::now().naive_utc())
+    .bind(request.menu_item_id)
     .execute(&*db)
     .await
     .map_err(|e| format!("Failed to log price change: {}", e))?;
@@ -300,30 +310,43 @@ pub async fn get_pricing_analytics(
     restaurant_id: i64,
     db: State<'_, DbPool>,
 ) -> Result<ApiResponse<serde_json::Value>, String> {
-    let stats = sqlx::query!(
-        "SELECT 
+    let stats = sqlx::query(
+        "SELECT
             COUNT(*) as total_items,
             AVG(price) as avg_price,
             AVG(cost_price) as avg_cost,
             AVG(CASE WHEN cost_price > 0 THEN ((price - cost_price) / price) * 100 ELSE 0 END) as avg_margin,
             MIN(price) as min_price,
             MAX(price) as max_price
-         FROM menu_items 
-         WHERE restaurant_id = ? AND is_active = 1",
-        restaurant_id
+         FROM menu_items
+         WHERE restaurant_id = ? AND is_active = 1"
     )
+    .bind(restaurant_id)
     .fetch_one(&*db)
     .await
     .map_err(|e| format!("Database error: {}", e))?;
 
+    let total_items: i64 = stats.try_get("total_items")
+        .map_err(|e| format!("Failed to get total_items: {}", e))?;
+    let avg_price: Option<f64> = stats.try_get("avg_price")
+        .map_err(|e| format!("Failed to get avg_price: {}", e))?;
+    let avg_cost: Option<f64> = stats.try_get("avg_cost")
+        .map_err(|e| format!("Failed to get avg_cost: {}", e))?;
+    let avg_margin: Option<f64> = stats.try_get("avg_margin")
+        .map_err(|e| format!("Failed to get avg_margin: {}", e))?;
+    let min_price: Option<f64> = stats.try_get("min_price")
+        .map_err(|e| format!("Failed to get min_price: {}", e))?;
+    let max_price: Option<f64> = stats.try_get("max_price")
+        .map_err(|e| format!("Failed to get max_price: {}", e))?;
+
     let analytics = serde_json::json!({
-        "total_items": stats.total_items,
-        "average_price": stats.avg_price.unwrap_or(0.0),
-        "average_cost": stats.avg_cost.unwrap_or(0.0),
-        "average_margin": stats.avg_margin.unwrap_or(0.0),
+        "total_items": total_items,
+        "average_price": avg_price.unwrap_or(0.0),
+        "average_cost": avg_cost.unwrap_or(0.0),
+        "average_margin": avg_margin.unwrap_or(0.0),
         "price_range": {
-            "min": stats.min_price.unwrap_or(0.0),
-            "max": stats.max_price.unwrap_or(0.0)
+            "min": min_price.unwrap_or(0.0),
+            "max": max_price.unwrap_or(0.0)
         }
     });
 
@@ -340,8 +363,8 @@ pub async fn sync_cost_prices_from_recipes(
     restaurant_id: i64,
     db: State<'_, DbPool>,
 ) -> Result<ApiResponse<String>, String> {
-    let updated = sqlx::query!(
-        "UPDATE menu_items 
+    let updated = sqlx::query(
+        "UPDATE menu_items
          SET cost_price = (
              SELECT COALESCE(SUM(mii.quantity_required * COALESCE(ii.cost_price, 0)), 0)
              FROM menu_item_ingredients mii
@@ -350,9 +373,9 @@ pub async fn sync_cost_prices_from_recipes(
          )
          WHERE restaurant_id = ? AND EXISTS (
              SELECT 1 FROM menu_item_ingredients WHERE menu_item_id = menu_items.id
-         )",
-        restaurant_id
+         )"
     )
+    .bind(restaurant_id)
     .execute(&*db)
     .await
     .map_err(|e| format!("Database error: {}", e))?;

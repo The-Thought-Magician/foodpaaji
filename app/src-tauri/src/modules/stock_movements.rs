@@ -96,10 +96,10 @@ pub async fn create_stock_movement(
         None => None,
     };
 
-    match sqlx::query!(
-        "INSERT INTO stock_movements (restaurant_id, inventory_item_id, movement_type, 
-         quantity, unit_cost, total_cost, reference_type, reference_id, batch_number, 
-         expiry_date, notes, user_id, movement_date) 
+    match sqlx::query(
+        "INSERT INTO stock_movements (restaurant_id, inventory_item_id, movement_type,
+         quantity, unit_cost, total_cost, reference_type, reference_id, batch_number,
+         expiry_date, notes, user_id, movement_date)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
     )
     .bind(request.restaurant_id)

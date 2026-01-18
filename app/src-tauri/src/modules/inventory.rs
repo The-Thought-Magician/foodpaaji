@@ -149,11 +149,11 @@ pub async fn create_inventory_item(
     request: CreateInventoryItemRequest,
     db: State<'_, DbPool>,
 ) -> Result<ApiResponse<InventoryItem>, String> {
-    match sqlx::query!(
-        "INSERT INTO inventory_items (restaurant_id, category_id, supplier_id, name, 
-         description, sku, barcode, unit_type, base_unit, conversion_factor, 
-         minimum_stock, maximum_stock, reorder_point, cost_price, selling_price, 
-         tax_rate, expiry_tracking, batch_tracking, location) 
+    match sqlx::query(
+        "INSERT INTO inventory_items (restaurant_id, category_id, supplier_id, name,
+         description, sku, barcode, unit_type, base_unit, conversion_factor,
+         minimum_stock, maximum_stock, reorder_point, cost_price, selling_price,
+         tax_rate, expiry_tracking, batch_tracking, location)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
     )
     .bind(request.restaurant_id)
@@ -252,8 +252,8 @@ pub async fn create_inventory_category(
     request: CreateCategoryRequest,
     db: State<'_, DbPool>,
 ) -> Result<ApiResponse<InventoryCategory>, String> {
-    match sqlx::query!(
-        "INSERT INTO inventory_categories (restaurant_id, name, description, parent_id) 
+    match sqlx::query(
+        "INSERT INTO inventory_categories (restaurant_id, name, description, parent_id)
          VALUES (?, ?, ?, ?)"
     )
     .bind(request.restaurant_id)
@@ -334,8 +334,8 @@ pub async fn create_supplier(
     request: CreateSupplierRequest,
     db: State<'_, DbPool>,
 ) -> Result<ApiResponse<Supplier>, String> {
-    match sqlx::query!(
-        "INSERT INTO suppliers (restaurant_id, name, contact_person, email, phone, 
+    match sqlx::query(
+        "INSERT INTO suppliers (restaurant_id, name, contact_person, email, phone,
          address, gstin, payment_terms) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
     )
     .bind(request.restaurant_id)

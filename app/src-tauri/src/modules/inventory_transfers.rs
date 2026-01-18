@@ -107,9 +107,9 @@ pub async fn create_inventory_transfer(
         total_value += cost * item_request.quantity;
     }
 
-    match sqlx::query!(
-        "INSERT INTO inventory_transfers (restaurant_id, transfer_number, from_location, 
-         to_location, status, requested_by, notes, total_items, total_value, requested_at) 
+    match sqlx::query(
+        "INSERT INTO inventory_transfers (restaurant_id, transfer_number, from_location,
+         to_location, status, requested_by, notes, total_items, total_value, requested_at)
          VALUES (?, ?, ?, ?, 'PENDING', ?, ?, ?, ?, ?)"
     )
     .bind(request.restaurant_id)
@@ -132,9 +132,9 @@ pub async fn create_inventory_transfer(
                 let item_name = get_item_name(item_request.inventory_item_id, &db).await?;
                 let unit = get_item_unit(item_request.inventory_item_id, &db).await?;
 
-                sqlx::query!(
-                    "INSERT INTO transfer_items (transfer_id, inventory_item_id, item_name, 
-                     requested_quantity, unit, unit_cost, status, notes) 
+                sqlx::query(
+                    "INSERT INTO transfer_items (transfer_id, inventory_item_id, item_name,
+                     requested_quantity, unit, unit_cost, status, notes)
                      VALUES (?, ?, ?, ?, ?, ?, 'PENDING', ?)"
                 )
                 .bind(transfer_id)
@@ -178,8 +178,8 @@ pub async fn approve_transfer(
     request: TransferApprovalRequest,
     db: State<'_, DbPool>,
 ) -> Result<ApiResponse<String>, String> {
-    sqlx::query!(
-        "UPDATE inventory_transfers SET status = 'APPROVED', approved_by = ?, 
+    sqlx::query(
+        "UPDATE inventory_transfers SET status = 'APPROVED', approved_by = ?,
          approved_at = ? WHERE id = ?"
     )
     .bind(request.approved_by)
@@ -190,8 +190,8 @@ pub async fn approve_transfer(
     .map_err(|e| format!("Failed to approve transfer: {}", e))?;
 
     for approval in &request.item_approvals {
-        sqlx::query!(
-            "UPDATE transfer_items SET approved_quantity = ?, status = 'APPROVED' 
+        sqlx::query(
+            "UPDATE transfer_items SET approved_quantity = ?, status = 'APPROVED'
              WHERE id = ?"
         )
         .bind(approval.approved_quantity)
@@ -238,8 +238,8 @@ pub async fn complete_transfer(
             ).await?;
         }
 
-        sqlx::query!(
-            "UPDATE transfer_items SET transferred_quantity = ?, status = 'COMPLETED' 
+        sqlx::query(
+            "UPDATE transfer_items SET transferred_quantity = ?, status = 'COMPLETED'
              WHERE id = ?"
         )
         .bind(completion.transferred_quantity)
@@ -249,8 +249,8 @@ pub async fn complete_transfer(
         .map_err(|e| format!("Failed to update transfer item: {}", e))?;
     }
 
-    sqlx::query!(
-        "UPDATE inventory_transfers SET status = 'COMPLETED', completed_by = ?, 
+    sqlx::query(
+        "UPDATE inventory_transfers SET status = 'COMPLETED', completed_by = ?,
          completed_at = ? WHERE id = ?"
     )
     .bind(request.completed_by)
@@ -431,9 +431,9 @@ async fn create_transfer_stock_movements(
 
     let total_cost = item.unit_cost * quantity;
 
-    sqlx::query!(
-        "INSERT INTO stock_movements (restaurant_id, inventory_item_id, movement_type, 
-         quantity, unit_cost, total_cost, reference_type, reference_id, notes, 
+    sqlx::query(
+        "INSERT INTO stock_movements (restaurant_id, inventory_item_id, movement_type,
+         quantity, unit_cost, total_cost, reference_type, reference_id, notes,
          user_id, movement_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
     )
     .bind(out_request.restaurant_id)
@@ -451,9 +451,9 @@ async fn create_transfer_stock_movements(
     .await
     .map_err(|e| format!("Failed to create OUT movement: {}", e))?;
 
-    sqlx::query!(
-        "INSERT INTO stock_movements (restaurant_id, inventory_item_id, movement_type, 
-         quantity, unit_cost, total_cost, reference_type, reference_id, notes, 
+    sqlx::query(
+        "INSERT INTO stock_movements (restaurant_id, inventory_item_id, movement_type,
+         quantity, unit_cost, total_cost, reference_type, reference_id, notes,
          user_id, movement_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
     )
     .bind(in_request.restaurant_id)
@@ -475,21 +475,24 @@ async fn create_transfer_stock_movements(
 }
 
 async fn get_item_cost(item_id: i64, db: &DbPool) -> Result<f64, String> {
-    sqlx::query_scalar!("SELECT cost_price FROM inventory_items WHERE id = ?", item_id)
+    sqlx::query_scalar::<_, f64>("SELECT cost_price FROM inventory_items WHERE id = ?")
+        .bind(item_id)
         .fetch_one(db)
         .await
         .map_err(|e| format!("Database error: {}", e))
 }
 
 async fn get_item_name(item_id: i64, db: &DbPool) -> Result<String, String> {
-    sqlx::query_scalar!("SELECT name FROM inventory_items WHERE id = ?", item_id)
+    sqlx::query_scalar::<_, String>("SELECT name FROM inventory_items WHERE id = ?")
+        .bind(item_id)
         .fetch_one(db)
         .await
         .map_err(|e| format!("Database error: {}", e))
 }
 
 async fn get_item_unit(item_id: i64, db: &DbPool) -> Result<String, String> {
-    sqlx::query_scalar!("SELECT base_unit FROM inventory_items WHERE id = ?", item_id)
+    sqlx::query_scalar::<_, String>("SELECT base_unit FROM inventory_items WHERE id = ?")
+        .bind(item_id)
         .fetch_one(db)
         .await
         .map_err(|e| format!("Database error: {}", e))

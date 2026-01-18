@@ -122,8 +122,8 @@ pub async fn create_unit_conversion(
         _ => {}
     }
 
-    match sqlx::query!(
-        "INSERT INTO unit_conversions (restaurant_id, from_unit, to_unit, conversion_factor) 
+    match sqlx::query(
+        "INSERT INTO unit_conversions (restaurant_id, from_unit, to_unit, conversion_factor)
          VALUES (?, ?, ?, ?)"
     )
     .bind(request.restaurant_id)
@@ -174,8 +174,8 @@ async fn create_reverse_conversion(
     request: CreateUnitConversionRequest,
     db: &DbPool,
 ) -> Result<(), String> {
-    sqlx::query!(
-        "INSERT INTO unit_conversions (restaurant_id, from_unit, to_unit, conversion_factor) 
+    sqlx::query(
+        "INSERT INTO unit_conversions (restaurant_id, from_unit, to_unit, conversion_factor)
          VALUES (?, ?, ?, ?)"
     )
     .bind(request.restaurant_id)

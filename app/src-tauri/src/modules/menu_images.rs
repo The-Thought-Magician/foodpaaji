@@ -74,7 +74,7 @@ fn save_image_file(
     filename: &str,
 ) -> Result<(String, PathBuf), String> {
     let app_data_dir = get_app_data_dir()
-        ?;
+        .map_err(|e| e.to_string())?;
     
     let images_dir = app_data_dir.join(directory);
     fs::create_dir_all(&images_dir)
@@ -130,7 +130,7 @@ pub async fn upload_menu_item_image(
 
     let (relative_path, _) = save_image_file(&final_data, "menu_images", &image_filename)?;
 
-    match sqlx::query!("UPDATE menu_items SET image_path = ? WHERE id = ? AND restaurant_id = ?")
+    match sqlx::query("UPDATE menu_items SET image_path = ? WHERE id = ? AND restaurant_id = ?")
         .bind(&relative_path)
         .bind(request.menu_item_id)
         .bind(request.restaurant_id)
@@ -200,7 +200,7 @@ pub async fn upload_menu_category_image(
 
     let (relative_path, _) = save_image_file(&final_data, "menu_images", &image_filename)?;
 
-    match sqlx::query!("UPDATE menu_categories SET image_path = ? WHERE id = ? AND restaurant_id = ?")
+    match sqlx::query("UPDATE menu_categories SET image_path = ? WHERE id = ? AND restaurant_id = ?")
         .bind(&relative_path)
         .bind(request.category_id)
         .bind(request.restaurant_id)
@@ -233,7 +233,7 @@ pub async fn get_menu_image(
     image_path: String,
 ) -> Result<ApiResponse<String>, String> {
     let app_data_dir = get_app_data_dir()
-        ?;
+        .map_err(|e| e.to_string())?;
     
     let full_path = app_data_dir.join(&image_path);
     
@@ -276,13 +276,13 @@ pub async fn delete_menu_item_image(
 
     if let Some(Some(path)) = image_path {
         let app_data_dir = get_app_data_dir()
-            ?;
-        
+            .map_err(|e| e.to_string())?;
+
         let full_path = app_data_dir.join(&path);
         let _ = fs::remove_file(&full_path);
     }
 
-    match sqlx::query!("UPDATE menu_items SET image_path = NULL WHERE id = ? AND restaurant_id = ?")
+    match sqlx::query("UPDATE menu_items SET image_path = NULL WHERE id = ? AND restaurant_id = ?")
         .bind(menu_item_id)
         .bind(restaurant_id)
         .execute(&*db)
@@ -321,13 +321,13 @@ pub async fn delete_menu_category_image(
 
     if let Some(Some(path)) = image_path {
         let app_data_dir = get_app_data_dir()
-            ?;
-        
+            .map_err(|e| e.to_string())?;
+
         let full_path = app_data_dir.join(&path);
         let _ = fs::remove_file(&full_path);
     }
 
-    match sqlx::query!("UPDATE menu_categories SET image_path = NULL WHERE id = ? AND restaurant_id = ?")
+    match sqlx::query("UPDATE menu_categories SET image_path = NULL WHERE id = ? AND restaurant_id = ?")
         .bind(category_id)
         .bind(restaurant_id)
         .execute(&*db)

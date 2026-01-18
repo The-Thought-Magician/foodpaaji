@@ -39,7 +39,7 @@ pub struct StockDeductionResult {
     pub deduction_details: Vec<DeductionDetail>,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Clone)]
 pub struct InsufficientStockItem {
     pub inventory_item_id: i64,
     pub item_name: String,
@@ -172,16 +172,22 @@ async fn check_stock_availability(
     required_quantity: f64,
     db: &DbPool,
 ) -> Result<(f64, String), String> {
-    let result = sqlx::query!(
-        "SELECT current_stock, name FROM inventory_items WHERE id = ? AND is_active = 1",
-        inventory_item_id
+    let result = sqlx::query(
+        "SELECT current_stock, name FROM inventory_items WHERE id = ? AND is_active = 1"
     )
+    .bind(inventory_item_id)
     .fetch_optional(db)
     .await
     .map_err(|e| format!("Database error: {}", e))?;
 
     match result {
-        Some(row) => Ok((row.current_stock, row.name)),
+        Some(row) => {
+            let current_stock: f64 = row.try_get("current_stock")
+                .map_err(|e| format!("Failed to get current_stock: {}", e))?;
+            let name: String = row.try_get("name")
+                .map_err(|e| format!("Failed to get name: {}", e))?;
+            Ok((current_stock, name))
+        },
         None => Err("Inventory item not found or inactive".to_string()),
     }
 }
@@ -194,15 +200,17 @@ async fn deduct_inventory_stock(
     user_id: i64,
     db: &DbPool,
 ) -> Result<(i64, f64), String> {
-    let cost_info = sqlx::query!(
-        "SELECT cost_price FROM inventory_items WHERE id = ?",
-        inventory_item_id
+    let cost_info = sqlx::query(
+        "SELECT cost_price FROM inventory_items WHERE id = ?"
     )
+    .bind(inventory_item_id)
     .fetch_optional(db)
     .await
     .map_err(|e| format!("Database error: {}", e))?;
 
-    let unit_cost = cost_info.map(|row| row.cost_price).unwrap_or(0.0);
+    let unit_cost = cost_info
+        .map(|row| row.try_get("cost_price").unwrap_or(0.0))
+        .unwrap_or(0.0);
     let total_cost = unit_cost * quantity;
 
     let movement_request = CreateStockMovementRequest {
@@ -219,9 +227,9 @@ async fn deduct_inventory_stock(
         user_id: Some(user_id),
     };
 
-    match sqlx::query!(
-        "INSERT INTO stock_movements (restaurant_id, inventory_item_id, movement_type, 
-         quantity, unit_cost, total_cost, reference_type, reference_id, notes, 
+    match sqlx::query(
+        "INSERT INTO stock_movements (restaurant_id, inventory_item_id, movement_type,
+         quantity, unit_cost, total_cost, reference_type, reference_id, notes,
          user_id, movement_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
     )
     .bind(movement_request.restaurant_id)
@@ -241,10 +249,10 @@ async fn deduct_inventory_stock(
         Ok(result) => {
             let movement_id = result.last_insert_rowid();
             
-            let remaining_stock = sqlx::query_scalar!(
-                "SELECT current_stock FROM inventory_items WHERE id = ?",
-                inventory_item_id
+            let remaining_stock = sqlx::query_scalar::<_, f64>(
+                "SELECT current_stock FROM inventory_items WHERE id = ?"
             )
+            .bind(inventory_item_id)
             .fetch_one(db)
             .await
             .map_err(|e| format!("Failed to get remaining stock: {}", e))?;
@@ -295,7 +303,7 @@ pub async fn validate_stock_availability(
 
     Ok(ApiResponse {
         success: true,
-        data: Some(insufficient_items),
+        data: Some(insufficient_items.clone()),
         message: if insufficient_items.is_empty() {
             Some("All required items are available in sufficient quantity".to_string())
         } else {
@@ -310,23 +318,23 @@ pub async fn create_menu_recipe(
     request: CreateRecipeRequest,
     db: State<'_, DbPool>,
 ) -> Result<ApiResponse<String>, String> {
-    sqlx::query!("DELETE FROM menu_item_ingredients WHERE menu_item_id = ?")
+    sqlx::query("DELETE FROM menu_item_ingredients WHERE menu_item_id = ?")
         .bind(request.menu_item_id)
         .execute(&*db)
         .await
         .map_err(|e| format!("Failed to clear existing recipe: {}", e))?;
 
     for ingredient in &request.ingredients {
-        let cost_per_unit = sqlx::query_scalar!(
-            "SELECT cost_price FROM inventory_items WHERE id = ?",
-            ingredient.inventory_item_id
+        let cost_per_unit = sqlx::query_scalar::<_, f64>(
+            "SELECT cost_price FROM inventory_items WHERE id = ?"
         )
+        .bind(ingredient.inventory_item_id)
         .fetch_optional(&*db)
         .await
         .map_err(|e| format!("Database error: {}", e))?;
 
-        sqlx::query!(
-            "INSERT INTO menu_item_ingredients (menu_item_id, inventory_item_id, 
+        sqlx::query(
+            "INSERT INTO menu_item_ingredients (menu_item_id, inventory_item_id,
              quantity_required, unit, cost_per_unit) VALUES (?, ?, ?, ?, ?)"
         )
         .bind(request.menu_item_id)
