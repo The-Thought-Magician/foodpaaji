@@ -24,6 +24,7 @@ pub mod menu;
 pub mod menu_items;
 pub mod menu_images;
 pub mod pricing;
+pub mod pricing_bulk;
 pub mod billing;
 pub mod customers;
 pub mod reservations;
