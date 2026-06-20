@@ -38,11 +38,12 @@ export function Dashboard() {
   useEffect(() => {
     async function load() {
       try {
-        const [summary, bills, orders, customers] = await Promise.all([
+        const [summary, bills, orders, customers, alerts] = await Promise.all([
           invoke<{ success: boolean; data: { today_bills: number; today_revenue: number; today_collected: number } }>('get_billing_summary'),
           invoke<{ success: boolean; data: RecentBill[] }>('get_bills', { status: null, limit: 5 }),
           invoke<{ success: boolean; data: { id: number }[] }>('get_orders', { status: 'pending', limit: 50 }),
           invoke<{ success: boolean; data: { total_customers: number } }>('get_customer_stats'),
+          invoke<{ success: boolean; data: { total_alerts: number } }>('get_alert_summary', { restaurantId: 1 }).catch(() => ({ success: false, data: { total_alerts: 0 } })),
         ])
 
         setData({
@@ -51,7 +52,7 @@ export function Dashboard() {
           today_collected: summary.success ? summary.data.today_collected : 0,
           active_orders: orders.success ? orders.data.length : 0,
           total_customers: customers.success ? customers.data.total_customers : 0,
-          low_stock_count: 0,
+          low_stock_count: alerts.success ? alerts.data.total_alerts : 0,
         })
         setActiveOrders(orders.success ? orders.data.length : 0)
         if (bills.success) setRecentBills(bills.data)
