@@ -3,16 +3,14 @@
 import { useState, useEffect, useMemo, useCallback } from 'react'
 import { invoke } from '@tauri-apps/api/core'
 import { Button } from '@/components/ui/button'
-import { Dialog, DialogContent } from '@/components/ui/dialog'
 import { Package, Plus, Search, X, Trash2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import InventoryCard, { type InventoryItem } from '@/components/inventory/inventory-card'
-import InventoryItemForm, { type InventoryItemFormData } from '@/components/inventory/inventory-item-form'
 import WasteTracking from '@/components/inventory/waste-tracking'
+import { DeleteInventoryDialog, RestockDialog, EditInventoryDialog } from '@/components/inventory/inventory-dialogs'
 
 const RESTAURANT_ID = 1
 const ITEMS_PER_PAGE = 12
-
 type Tab = 'items' | 'waste'
 
 export function InventoryManagement() {
@@ -24,6 +22,9 @@ export function InventoryManagement() {
   const [tab, setTab] = useState<Tab>('items')
   const [showForm, setShowForm] = useState(false)
   const [editItem, setEditItem] = useState<InventoryItem | null>(null)
+  const [deleteItem, setDeleteItem] = useState<InventoryItem | null>(null)
+  const [restockItem, setRestockItem] = useState<InventoryItem | null>(null)
+  const [restockQty, setRestockQty] = useState('')
 
   const loadItems = useCallback(() => {
     invoke<{ success: boolean; data?: InventoryItem[] }>('get_inventory_items', { restaurantId: RESTAURANT_ID })
@@ -54,72 +55,6 @@ export function InventoryManagement() {
     return filtered.slice(start, start + ITEMS_PER_PAGE)
   }, [filtered, page])
 
-  const handleSubmit = async (data: InventoryItemFormData) => {
-    if (editItem) {
-      await invoke('update_inventory_item', {
-        request: {
-          id: editItem.id,
-          restaurant_id: RESTAURANT_ID,
-          category_id: data.category_id,
-          supplier_id: data.supplier_id,
-          name: data.name,
-          description: data.description || null,
-          sku: data.sku || null,
-          barcode: data.barcode || null,
-          unit_type: data.unit_type,
-          base_unit: data.base_unit,
-          conversion_factor: data.conversion_factor,
-          minimum_stock: data.minimum_stock,
-          maximum_stock: data.maximum_stock,
-          reorder_point: data.reorder_point,
-          cost_price: data.cost_price,
-          selling_price: data.selling_price,
-          tax_rate: data.tax_rate,
-          expiry_tracking: data.expiry_tracking,
-          batch_tracking: data.batch_tracking,
-          location: data.location || null,
-        }
-      })
-    } else {
-      await invoke('create_inventory_item', {
-        request: {
-          restaurant_id: RESTAURANT_ID,
-          category_id: data.category_id,
-          supplier_id: data.supplier_id,
-          name: data.name,
-          description: data.description || null,
-          sku: data.sku || null,
-          barcode: data.barcode || null,
-          unit_type: data.unit_type,
-          base_unit: data.base_unit,
-          conversion_factor: data.conversion_factor,
-          minimum_stock: data.minimum_stock,
-          maximum_stock: data.maximum_stock,
-          reorder_point: data.reorder_point,
-          cost_price: data.cost_price,
-          selling_price: data.selling_price,
-          tax_rate: data.tax_rate,
-          expiry_tracking: data.expiry_tracking,
-          batch_tracking: data.batch_tracking,
-          location: data.location || null,
-        }
-      })
-    }
-    setShowForm(false)
-    setEditItem(null)
-    loadItems()
-  }
-
-  const openEdit = (item: InventoryItem) => {
-    setEditItem(item)
-    setShowForm(true)
-  }
-
-  const openAdd = () => {
-    setEditItem(null)
-    setShowForm(true)
-  }
-
   if (loading) {
     return (
       <div className="flex items-center justify-center h-96">
@@ -140,7 +75,7 @@ export function InventoryManagement() {
           <h2 className="text-2xl font-bold" style={{ fontFamily: 'Outfit, sans-serif' }}>Inventory Management</h2>
           <p className="text-muted-foreground">Manage your restaurant inventory and stock levels</p>
         </div>
-        <Button className="gradient-spice text-white shadow-lg" onClick={openAdd}>
+        <Button className="gradient-spice text-white shadow-lg" onClick={() => { setEditItem(null); setShowForm(true) }}>
           <Plus className="w-4 h-4 mr-2" />Add Item
         </Button>
       </div>
@@ -196,10 +131,11 @@ export function InventoryManagement() {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {paginated.map(item => (
                   <InventoryCard key={item.id} item={item}
-                    onEdit={() => openEdit(item)} onDelete={() => {}} onRestock={() => {}} />
+                    onEdit={() => { setEditItem(item); setShowForm(true) }}
+                    onDelete={() => setDeleteItem(item)}
+                    onRestock={() => { setRestockItem(item); setRestockQty('') }} />
                 ))}
               </div>
-
               {totalPages > 1 && (
                 <div className="flex items-center justify-between">
                   <p className="text-sm text-muted-foreground">
@@ -225,26 +161,11 @@ export function InventoryManagement() {
         </>
       )}
 
-      <Dialog open={showForm} onOpenChange={open => { setShowForm(open); if (!open) setEditItem(null) }}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <InventoryItemForm
-            isEditing={!!editItem}
-            initialData={editItem ? {
-              name: editItem.name,
-              sku: editItem.sku ?? '',
-              category_id: editItem.category_id ?? null,
-              supplier_id: editItem.supplier_id ?? null,
-              minimum_stock: editItem.minimum_stock,
-              maximum_stock: editItem.maximum_stock,
-              cost_price: editItem.cost_price,
-              selling_price: editItem.selling_price,
-              base_unit: editItem.base_unit,
-            } : undefined}
-            onSubmit={handleSubmit}
-            onCancel={() => { setShowForm(false); setEditItem(null) }}
-          />
-        </DialogContent>
-      </Dialog>
+      <DeleteInventoryDialog item={deleteItem} onClose={() => setDeleteItem(null)} onDeleted={loadItems} />
+      <RestockDialog item={restockItem} qty={restockQty} onQtyChange={setRestockQty}
+        onClose={() => { setRestockItem(null); setRestockQty('') }} onRestocked={loadItems} />
+      <EditInventoryDialog open={showForm} item={editItem}
+        onClose={() => { setShowForm(false); setEditItem(null) }} onSaved={loadItems} />
     </div>
   )
 }

@@ -221,3 +221,22 @@ pub async fn update_inventory_item(
         Err(e) => Ok(ApiResponse { success: false, data: None, message: None, error: Some(e) }),
     }
 }
+
+#[tauri::command]
+pub async fn delete_inventory_item(
+    item_id: i64,
+    restaurant_id: i64,
+    db: State<'_, DbPool>,
+) -> Result<ApiResponse<String>, String> {
+    let result = sqlx::query(
+        "UPDATE inventory_items SET is_active = 0, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND restaurant_id = ?"
+    )
+    .bind(item_id).bind(restaurant_id)
+    .execute(&*db).await
+    .map_err(|e| format!("Database error: {}", e))?;
+
+    if result.rows_affected() == 0 {
+        return Ok(ApiResponse { success: false, data: None, message: None, error: Some("Item not found or access denied".to_string()) });
+    }
+    Ok(ApiResponse { success: true, data: Some("Item deleted successfully".to_string()), message: Some("Inventory item deactivated".to_string()), error: None })
+}
