@@ -4,6 +4,9 @@ import { useState, useEffect } from 'react'
 import { invoke } from '@tauri-apps/api/core'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Plus } from 'lucide-react'
 import InventorySearchFilters from './inventory-search-filters'
 import InventorySearchTable from './inventory-search-table'
@@ -50,11 +53,27 @@ export default function InventorySearch() {
 
   const clearFilters = () => { setFilters(DEFAULT_FILTERS); setSelectedCategory(null) }
 
+  const [showCatForm, setShowCatForm] = useState(false)
+  const [catName, setCatName] = useState('')
+  const [catDesc, setCatDesc] = useState('')
+
+  const createCategory = async () => {
+    if (!catName.trim()) return
+    try {
+      await invoke('create_inventory_category', {
+        request: { restaurant_id: RESTAURANT_ID, name: catName.trim(), description: catDesc.trim() || null, parent_id: null }
+      })
+      const r = await invoke<{ success: boolean; data?: SearchCategory[] }>('get_inventory_categories', { restaurantId: RESTAURANT_ID })
+      if (r.success && r.data) setCategories(r.data)
+      setShowCatForm(false); setCatName(''); setCatDesc('')
+    } catch (e) { console.error(e) }
+  }
+
   return (
     <div className="space-y-6 p-6">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold">Inventory Search & Browse</h1>
-        <Button size="sm"><Plus className="h-4 w-4 mr-2" />Add New Item</Button>
+        <Button size="sm" variant="outline" onClick={() => setShowCatForm(true)}><Plus className="h-4 w-4 mr-2" />New Category</Button>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
@@ -85,6 +104,16 @@ export default function InventorySearch() {
           </Card>
         </div>
       </div>
+      <Dialog open={showCatForm} onOpenChange={setShowCatForm}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader><DialogTitle>New Inventory Category</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <div><Label>Name *</Label><Input value={catName} onChange={e => setCatName(e.target.value)} placeholder="e.g. Dairy" autoFocus /></div>
+            <div><Label>Description</Label><Input value={catDesc} onChange={e => setCatDesc(e.target.value)} placeholder="Optional" /></div>
+            <Button className="w-full gradient-spice text-white" onClick={createCategory} disabled={!catName.trim()}>Create Category</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
