@@ -10,6 +10,7 @@ pub mod permissions;
 pub mod inventory;
 pub mod inventory_suppliers;
 pub mod stock_movements;
+pub mod stock_movement_queries;
 pub mod low_stock_alerts;
 pub mod low_stock_alert_actions;
 pub mod unit_conversions;
