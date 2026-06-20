@@ -12,6 +12,7 @@ import { EmployeeForm } from '@/components/employee/employee-form'
 import { EmployeeDashboard } from '@/components/employee/employee-dashboard'
 import { PasswordChange } from '@/components/employee/password-change'
 import { EmployeeLogin } from '@/components/employee/employee-login'
+import AttendanceReport from '@/components/employee/attendance-report'
 
 interface UserDto {
   id: number | null
@@ -42,6 +43,7 @@ export function EmployeeManagement() {
   const [dashboardEmployee, setDashboardEmployee] = useState<Employee | null>(null)
   const [changePwdEmployee, setChangePwdEmployee] = useState<Employee | null>(null)
   const [showLogin, setShowLogin] = useState(false)
+  const [activeTab, setActiveTab] = useState<'list' | 'attendance'>('list')
 
   const loadEmployees = useCallback(() => {
     invoke<ApiResponse<UserDto[]>>('get_employees', { restaurant_id: RESTAURANT_ID })
@@ -116,6 +118,14 @@ export function EmployeeManagement() {
         </div>
       </div>
 
+      <div className="flex gap-1 border-b border-border pb-0">
+        <button onClick={() => setActiveTab('list')} className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${activeTab === 'list' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'}`}>Staff</button>
+        <button onClick={() => setActiveTab('attendance')} className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${activeTab === 'attendance' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'}`}>Attendance Report</button>
+      </div>
+
+      {activeTab === 'attendance' && <AttendanceReport />}
+
+      {activeTab === 'list' && <div className="space-y-6">
       <div className="flex flex-col lg:flex-row gap-4">
         <div className="relative flex-1 max-w-md">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-4 h-4" />
@@ -170,6 +180,7 @@ export function EmployeeManagement() {
           )}
         </>
       )}
+      </div>}
 
       {deleteTarget && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
