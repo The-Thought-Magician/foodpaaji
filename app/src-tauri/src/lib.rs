@@ -16,7 +16,8 @@ use modules::inventory_suppliers::{get_inventory_categories, create_inventory_ca
 use modules::stock_movements::{create_stock_movement, get_stock_movements, adjust_stock_level};
 use modules::low_stock_alerts::{get_low_stock_alerts, get_alert_summary};
 use modules::low_stock_alert_actions::{acknowledge_alert, bulk_acknowledge_alerts, clear_acknowledged_alerts, check_and_create_alerts};
-use modules::unit_conversions::{get_unit_conversions, create_unit_conversion, convert_units, get_available_units, setup_default_conversions};
+use modules::unit_conversions::{get_unit_conversions, create_unit_conversion};
+use modules::unit_conversion_tools::{convert_units, get_available_units, setup_default_conversions};
 use modules::inventory_valuation::calculate_inventory_valuation;
 use modules::inventory_valuation_methods::compare_valuation_methods;
 use modules::inventory_reports::{get_stock_summary_report, get_movement_report, get_low_stock_report};

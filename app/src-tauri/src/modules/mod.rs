@@ -13,6 +13,7 @@ pub mod stock_movements;
 pub mod low_stock_alerts;
 pub mod low_stock_alert_actions;
 pub mod unit_conversions;
+pub mod unit_conversion_tools;
 pub mod inventory_valuation;
 pub mod inventory_valuation_methods;
 pub mod inventory_reports;
