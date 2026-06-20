@@ -14,6 +14,7 @@ pub mod inventory_valuation;
 pub mod inventory_reports;
 pub mod auto_stock_deduction;
 pub mod inventory_transfers;
+pub mod inventory_transfer_search;
 pub mod menu;
 pub mod menu_images;
 pub mod pricing;
