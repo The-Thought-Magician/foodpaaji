@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo, useCallback } from 'react'
 import { invoke } from '@tauri-apps/api/core'
 import { Button } from '@/components/ui/button'
-import { Package, Plus, Search, X, Trash2, BarChart3, ArrowLeftRight, FileText, DollarSign, Bell, Truck, Layers } from 'lucide-react'
+import { Package, Plus, Search, X, Trash2, BarChart3, ArrowLeftRight, FileText, DollarSign, Bell, Truck, Layers, History } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import InventoryCard, { type InventoryItem } from '@/components/inventory/inventory-card'
 import WasteTracking from '@/components/inventory/waste-tracking'
@@ -14,11 +14,12 @@ import InventoryValuation from '@/components/inventory/inventory-valuation'
 import LowStockAlerts from '@/components/inventory/low-stock-alerts'
 import SupplierManagement from '@/components/inventory/supplier-management'
 import BulkInventoryUpdate from '@/components/inventory/bulk-inventory-update'
+import StockMovementHistory from '@/components/inventory/stock-movement-history'
 import { DeleteInventoryDialog, RestockDialog, EditInventoryDialog, AdjustStockDialog } from '@/components/inventory/inventory-dialogs'
 
 const RESTAURANT_ID = 1
 const ITEMS_PER_PAGE = 12
-type Tab = 'items' | 'waste' | 'analytics' | 'transfers' | 'reports' | 'valuation' | 'alerts' | 'suppliers' | 'bulk'
+type Tab = 'items' | 'waste' | 'analytics' | 'transfers' | 'reports' | 'valuation' | 'alerts' | 'suppliers' | 'bulk' | 'movements'
 
 export function InventoryManagement() {
   const [items, setItems] = useState<InventoryItem[]>([])
@@ -134,6 +135,11 @@ export function InventoryManagement() {
             tab === 'bulk' ? 'bg-background shadow text-foreground' : 'text-muted-foreground hover:text-foreground')}>
           <Layers className="w-4 h-4" /> Bulk Update
         </button>
+        <button onClick={() => setTab('movements')}
+          className={cn('px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2',
+            tab === 'movements' ? 'bg-background shadow text-foreground' : 'text-muted-foreground hover:text-foreground')}>
+          <History className="w-4 h-4" /> Movements
+        </button>
       </div>
 
       {tab === 'waste' && <WasteTracking />}
@@ -144,6 +150,7 @@ export function InventoryManagement() {
       {tab === 'alerts' && <LowStockAlerts />}
       {tab === 'suppliers' && <SupplierManagement />}
       {tab === 'bulk' && <BulkInventoryUpdate />}
+      {tab === 'movements' && <StockMovementHistory />}
 
       {tab === 'items' && (
         <>

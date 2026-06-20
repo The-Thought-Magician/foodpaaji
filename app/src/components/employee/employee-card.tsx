@@ -16,9 +16,10 @@ interface Props {
   employee: Employee
   onEdit?: (employee: Employee) => void
   onDelete?: (employee: Employee) => void
+  onView?: (employee: Employee) => void
 }
 
-export default function EmployeeCard({ employee, onEdit, onDelete }: Props) {
+export default function EmployeeCard({ employee, onEdit, onDelete, onView }: Props) {
   const config = ROLE_CONFIG[employee.role as keyof typeof ROLE_CONFIG] ?? ROLE_CONFIG.waiter
   const RoleIcon = config.icon
   const initials = employee.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
@@ -67,6 +68,7 @@ export default function EmployeeCard({ employee, onEdit, onDelete }: Props) {
             : 'bg-rose-500/10 text-rose-600 border-rose-500/20'
         }`}>{employee.status}</span>
         <div className="flex gap-1">
+          {onView && <Button variant="ghost" size="sm" className="text-xs" onClick={() => onView(employee)}>View</Button>}
           <Button variant="ghost" size="sm" className="text-xs" onClick={() => onEdit?.(employee)}>Edit</Button>
           {onDelete && <Button variant="ghost" size="sm" className="text-xs text-red-500 hover:text-red-600" onClick={() => onDelete(employee)}><Trash2 className="w-3.5 h-3.5" /></Button>}
         </div>

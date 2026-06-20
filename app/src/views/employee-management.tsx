@@ -9,6 +9,7 @@ import type { ApiResponse } from '@/types/api'
 import { cn } from '@/lib/utils'
 import EmployeeCard from '@/components/employee/employee-card'
 import { EmployeeForm } from '@/components/employee/employee-form'
+import { EmployeeDashboard } from '@/components/employee/employee-dashboard'
 
 interface UserDto {
   id: number | null
@@ -36,6 +37,7 @@ export function EmployeeManagement() {
   const [showAddForm, setShowAddForm] = useState(false)
   const [editEmployee, setEditEmployee] = useState<Employee | undefined>()
   const [deleteTarget, setDeleteTarget] = useState<Employee | null>(null)
+  const [dashboardEmployee, setDashboardEmployee] = useState<Employee | null>(null)
 
   const loadEmployees = useCallback(() => {
     invoke<ApiResponse<UserDto[]>>('get_employees', { restaurant_id: RESTAURANT_ID })
@@ -144,7 +146,7 @@ export function EmployeeManagement() {
       ) : (
         <>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {paginated.map(emp => <EmployeeCard key={emp.id} employee={emp} onEdit={e => setEditEmployee(e)} onDelete={e => setDeleteTarget(e)} />)}
+            {paginated.map(emp => <EmployeeCard key={emp.id} employee={emp} onEdit={e => setEditEmployee(e)} onDelete={e => setDeleteTarget(e)} onView={e => setDashboardEmployee(e)} />)}
           </div>
           {totalPages > 1 && (
             <div className="flex items-center justify-between">
@@ -171,6 +173,14 @@ export function EmployeeManagement() {
               <button onClick={() => setDeleteTarget(null)} className="flex-1 px-4 py-2 border border-border rounded-xl text-sm hover:bg-muted transition-colors">Cancel</button>
               <button onClick={confirmDelete} className="flex-1 px-4 py-2 bg-red-500 text-white rounded-xl text-sm hover:bg-red-600 transition-colors">Delete</button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {dashboardEmployee && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-card rounded-2xl shadow-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto animate-scale-in">
+            <EmployeeDashboard employee={dashboardEmployee} onLogout={() => setDashboardEmployee(null)} onChangePassword={() => {}} onViewProfile={() => {}} />
           </div>
         </div>
       )}
