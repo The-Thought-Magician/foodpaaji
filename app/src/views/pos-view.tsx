@@ -102,17 +102,17 @@ export function PosView() {
   const placeOrder = async () => {
     if (cart.length === 0 || cart.some(i => !i.item_name)) return
     try {
-      if (coupon?.valid && coupon.coupon_id) {
-        await invoke('apply_coupon', { couponId: coupon.coupon_id })
+      const stockItems = cart.filter(i => i.menu_item_id).map(i => ({ menu_item_id: i.menu_item_id!, quantity: i.quantity, notes: null }))
+      if (stockItems.length > 0) {
+        const sv = await invoke<{ success: boolean; data?: { item_name: string; shortage: number }[] }>('validate_stock_availability', { request: { restaurant_id: 1, order_items: stockItems } }).catch(() => null)
+        if (sv?.success && sv.data && sv.data.length > 0) {
+          const msg = sv.data.map(s => `${s.item_name} (short ${s.shortage.toFixed(1)})`).join(', ')
+          if (!confirm(`Low stock warning: ${msg}. Place order anyway?`)) return
+        }
       }
-      await invoke('create_order', {
-        request: { customer_id: null, table_number: tableNumber || null, items: cart, notes: null }
-      })
-      setCart([])
-      setTableNumber('')
-      setCouponCode('')
-      setCoupon(null)
-      loadOrders()
+      if (coupon?.valid && coupon.coupon_id) await invoke('apply_coupon', { couponId: coupon.coupon_id })
+      await invoke('create_order', { request: { customer_id: null, table_number: tableNumber || null, items: cart, notes: null } })
+      setCart([]); setTableNumber(''); setCouponCode(''); setCoupon(null); loadOrders()
     } catch (e) { console.error(e) }
   }
 
