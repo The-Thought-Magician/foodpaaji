@@ -17,7 +17,8 @@ use modules::stock_movements::{create_stock_movement, get_stock_movements, adjus
 use modules::low_stock_alerts::{get_low_stock_alerts, get_alert_summary, acknowledge_alert, bulk_acknowledge_alerts, clear_acknowledged_alerts, check_and_create_alerts};
 use modules::unit_conversions::{get_unit_conversions, create_unit_conversion, convert_units, get_available_units, setup_default_conversions};
 use modules::inventory_valuation::{calculate_inventory_valuation, compare_valuation_methods};
-use modules::inventory_reports::{get_stock_summary_report, get_movement_report, get_low_stock_report, get_inventory_analytics, get_top_moving_items_report, get_slow_moving_items_report};
+use modules::inventory_reports::{get_stock_summary_report, get_movement_report, get_low_stock_report};
+use modules::inventory_analytics::{get_inventory_analytics, get_top_moving_items_report, get_slow_moving_items_report};
 use modules::auto_stock_deduction::{process_order_completion, validate_stock_availability, create_menu_recipe, get_menu_recipe};
 use modules::inventory_transfers::{create_inventory_transfer, approve_transfer, complete_transfer};
 use modules::inventory_transfer_search::get_inventory_transfers;

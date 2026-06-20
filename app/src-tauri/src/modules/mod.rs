@@ -14,6 +14,7 @@ pub mod low_stock_alerts;
 pub mod unit_conversions;
 pub mod inventory_valuation;
 pub mod inventory_reports;
+pub mod inventory_analytics;
 pub mod auto_stock_deduction;
 pub mod inventory_transfers;
 pub mod inventory_transfer_search;
