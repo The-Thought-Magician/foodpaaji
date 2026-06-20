@@ -14,9 +14,10 @@ const ROLE_CONFIG = {
 
 interface Props {
   employee: Employee
+  onEdit?: (employee: Employee) => void
 }
 
-export default function EmployeeCard({ employee }: Props) {
+export default function EmployeeCard({ employee, onEdit }: Props) {
   const config = ROLE_CONFIG[employee.role as keyof typeof ROLE_CONFIG] ?? ROLE_CONFIG.waiter
   const RoleIcon = config.icon
   const initials = employee.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
@@ -64,7 +65,7 @@ export default function EmployeeCard({ employee }: Props) {
             ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20'
             : 'bg-rose-500/10 text-rose-600 border-rose-500/20'
         }`}>{employee.status}</span>
-        <Button variant="ghost" size="sm" className="text-xs">View Details</Button>
+        <Button variant="ghost" size="sm" className="text-xs" onClick={() => onEdit?.(employee)}>Edit</Button>
       </div>
     </div>
   )

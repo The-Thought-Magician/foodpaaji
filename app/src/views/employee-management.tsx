@@ -34,6 +34,7 @@ export function EmployeeManagement() {
   const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'inactive'>('all')
   const [page, setPage] = useState(1)
   const [showAddForm, setShowAddForm] = useState(false)
+  const [editEmployee, setEditEmployee] = useState<Employee | undefined>()
 
   useEffect(() => {
     invoke<ApiResponse<UserDto[]>>('get_employees', { restaurant_id: RESTAURANT_ID })
@@ -131,7 +132,7 @@ export function EmployeeManagement() {
       ) : (
         <>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {paginated.map(emp => <EmployeeCard key={emp.id} employee={emp} />)}
+            {paginated.map(emp => <EmployeeCard key={emp.id} employee={emp} onEdit={e => setEditEmployee(e)} />)}
           </div>
           {totalPages > 1 && (
             <div className="flex items-center justify-between">
@@ -149,13 +150,22 @@ export function EmployeeManagement() {
         </>
       )}
 
-      {showAddForm && (
+      {(showAddForm || editEmployee) && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-card rounded-2xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto animate-scale-in">
             <EmployeeForm
+              employee={editEmployee}
               restaurantId={RESTAURANT_ID}
-              onSave={emp => { setEmployees(prev => [...prev, emp]); setShowAddForm(false) }}
-              onCancel={() => setShowAddForm(false)}
+              onSave={emp => {
+                if (editEmployee) {
+                  setEmployees(prev => prev.map(e => e.id === emp.id ? emp : e))
+                  setEditEmployee(undefined)
+                } else {
+                  setEmployees(prev => [...prev, emp])
+                  setShowAddForm(false)
+                }
+              }}
+              onCancel={() => { setShowAddForm(false); setEditEmployee(undefined) }}
             />
           </div>
         </div>

@@ -59,26 +59,45 @@ export function EmployeeForm({ employee, restaurantId, onSave, onCancel }: Props
   const handleSubmit = async (ev: React.FormEvent) => {
     ev.preventDefault()
     if (!validate()) return
-    if (employee) { console.warn('Update employee not yet implemented'); return }
-
     setLoading(true)
     try {
       const [first_name, ...rest] = formData.name.trim().split(' ')
-      const res = await invoke<ApiResponse<{ id: number; email: string; phone?: string; first_name: string; last_name: string }>>('create_employee', {
-        request: {
-          restaurant_id: restaurantId, email: formData.email, phone: formData.phone, password,
-          first_name: first_name || formData.name, last_name: rest.join(' ') || '',
-          role: formData.role.toUpperCase(), salary: formData.salary, hire_date: formData.joiningDate,
-        }
-      })
-      if (res.success && res.data) {
-        const u = res.data
-        onSave({
-          id: u.id, name: `${u.first_name} ${u.last_name}`.trim() || formData.name,
-          email: u.email, phone: u.phone ?? formData.phone, role: formData.role,
-          department: formData.department, salary: formData.salary, joiningDate: formData.joiningDate,
-          address: formData.address, emergencyContact: formData.emergencyContact, status: formData.status,
+      const lastName = rest.join(' ') || ''
+      if (employee?.id) {
+        const res = await invoke<ApiResponse<{ id: number; email: string; phone?: string; first_name: string; last_name: string; is_active: boolean }>>('update_employee', {
+          request: {
+            id: employee.id, restaurant_id: restaurantId, email: formData.email, phone: formData.phone || null,
+            first_name: first_name || formData.name, last_name: lastName,
+            role: formData.role.toUpperCase(), salary: formData.salary, hire_date: formData.joiningDate,
+            is_active: formData.status === 'active',
+          }
         })
+        if (res.success && res.data) {
+          const u = res.data
+          onSave({
+            id: u.id, name: `${u.first_name} ${u.last_name}`.trim() || formData.name,
+            email: u.email, phone: u.phone ?? formData.phone, role: formData.role,
+            department: formData.department, salary: formData.salary, joiningDate: formData.joiningDate,
+            address: formData.address, emergencyContact: formData.emergencyContact, status: u.is_active ? 'active' : 'inactive',
+          })
+        }
+      } else {
+        const res = await invoke<ApiResponse<{ id: number; email: string; phone?: string; first_name: string; last_name: string }>>('create_employee', {
+          request: {
+            restaurant_id: restaurantId, email: formData.email, phone: formData.phone, password,
+            first_name: first_name || formData.name, last_name: lastName,
+            role: formData.role.toUpperCase(), salary: formData.salary, hire_date: formData.joiningDate,
+          }
+        })
+        if (res.success && res.data) {
+          const u = res.data
+          onSave({
+            id: u.id, name: `${u.first_name} ${u.last_name}`.trim() || formData.name,
+            email: u.email, phone: u.phone ?? formData.phone, role: formData.role,
+            department: formData.department, salary: formData.salary, joiningDate: formData.joiningDate,
+            address: formData.address, emergencyContact: formData.emergencyContact, status: formData.status,
+          })
+        }
       }
     } catch (e) { console.error(e) }
     finally { setLoading(false) }

@@ -1,13 +1,8 @@
 use crate::database::DbPool;
-use crate::types::{User, UserWithHash, CreateUserRequest, ApiResponse};
+use crate::types::{User, CreateUserRequest, ApiResponse};
 use tauri::State;
-use bcrypt::{hash, verify, DEFAULT_COST};
+use bcrypt::{hash, DEFAULT_COST};
 use serde::{Deserialize, Serialize};
-use chrono::Utc;
-use std::path::PathBuf;
-use std::fs;
-use base64::{Engine as _, engine::general_purpose};
-use sqlx::Row;
 
 #[derive(Deserialize)]
 pub struct EmployeeSearchRequest {
@@ -33,27 +28,17 @@ pub async fn get_employees(
     db: State<'_, DbPool>,
 ) -> Result<ApiResponse<Vec<User>>, String> {
     match sqlx::query_as::<_, User>(
-        "SELECT id, restaurant_id, email, phone, first_name, last_name, 
-         role, permissions, salary, hire_date, is_active, 
-         last_login, created_at, updated_at 
+        "SELECT id, restaurant_id, email, phone, first_name, last_name,
+         role, permissions, salary, hire_date, is_active,
+         last_login, created_at, updated_at
          FROM users WHERE restaurant_id = ? ORDER BY created_at DESC"
     )
     .bind(restaurant_id)
     .fetch_all(&*db)
     .await
     {
-        Ok(employees) => Ok(ApiResponse {
-            success: true,
-            data: Some(employees),
-            message: None,
-            error: None,
-        }),
-        Err(e) => Ok(ApiResponse {
-            success: false,
-            data: None,
-            message: None,
-            error: Some(format!("Database error: {}", e)),
-        })
+        Ok(employees) => Ok(ApiResponse { success: true, data: Some(employees), message: None, error: None }),
+        Err(e) => Ok(ApiResponse { success: false, data: None, message: None, error: Some(format!("Database error: {}", e)) }),
     }
 }
 
@@ -66,11 +51,10 @@ pub async fn search_employees(
     let limit = request.limit.unwrap_or(10);
     let offset = (page - 1) * limit;
 
-    let mut query = "SELECT id, restaurant_id, email, phone, first_name, last_name, 
-                     role, permissions, salary, hire_date, is_active, 
-                     last_login, created_at, updated_at 
+    let mut query = "SELECT id, restaurant_id, email, phone, first_name, last_name, \
+                     role, permissions, salary, hire_date, is_active, \
+                     last_login, created_at, updated_at \
                      FROM users WHERE restaurant_id = ?".to_string();
-    
     let mut count_query = "SELECT COUNT(*) FROM users WHERE restaurant_id = ?".to_string();
     let mut params = vec![request.restaurant_id.to_string()];
 
@@ -78,16 +62,10 @@ pub async fn search_employees(
         if !search.trim().is_empty() {
             query.push_str(" AND (first_name LIKE ? OR last_name LIKE ? OR email LIKE ? OR phone LIKE ?)");
             count_query.push_str(" AND (first_name LIKE ? OR last_name LIKE ? OR email LIKE ? OR phone LIKE ?)");
-            let search_pattern = format!("%{}%", search.trim());
-            params.extend(vec![
-                search_pattern.clone(),
-                search_pattern.clone(),
-                search_pattern.clone(),
-                search_pattern
-            ]);
+            let p = format!("%{}%", search.trim());
+            params.extend(vec![p.clone(), p.clone(), p.clone(), p]);
         }
     }
-
     if let Some(role) = &request.role_filter {
         if !role.trim().is_empty() {
             query.push_str(" AND role = ?");
@@ -95,50 +73,27 @@ pub async fn search_employees(
             params.push(role.to_uppercase());
         }
     }
-
     if let Some(status) = request.status_filter {
         query.push_str(" AND is_active = ?");
         count_query.push_str(" AND is_active = ?");
         params.push((status as i64).to_string());
     }
-
     query.push_str(" ORDER BY created_at DESC LIMIT ? OFFSET ?");
     params.push(limit.to_string());
     params.push(offset.to_string());
 
-    let total_result = sqlx::query_scalar::<_, i64>(&count_query);
-    let mut total_query = total_result;
-    for (i, param) in params.iter().take(params.len() - 2).enumerate() {
-        total_query = total_query.bind(param);
-    }
+    let mut total_query = sqlx::query_scalar::<_, i64>(&count_query);
+    for param in params.iter().take(params.len() - 2) { total_query = total_query.bind(param); }
+    let mut emp_query = sqlx::query_as::<_, User>(&query);
+    for param in &params { emp_query = emp_query.bind(param); }
 
-    let employees_result = sqlx::query_as::<_, User>(&query);
-    let mut employees_query = employees_result;
-    for param in &params {
-        employees_query = employees_query.bind(param);
-    }
-
-    match tokio::try_join!(
-        total_query.fetch_one(&*db),
-        employees_query.fetch_all(&*db)
-    ) {
+    match tokio::try_join!(total_query.fetch_one(&*db), emp_query.fetch_all(&*db)) {
         Ok((total, employees)) => Ok(ApiResponse {
             success: true,
-            data: Some(EmployeeSearchResponse {
-                employees,
-                total,
-                page,
-                limit,
-            }),
-            message: None,
-            error: None,
+            data: Some(EmployeeSearchResponse { employees, total, page, limit }),
+            message: None, error: None,
         }),
-        Err(e) => Ok(ApiResponse {
-            success: false,
-            data: None,
-            message: None,
-            error: Some(format!("Database error: {}", e)),
-        })
+        Err(e) => Ok(ApiResponse { success: false, data: None, message: None, error: Some(format!("Database error: {}", e)) }),
     }
 }
 
@@ -147,241 +102,74 @@ pub async fn create_employee(
     request: CreateUserRequest,
     db: State<'_, DbPool>,
 ) -> Result<ApiResponse<User>, String> {
-    let password_hash = hash(&request.password, DEFAULT_COST)
-        .map_err(|e| format!("Hash error: {}", e))?;
+    let password_hash = hash(&request.password, DEFAULT_COST).map_err(|e| format!("Hash error: {}", e))?;
     let role = request.role.to_uppercase();
-    
     match sqlx::query(
-    "INSERT INTO users (restaurant_id, email, phone, password_hash,
-     first_name, last_name, role, salary, hire_date)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"
+        "INSERT INTO users (restaurant_id, email, phone, password_hash, first_name, last_name, role, salary, hire_date)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"
     )
-    .bind(request.restaurant_id)
-    .bind(&request.email)
-    .bind(&request.phone)
-    .bind(&password_hash)
-    .bind(&request.first_name)
-    .bind(&request.last_name)
-    .bind(&role)
-    .bind(request.salary)
-    .bind(&request.hire_date)
-    .execute(&*db)
-    .await
+    .bind(request.restaurant_id).bind(&request.email).bind(&request.phone)
+    .bind(&password_hash).bind(&request.first_name).bind(&request.last_name)
+    .bind(&role).bind(request.salary).bind(&request.hire_date)
+    .execute(&*db).await
     {
         Ok(result) => {
             let user_id = result.last_insert_rowid();
             match get_employee_by_id(user_id, &db).await {
-                Ok(user) => Ok(ApiResponse {
-                    success: true,
-                    data: Some(user),
-                    message: Some("Employee created successfully".to_string()),
-                    error: None,
-                }),
-                Err(e) => Ok(ApiResponse {
-                    success: false,
-                    data: None,
-                    message: None,
-                    error: Some(e),
-                })
+                Ok(user) => Ok(ApiResponse { success: true, data: Some(user), message: Some("Employee created successfully".to_string()), error: None }),
+                Err(e) => Ok(ApiResponse { success: false, data: None, message: None, error: Some(e) }),
             }
         },
-        Err(e) => Ok(ApiResponse {
-            success: false,
-            data: None,
-            message: None,
-            error: Some(format!("Database error: {}", e)),
-        })
+        Err(e) => Ok(ApiResponse { success: false, data: None, message: None, error: Some(format!("Database error: {}", e)) }),
     }
 }
 
-async fn get_employee_by_id(id: i64, db: &DbPool) -> Result<User, String> {
+#[derive(Deserialize)]
+pub struct UpdateEmployeeRequest {
+    pub id: i64,
+    pub restaurant_id: i64,
+    pub email: String,
+    pub phone: Option<String>,
+    pub first_name: String,
+    pub last_name: String,
+    pub role: String,
+    pub salary: Option<f64>,
+    pub hire_date: Option<String>,
+    pub is_active: bool,
+}
+
+#[tauri::command]
+pub async fn update_employee(
+    request: UpdateEmployeeRequest,
+    db: State<'_, DbPool>,
+) -> Result<ApiResponse<User>, String> {
+    let role = request.role.to_uppercase();
+    match sqlx::query(
+        "UPDATE users SET email=?, phone=?, first_name=?, last_name=?, role=?, salary=?, hire_date=?, is_active=?
+         WHERE id=? AND restaurant_id=?"
+    )
+    .bind(&request.email).bind(&request.phone).bind(&request.first_name).bind(&request.last_name)
+    .bind(&role).bind(request.salary).bind(&request.hire_date).bind(request.is_active)
+    .bind(request.id).bind(request.restaurant_id)
+    .execute(&*db).await
+    {
+        Ok(_) => match get_employee_by_id(request.id, &db).await {
+            Ok(user) => Ok(ApiResponse { success: true, data: Some(user), message: Some("Employee updated".to_string()), error: None }),
+            Err(e) => Ok(ApiResponse { success: false, data: None, message: None, error: Some(e) }),
+        },
+        Err(e) => Ok(ApiResponse { success: false, data: None, message: None, error: Some(format!("Database error: {}", e)) }),
+    }
+}
+
+pub async fn get_employee_by_id(id: i64, db: &DbPool) -> Result<User, String> {
     sqlx::query_as::<_, User>(
-        "SELECT id, restaurant_id, email, phone, first_name, last_name, 
-         role, permissions, salary, hire_date, is_active, 
-         last_login, created_at, updated_at 
+        "SELECT id, restaurant_id, email, phone, first_name, last_name,
+         role, permissions, salary, hire_date, is_active,
+         last_login, created_at, updated_at
          FROM users WHERE id = ?"
     )
     .bind(id)
     .fetch_one(db)
     .await
     .map_err(|e| format!("Database error: {}", e))
-}
-
-#[derive(Deserialize)]
-pub struct EmployeeLoginRequest {
-    pub email: String,
-    pub password: String,
-    pub restaurant_id: i64,
-}
-
-#[derive(Serialize)]
-pub struct EmployeeLoginResponse {
-    pub user: User,
-    pub token: String,
-}
-
-#[tauri::command]
-pub async fn authenticate_employee(
-    request: EmployeeLoginRequest,
-    db: State<'_, DbPool>,
-) -> Result<ApiResponse<EmployeeLoginResponse>, String> {
-    match sqlx::query_as::<_, UserWithHash>(
-        "SELECT id, restaurant_id, email, phone, first_name, last_name,
-         role, permissions, salary, hire_date, is_active,
-         last_login, created_at, updated_at, password_hash
-         FROM users WHERE email = ? AND restaurant_id = ? AND is_active = 1"
-    )
-    .bind(&request.email)
-    .bind(request.restaurant_id)
-    .fetch_optional(&*db)
-    .await
-    {
-        Ok(Some(user_with_hash)) => {
-            if let Some(stored_hash) = &user_with_hash.password_hash {
-                match verify(&request.password, stored_hash) {
-                    Ok(true) => {
-                        sqlx::query("UPDATE users SET last_login = ? WHERE id = ?")
-                            .bind(Utc::now().naive_utc())
-                            .bind(user_with_hash.id)
-                            .execute(&*db)
-                            .await
-                            .ok();
-
-                        let user = User {
-                            id: user_with_hash.id,
-                            restaurant_id: user_with_hash.restaurant_id,
-                            email: user_with_hash.email,
-                            phone: user_with_hash.phone,
-                            first_name: user_with_hash.first_name,
-                            last_name: user_with_hash.last_name,
-                            role: user_with_hash.role,
-                            permissions: user_with_hash.permissions,
-                            salary: user_with_hash.salary,
-                            hire_date: user_with_hash.hire_date,
-                            is_active: user_with_hash.is_active,
-                            last_login: Some(Utc::now()),
-                            created_at: user_with_hash.created_at,
-                            updated_at: user_with_hash.updated_at,
-                        };
-
-                        let user_id = user.id.ok_or("User ID is missing")?;
-                        let token = crate::modules::auth::generate_jwt(user_id.to_string(), 86400)
-                            .map_err(|e| format!("Token generation error: {}", e))?;
-
-                        Ok(ApiResponse {
-                            success: true,
-                            data: Some(EmployeeLoginResponse { user, token }),
-                            message: Some("Authentication successful".to_string()),
-                            error: None,
-                        })
-                    },
-                    Ok(false) => Ok(ApiResponse {
-                        success: false,
-                        data: None,
-                        message: None,
-                        error: Some("Invalid password".to_string()),
-                    }),
-                    Err(e) => Ok(ApiResponse {
-                        success: false,
-                        data: None,
-                        message: None,
-                        error: Some(format!("Password verification error: {}", e)),
-                    })
-                }
-            } else {
-                Ok(ApiResponse {
-                    success: false,
-                    data: None,
-                    message: None,
-                    error: Some("Employee account not properly configured".to_string()),
-                })
-            }
-        },
-        Ok(None) => Ok(ApiResponse {
-            success: false,
-            data: None,
-            message: None,
-            error: Some("Invalid email or employee not active".to_string()),
-        }),
-        Err(e) => Ok(ApiResponse {
-            success: false,
-            data: None,
-            message: None,
-            error: Some(format!("Database error: {}", e)),
-        })
-    }
-}
-
-#[derive(Deserialize)]
-pub struct UpdatePasswordRequest {
-    pub employee_id: i64,
-    pub current_password: String,
-    pub new_password: String,
-}
-
-#[tauri::command]
-pub async fn update_employee_password(
-    request: UpdatePasswordRequest,
-    db: State<'_, DbPool>,
-) -> Result<ApiResponse<String>, String> {
-    match sqlx::query_scalar::<_, String>(
-        "SELECT password_hash FROM users WHERE id = ? AND is_active = 1"
-    )
-    .bind(request.employee_id)
-    .fetch_optional(&*db)
-    .await
-    {
-        Ok(Some(stored_hash)) => {
-            match verify(&request.current_password, &stored_hash) {
-                Ok(true) => {
-                    let new_hash = hash(&request.new_password, DEFAULT_COST)
-                        .map_err(|e| format!("Hash error: {}", e))?;
-
-                    match sqlx::query("UPDATE users SET password_hash = ? WHERE id = ?")
-                        .bind(&new_hash)
-                        .bind(request.employee_id)
-                        .execute(&*db)
-                        .await
-                    {
-                        Ok(_) => Ok(ApiResponse {
-                            success: true,
-                            data: Some("Password updated successfully".to_string()),
-                            message: Some("Password updated successfully".to_string()),
-                            error: None,
-                        }),
-                        Err(e) => Ok(ApiResponse {
-                            success: false,
-                            data: None,
-                            message: None,
-                            error: Some(format!("Database error: {}", e)),
-                        })
-                    }
-                },
-                Ok(false) => Ok(ApiResponse {
-                    success: false,
-                    data: None,
-                    message: None,
-                    error: Some("Current password is incorrect".to_string()),
-                }),
-                Err(e) => Ok(ApiResponse {
-                    success: false,
-                    data: None,
-                    message: None,
-                    error: Some(format!("Password verification error: {}", e)),
-                })
-            }
-        },
-        Ok(None) => Ok(ApiResponse {
-            success: false,
-            data: None,
-            message: None,
-            error: Some("Employee not found or inactive".to_string()),
-        }),
-        Err(e) => Ok(ApiResponse {
-            success: false,
-            data: None,
-            message: None,
-            error: Some(format!("Database error: {}", e)),
-        })
-    }
 }

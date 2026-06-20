@@ -1,4 +1,5 @@
 pub mod employee;
+pub mod employee_auth;
 pub mod employee_images;
 pub mod attendance;
 pub mod util;
