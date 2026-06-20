@@ -126,12 +126,15 @@ export function PosView() {
   const convertToBill = async () => {
     if (!showConvert) return
     try {
+      const details = await invoke<{ success: boolean; data: { items: { item_name: string; quantity: number; unit_price: number; menu_item_id?: number }[] } | null }>('get_order_details', { orderId: showConvert.id })
       const res = await invoke<{ success: boolean; bill_id: number }>('convert_order_to_bill', {
         orderId: showConvert.id, discountPercent, taxPercent
       })
       if (res.success) {
         const receipt = await invoke<{ success: boolean; data: { receipt_id: number; content: string; receipt_number: string } }>('generate_receipt', { billId: res.bill_id })
         if (receipt.success) setShowReceipt({ id: receipt.data.receipt_id, content: receipt.data.content, number: receipt.data.receipt_number })
+        const orderItems = (details.success && details.data?.items || []).filter(i => i.menu_item_id).map(i => ({ menu_item_id: i.menu_item_id!, quantity: i.quantity, notes: null }))
+        if (orderItems.length > 0) await invoke('process_order_completion', { request: { restaurant_id: 1, order_id: showConvert.id, order_items: orderItems, user_id: 1 } }).catch(console.error)
         setShowConvert(null)
         loadOrders()
       }
