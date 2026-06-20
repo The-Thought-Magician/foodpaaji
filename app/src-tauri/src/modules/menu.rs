@@ -382,15 +382,25 @@ pub async fn create_menu_item(
 
 #[tauri::command]
 pub async fn get_menu_items_by_category(
-    category_id: i64,
+    restaurant_id: i64,
+    category_id: Option<i64>,
     db: State<'_, DbPool>,
 ) -> Result<ApiResponse<Vec<MenuItem>>, String> {
-    let items = sqlx::query_as::<_, MenuItem>(
-        "SELECT * FROM menu_items WHERE category_id = ? ORDER BY sort_order, name"
-    )
-    .bind(category_id)
-    .fetch_all(&*db)
-    .await
+    let items = match category_id {
+        Some(cat_id) => sqlx::query_as::<_, MenuItem>(
+            "SELECT * FROM menu_items WHERE restaurant_id = ? AND category_id = ? ORDER BY sort_order, name"
+        )
+        .bind(restaurant_id)
+        .bind(cat_id)
+        .fetch_all(&*db)
+        .await,
+        None => sqlx::query_as::<_, MenuItem>(
+            "SELECT * FROM menu_items WHERE restaurant_id = ? ORDER BY sort_order, name"
+        )
+        .bind(restaurant_id)
+        .fetch_all(&*db)
+        .await,
+    }
     .map_err(|e| format!("Failed to fetch menu items: {}", e))?;
 
     Ok(ApiResponse {
@@ -399,6 +409,55 @@ pub async fn get_menu_items_by_category(
         message: None,
         error: None,
     })
+}
+
+#[tauri::command]
+pub async fn update_menu_item(
+    id: i64,
+    request: UpdateMenuItemRequest,
+    db: State<'_, DbPool>,
+) -> Result<ApiResponse<MenuItem>, String> {
+    if let Some(ref name) = request.name {
+        sqlx::query("UPDATE menu_items SET name = ? WHERE id = ?")
+            .bind(name).bind(id).execute(&*db).await
+            .map_err(|e| format!("Failed to update: {}", e))?;
+    }
+    if let Some(v) = request.category_id {
+        sqlx::query("UPDATE menu_items SET category_id = ? WHERE id = ?")
+            .bind(v).bind(id).execute(&*db).await
+            .map_err(|e| format!("Failed to update: {}", e))?;
+    }
+    if let Some(ref v) = request.description {
+        sqlx::query("UPDATE menu_items SET description = ? WHERE id = ?")
+            .bind(v).bind(id).execute(&*db).await
+            .map_err(|e| format!("Failed to update: {}", e))?;
+    }
+    if let Some(v) = request.price {
+        sqlx::query("UPDATE menu_items SET price = ? WHERE id = ?")
+            .bind(v).bind(id).execute(&*db).await
+            .map_err(|e| format!("Failed to update: {}", e))?;
+    }
+    if let Some(v) = request.is_available {
+        sqlx::query("UPDATE menu_items SET is_available = ? WHERE id = ?")
+            .bind(v).bind(id).execute(&*db).await
+            .map_err(|e| format!("Failed to update: {}", e))?;
+    }
+    if let Some(v) = request.is_vegetarian {
+        sqlx::query("UPDATE menu_items SET is_vegetarian = ? WHERE id = ?")
+            .bind(v).bind(id).execute(&*db).await
+            .map_err(|e| format!("Failed to update: {}", e))?;
+    }
+    if let Some(v) = request.is_spicy {
+        sqlx::query("UPDATE menu_items SET is_spicy = ? WHERE id = ?")
+            .bind(v).bind(id).execute(&*db).await
+            .map_err(|e| format!("Failed to update: {}", e))?;
+    }
+    if let Some(v) = request.preparation_time {
+        sqlx::query("UPDATE menu_items SET preparation_time = ? WHERE id = ?")
+            .bind(v).bind(id).execute(&*db).await
+            .map_err(|e| format!("Failed to update: {}", e))?;
+    }
+    get_menu_item_by_id(id, db).await
 }
 
 #[tauri::command]

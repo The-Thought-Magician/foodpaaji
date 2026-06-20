@@ -17,7 +17,7 @@ use modules::inventory_valuation::{calculate_inventory_valuation, compare_valuat
 use modules::inventory_reports::{get_stock_summary_report, get_movement_report, get_low_stock_report, get_inventory_analytics, get_top_moving_items_report, get_slow_moving_items_report};
 use modules::auto_stock_deduction::{process_order_completion, validate_stock_availability, create_menu_recipe, get_menu_recipe};
 use modules::inventory_transfers::{create_inventory_transfer, approve_transfer, complete_transfer, get_inventory_transfers};
-use modules::menu::{create_menu_category, get_menu_categories, get_menu_category_by_id, update_menu_category, delete_menu_category, create_menu_item, get_menu_items_by_category, get_menu_item_by_id, delete_menu_item};
+use modules::menu::{create_menu_category, get_menu_categories, get_menu_category_by_id, update_menu_category, delete_menu_category, create_menu_item, get_menu_items_by_category, get_menu_item_by_id, delete_menu_item, update_menu_item};
 use modules::menu_images::{upload_menu_item_image, upload_menu_category_image, get_menu_image, delete_menu_item_image, delete_menu_category_image};
 use modules::pricing::{calculate_menu_item_price, bulk_calculate_prices, update_menu_item_price, get_pricing_analytics, sync_cost_prices_from_recipes};
 use modules::billing::{create_bill, get_bills, get_bill_details, update_bill_status, record_payment, get_billing_summary};
@@ -98,6 +98,7 @@ pub fn run() {
       get_menu_items_by_category,
       get_menu_item_by_id,
       delete_menu_item,
+      update_menu_item,
       upload_menu_item_image,
       upload_menu_category_image,
       get_menu_image,

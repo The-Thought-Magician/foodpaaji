@@ -45,7 +45,7 @@ export function MenuPicker({ onAdd }: MenuPickerProps) {
 
   useEffect(() => {
     if (!activeCat) return
-    invoke<{ success: boolean; data: MenuItem[] }>('get_menu_items_by_category', { categoryId: activeCat })
+    invoke<{ success: boolean; data: MenuItem[] }>('get_menu_items_by_category', { restaurantId: 1, categoryId: activeCat })
       .then(r => { if (r.success) setItems(r.data.filter(i => i.is_available)) })
       .catch(console.error)
   }, [activeCat])
