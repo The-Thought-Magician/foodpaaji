@@ -108,6 +108,18 @@ export function EmployeeForm({ employee, restaurantId, onSave, onCancel }: Props
     if (errors[field as keyof FormErrors]) setErrors(prev => ({ ...prev, [field]: undefined }))
   }
 
+  const handlePhotoChange = async (file: File) => {
+    if (!employee?.id) return
+    const reader = new FileReader()
+    reader.onload = async (e) => {
+      const base64 = e.target?.result as string
+      await invoke('upload_employee_image', {
+        request: { employee_id: employee.id, image_data: base64, file_name: file.name }
+      }).catch(console.error)
+    }
+    reader.readAsDataURL(file)
+  }
+
   return (
     <div className="max-w-2xl mx-auto p-6">
       <div className="mb-6">
@@ -119,7 +131,7 @@ export function EmployeeForm({ employee, restaurantId, onSave, onCancel }: Props
         <EmployeeFormFields
           formData={formData} errors={errors} isEditing={!!employee}
           password={password} onFieldChange={handleFieldChange}
-          onPasswordChange={setPassword} onPhotoChange={() => {}}
+          onPasswordChange={setPassword} onPhotoChange={handlePhotoChange}
         />
         <div className="flex justify-end gap-4">
           <Button type="button" variant="outline" onClick={onCancel}><X className="h-4 w-4 mr-2" />Cancel</Button>
