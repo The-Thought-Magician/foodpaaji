@@ -9,6 +9,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
 import { Plus, Minus, Trash2, ShoppingCart, Receipt, Tag } from 'lucide-react'
+import { MenuPicker } from '@/components/pos/menu-picker'
 
 interface CartItem {
   item_name: string
@@ -128,12 +129,26 @@ export function PosView() {
     } catch (e) { console.error(e) }
   }
 
+  const addFromMenu = (item: { menu_item_id: number; item_name: string; unit_price: number }) => {
+    const existing = cart.findIndex(c => c.menu_item_id === item.menu_item_id)
+    if (existing >= 0) {
+      changeQty(existing, 1)
+    } else {
+      setCart(prev => [...prev, { ...item, quantity: 1 }])
+    }
+  }
+
   return (
-    <div className="grid grid-cols-2 gap-6 h-[calc(100vh-120px)]">
+    <div className="grid grid-cols-3 gap-4 h-[calc(100vh-120px)]">
+      <div className="flex flex-col overflow-hidden border border-border rounded-xl p-3">
+        <h3 className="font-semibold text-sm mb-2">Menu</h3>
+        <MenuPicker onAdd={addFromMenu} />
+      </div>
+
       <div className="flex flex-col space-y-4 overflow-hidden">
         <div className="flex items-center justify-between">
           <h3 className="font-semibold flex items-center gap-2"><ShoppingCart className="w-4 h-4" />Cart</h3>
-          <Button size="sm" variant="outline" onClick={addItem}><Plus className="w-4 h-4 mr-1" />Item</Button>
+          <Button size="sm" variant="outline" onClick={addItem}><Plus className="w-4 h-4 mr-1" />Custom</Button>
         </div>
 
         <Input placeholder="Table number (e.g. T1)" value={tableNumber} onChange={e => setTableNumber(e.target.value)} />
