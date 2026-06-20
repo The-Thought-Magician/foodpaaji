@@ -50,6 +50,14 @@ export function PosView() {
   const [coupon, setCoupon] = useState<CouponResult | null>(null)
   const [orders, setOrders] = useState<Order[]>([])
   const [showReceipt, setShowReceipt] = useState<{ id: number; content: string; number: string } | null>(null)
+  const [orderDetail, setOrderDetail] = useState<{ order_number: string; table_number?: string; status: string; notes?: string; items: { item_name: string; quantity: number; unit_price: number }[] } | null>(null)
+
+  const viewOrderDetails = async (orderId: number) => {
+    try {
+      const res = await invoke<{ success: boolean; data: typeof orderDetail }>('get_order_details', { orderId })
+      if (res.success && res.data) setOrderDetail(res.data)
+    } catch (e) { console.error(e) }
+  }
   const [showConvert, setShowConvert] = useState<Order | null>(null)
   const [taxPercent, setTaxPercent] = useState(() => getSettings().default_tax_percent)
   const [discountPercent, setDiscountPercent] = useState(0)
@@ -222,6 +230,7 @@ export function PosView() {
                       <Receipt className="w-4 h-4 mr-1" />Bill
                     </Button>
                   )}
+                  <Button size="sm" variant="ghost" onClick={() => viewOrderDetails(order.id)}>Details</Button>
                   <Button size="sm" variant="ghost" className="text-red-500" onClick={() => updateStatus(order.id, 'cancelled')}>Cancel</Button>
                 </div>
               </CardContent>
@@ -232,6 +241,28 @@ export function PosView() {
           )}
         </div>
       </div>
+
+      <Dialog open={!!orderDetail} onOpenChange={() => setOrderDetail(null)}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Order — {orderDetail?.order_number}</DialogTitle></DialogHeader>
+          <p className="text-sm text-muted-foreground">{orderDetail?.table_number ? `Table ${orderDetail.table_number}` : 'Takeaway'} · {orderDetail?.status}</p>
+          <div className="space-y-1 max-h-64 overflow-y-auto">
+            {orderDetail?.items.map((item, i) => (
+              <div key={i} className="flex justify-between text-sm py-1 border-b last:border-0">
+                <span>{item.item_name} × {item.quantity}</span>
+                <span>₹{(item.unit_price * item.quantity).toFixed(0)}</span>
+              </div>
+            ))}
+          </div>
+          {orderDetail?.items && (
+            <div className="flex justify-between font-semibold text-sm border-t pt-2">
+              <span>Total</span>
+              <span>₹{orderDetail.items.reduce((s, i) => s + i.unit_price * i.quantity, 0).toFixed(0)}</span>
+            </div>
+          )}
+          {orderDetail?.notes && <p className="text-xs text-muted-foreground">{orderDetail.notes}</p>}
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={!!showConvert} onOpenChange={() => setShowConvert(null)}>
         <DialogContent>
