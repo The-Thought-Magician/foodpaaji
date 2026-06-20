@@ -9,7 +9,8 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Calendar, Plus, Clock, Users } from 'lucide-react'
+import { Calendar, Plus, Clock, Users, QrCode } from 'lucide-react'
+import { TableQrManager } from '@/components/reservations/table-qr'
 
 interface Reservation {
   id: number
@@ -47,6 +48,7 @@ export function ReservationManagement() {
   const [reservations, setReservations] = useState<Reservation[]>([])
   const [tables, setTables] = useState<Table[]>([])
   const [date, setDate] = useState(new Date().toISOString().split('T')[0])
+  const [activeTab, setActiveTab] = useState<'reservations' | 'qr'>('reservations')
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState({ customer_name: '', customer_phone: '', table_id: '', party_size: '2', reservation_date: '', reservation_time: '19:00', duration_minutes: '90', special_requests: '' })
 
@@ -100,6 +102,18 @@ export function ReservationManagement() {
 
   return (
     <div className="space-y-6">
+      <div className="flex gap-1 border-b border-border pb-0">
+        <button onClick={() => setActiveTab('reservations')} className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors ${activeTab === 'reservations' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'}`}>
+          <Calendar className="w-4 h-4" />Reservations
+        </button>
+        <button onClick={() => setActiveTab('qr')} className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors ${activeTab === 'qr' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'}`}>
+          <QrCode className="w-4 h-4" />Table QR Codes
+        </button>
+      </div>
+
+      {activeTab === 'qr' && <TableQrManager />}
+
+      {activeTab === 'reservations' && <>
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2">
@@ -186,6 +200,7 @@ export function ReservationManagement() {
           </div>
         </DialogContent>
       </Dialog>
+      </>}
     </div>
   )
 }
