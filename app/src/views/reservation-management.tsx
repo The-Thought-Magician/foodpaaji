@@ -50,6 +50,7 @@ export function ReservationManagement() {
   const [date, setDate] = useState(new Date().toISOString().split('T')[0])
   const [activeTab, setActiveTab] = useState<'reservations' | 'qr'>('reservations')
   const [showForm, setShowForm] = useState(false)
+  const [editingId, setEditingId] = useState<number | null>(null)
   const [form, setForm] = useState({ customer_name: '', customer_phone: '', table_id: '', party_size: '2', reservation_date: '', reservation_time: '19:00', duration_minutes: '90', special_requests: '' })
 
   const loadReservations = useCallback(async () => {
@@ -68,22 +69,31 @@ export function ReservationManagement() {
 
   useEffect(() => { loadReservations(); loadTables() }, [loadReservations])
 
-  const openCreate = () => { setForm({ ...form, reservation_date: date }); setShowForm(true) }
+  const openCreate = () => { setEditingId(null); setForm({ customer_name: '', customer_phone: '', table_id: '', party_size: '2', reservation_date: date, reservation_time: '19:00', duration_minutes: '90', special_requests: '' }); setShowForm(true) }
+
+  const openEdit = (r: Reservation) => {
+    setEditingId(r.id)
+    setForm({ customer_name: r.customer_name, customer_phone: r.customer_phone, table_id: r.table_id?.toString() ?? '', party_size: r.party_size.toString(), reservation_date: r.date, reservation_time: r.time, duration_minutes: r.duration.toString(), special_requests: r.special_requests ?? '' })
+    setShowForm(true)
+  }
 
   const save = async () => {
+    const request = {
+      customer_name: form.customer_name,
+      customer_phone: form.customer_phone,
+      table_id: form.table_id ? parseInt(form.table_id) : null,
+      party_size: parseInt(form.party_size),
+      reservation_date: form.reservation_date,
+      reservation_time: form.reservation_time,
+      duration_minutes: parseInt(form.duration_minutes),
+      special_requests: form.special_requests || null,
+    }
     try {
-      await invoke('create_reservation', {
-        request: {
-          customer_name: form.customer_name,
-          customer_phone: form.customer_phone,
-          table_id: form.table_id ? parseInt(form.table_id) : null,
-          party_size: parseInt(form.party_size),
-          reservation_date: form.reservation_date,
-          reservation_time: form.reservation_time,
-          duration_minutes: parseInt(form.duration_minutes),
-          special_requests: form.special_requests || null,
-        }
-      })
+      if (editingId) {
+        await invoke('update_reservation', { reservationId: editingId, request })
+      } else {
+        await invoke('create_reservation', { request })
+      }
       setShowForm(false)
       loadReservations()
     } catch (e) { console.error(e) }
@@ -154,6 +164,7 @@ export function ReservationManagement() {
                   </div>
                 )}
                 <Badge className={STATUS_COLOR[r.status] || ''}>{r.status}</Badge>
+                <Button size="sm" variant="outline" onClick={() => openEdit(r)}>Edit</Button>
                 <Select value={r.status} onValueChange={(v: string | null) => updateStatus(r.id, v ?? r.status)}>
                   <SelectTrigger className="w-32 h-8 text-xs"><SelectValue /></SelectTrigger>
                   <SelectContent>
@@ -174,7 +185,7 @@ export function ReservationManagement() {
 
       <Dialog open={showForm} onOpenChange={setShowForm}>
         <DialogContent>
-          <DialogHeader><DialogTitle>New Reservation</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{editingId ? 'Edit Reservation' : 'New Reservation'}</DialogTitle></DialogHeader>
           <div className="space-y-3">
             <div><Label>Guest Name *</Label><Input value={form.customer_name} onChange={e => setForm({ ...form, customer_name: e.target.value })} /></div>
             <div><Label>Phone *</Label><Input value={form.customer_phone} onChange={e => setForm({ ...form, customer_phone: e.target.value })} /></div>
@@ -196,7 +207,7 @@ export function ReservationManagement() {
               </Select>
             </div>
             <div><Label>Special Requests</Label><Input value={form.special_requests} onChange={e => setForm({ ...form, special_requests: e.target.value })} /></div>
-            <Button className="w-full gradient-spice text-white" onClick={save}>Create Reservation</Button>
+            <Button className="w-full gradient-spice text-white" onClick={save}>{editingId ? 'Update Reservation' : 'Create Reservation'}</Button>
           </div>
         </DialogContent>
       </Dialog>
