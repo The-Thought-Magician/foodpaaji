@@ -2,6 +2,7 @@ pub mod employee;
 pub mod employee_auth;
 pub mod employee_images;
 pub mod attendance;
+pub mod attendance_breaks;
 pub mod util;
 pub mod auth;
 pub mod fs_check;
