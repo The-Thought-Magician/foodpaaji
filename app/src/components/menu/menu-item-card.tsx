@@ -1,7 +1,8 @@
 'use client'
 
 import { Button } from '@/components/ui/button'
-import { Edit, Trash2, Image as ImageIcon, Clock } from 'lucide-react'
+import { MenuImage } from '@/components/ui/menu-image'
+import { Edit, Trash2, Clock } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 export interface MenuItemData {
@@ -30,13 +31,7 @@ export function MenuItemCard({ item, onEdit, onDelete, onToggle, onQuickPrice }:
   return (
     <div className="card-hover bg-card rounded-2xl overflow-hidden border border-border">
       <div className="relative h-36 bg-muted">
-        {item.image_path ? (
-          <img src={item.image_path} alt={item.name} className="w-full h-full object-cover" />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center">
-            <ImageIcon className="w-12 h-12 text-muted-foreground/30" />
-          </div>
-        )}
+        <MenuImage imagePath={item.image_path} alt={item.name} className="w-full h-36 object-cover" />
         <div className="absolute top-3 left-3 flex gap-2">
           {item.is_vegetarian && (
             <span className="w-5 h-5 rounded-full bg-emerald-500 border-2 border-white shadow-sm" />

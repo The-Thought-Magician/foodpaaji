@@ -5,7 +5,8 @@ import { invoke } from '@tauri-apps/api/core'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Plus, Edit, Trash2, Eye, EyeOff, Image as ImageIcon } from 'lucide-react'
+import { Plus, Edit, Trash2, Eye, EyeOff } from 'lucide-react'
+import { MenuImage } from '@/components/ui/menu-image'
 import CategoryFormDialog, { type MenuCategory, type CategoryFormData } from './category-form-dialog'
 
 interface Props {
@@ -96,8 +97,8 @@ export default function MenuCategories({ restaurantId, onCategoriesChange }: Pro
             </CardHeader>
             <CardContent>
               {cat.image_path && (
-                <div className="mb-3 w-full h-32 bg-muted rounded-lg flex items-center justify-center">
-                  <ImageIcon className="h-8 w-8 text-muted-foreground" />
+                <div className="mb-3">
+                  <MenuImage imagePath={cat.image_path} alt={cat.name} />
                 </div>
               )}
               {cat.description && <p className="text-sm text-muted-foreground mb-3">{cat.description}</p>}
