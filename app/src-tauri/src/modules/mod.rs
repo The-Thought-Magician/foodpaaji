@@ -18,6 +18,7 @@ pub mod inventory_valuation_methods;
 pub mod inventory_reports;
 pub mod inventory_analytics;
 pub mod auto_stock_deduction;
+pub mod menu_recipes;
 pub mod inventory_transfers;
 pub mod inventory_transfer_search;
 pub mod menu_types;
