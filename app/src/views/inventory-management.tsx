@@ -42,6 +42,7 @@ export function InventoryManagement() {
       .then(res => { if (res.success && res.data) setItems(res.data) })
       .catch(e => console.error('Failed to load inventory:', e))
       .finally(() => setLoading(false))
+    invoke('check_and_create_alerts', { restaurantId: RESTAURANT_ID }).catch(() => {})
   }, [])
 
   useEffect(() => { loadItems() }, [loadItems])
