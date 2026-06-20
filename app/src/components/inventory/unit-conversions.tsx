@@ -29,6 +29,20 @@ export default function UnitConversions() {
   const [msg, setMsg] = useState('')
   const [saving, setSaving] = useState(false)
   const [setupDone, setSetupDone] = useState(false)
+  const [cvtQty, setCvtQty] = useState('')
+  const [cvtFrom, setCvtFrom] = useState('')
+  const [cvtTo, setCvtTo] = useState('')
+  const [cvtResult, setCvtResult] = useState<{ converted_quantity: number; converted_unit: string } | null>(null)
+
+  const runConvert = async () => {
+    const qty = parseFloat(cvtQty)
+    if (isNaN(qty) || !cvtFrom || !cvtTo) return
+    try {
+      const res = await invoke<{ success: boolean; data?: { converted_quantity: number; converted_unit: string }; error?: string }>('convert_units', { request: { restaurant_id: RESTAURANT_ID, quantity: qty, from_unit: cvtFrom, to_unit: cvtTo } })
+      if (res.success && res.data) setCvtResult(res.data)
+      else setCvtResult(null)
+    } catch { setCvtResult(null) }
+  }
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -105,6 +119,20 @@ export default function UnitConversions() {
             </Button>
           </div>
           {msg && <p className={`text-sm font-medium ${msg.startsWith('Error') || msg === 'Failed' ? 'text-red-500' : 'text-green-600'}`}>{msg}</p>}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader className="pb-3"><CardTitle className="text-base">Quick Converter</CardTitle></CardHeader>
+        <CardContent>
+          <div className="flex items-end gap-2 flex-wrap">
+            <div className="w-28"><Label>Quantity</Label><Input type="number" value={cvtQty} onChange={e => setCvtQty(e.target.value)} placeholder="e.g. 5" /></div>
+            <div className="w-24"><Label>From</Label><Input value={cvtFrom} onChange={e => setCvtFrom(e.target.value)} placeholder="kg" /></div>
+            <ArrowRight className="w-4 h-4 text-muted-foreground mb-2" />
+            <div className="w-24"><Label>To</Label><Input value={cvtTo} onChange={e => setCvtTo(e.target.value)} placeholder="g" /></div>
+            <Button variant="outline" size="sm" onClick={runConvert} className="mb-0.5">Convert</Button>
+            {cvtResult && <span className="text-sm font-medium text-green-600 mb-0.5">= {cvtResult.converted_quantity.toFixed(4)} {cvtResult.converted_unit}</span>}
+          </div>
         </CardContent>
       </Card>
 
