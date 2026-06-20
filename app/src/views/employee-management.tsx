@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { invoke } from '@tauri-apps/api/core'
 import { Button } from '@/components/ui/button'
 import { Users, Plus, Search, X } from 'lucide-react'
@@ -35,8 +35,9 @@ export function EmployeeManagement() {
   const [page, setPage] = useState(1)
   const [showAddForm, setShowAddForm] = useState(false)
   const [editEmployee, setEditEmployee] = useState<Employee | undefined>()
+  const [deleteTarget, setDeleteTarget] = useState<Employee | null>(null)
 
-  useEffect(() => {
+  const loadEmployees = useCallback(() => {
     invoke<ApiResponse<UserDto[]>>('get_employees', { restaurant_id: RESTAURANT_ID })
       .then(res => {
         if (res.success && Array.isArray(res.data)) {
@@ -54,6 +55,17 @@ export function EmployeeManagement() {
       .catch(e => console.error('Failed to load employees:', e))
       .finally(() => setLoading(false))
   }, [])
+
+  const confirmDelete = async () => {
+    if (!deleteTarget) return
+    try {
+      await invoke('delete_employee', { request: { employee_id: deleteTarget.id, requesting_user_role: 'MANAGER' } })
+      setDeleteTarget(null)
+      loadEmployees()
+    } catch (e) { console.error(e) }
+  }
+
+  useEffect(() => { loadEmployees() }, [loadEmployees])
 
   const filtered = useMemo(() => {
     return employees.filter(e => {
@@ -132,7 +144,7 @@ export function EmployeeManagement() {
       ) : (
         <>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {paginated.map(emp => <EmployeeCard key={emp.id} employee={emp} onEdit={e => setEditEmployee(e)} />)}
+            {paginated.map(emp => <EmployeeCard key={emp.id} employee={emp} onEdit={e => setEditEmployee(e)} onDelete={e => setDeleteTarget(e)} />)}
           </div>
           {totalPages > 1 && (
             <div className="flex items-center justify-between">
@@ -148,6 +160,19 @@ export function EmployeeManagement() {
             </div>
           )}
         </>
+      )}
+
+      {deleteTarget && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-card rounded-2xl shadow-xl max-w-sm w-full p-6 space-y-4 animate-scale-in">
+            <h3 className="text-lg font-semibold">Delete Employee</h3>
+            <p className="text-muted-foreground text-sm">Remove <strong>{deleteTarget.name}</strong>? This cannot be undone.</p>
+            <div className="flex gap-3">
+              <button onClick={() => setDeleteTarget(null)} className="flex-1 px-4 py-2 border border-border rounded-xl text-sm hover:bg-muted transition-colors">Cancel</button>
+              <button onClick={confirmDelete} className="flex-1 px-4 py-2 bg-red-500 text-white rounded-xl text-sm hover:bg-red-600 transition-colors">Delete</button>
+            </div>
+          </div>
+        </div>
       )}
 
       {(showAddForm || editEmployee) && (

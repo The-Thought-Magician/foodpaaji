@@ -1,7 +1,7 @@
 'use client'
 
 import { Button } from '@/components/ui/button'
-import { MoreVertical, Phone, Calendar, Crown, Shield, Utensils, Coffee } from 'lucide-react'
+import { MoreVertical, Phone, Calendar, Crown, Shield, Utensils, Coffee, Trash2 } from 'lucide-react'
 import type { Employee } from '@/types/employee'
 
 const ROLE_CONFIG = {
@@ -15,9 +15,10 @@ const ROLE_CONFIG = {
 interface Props {
   employee: Employee
   onEdit?: (employee: Employee) => void
+  onDelete?: (employee: Employee) => void
 }
 
-export default function EmployeeCard({ employee, onEdit }: Props) {
+export default function EmployeeCard({ employee, onEdit, onDelete }: Props) {
   const config = ROLE_CONFIG[employee.role as keyof typeof ROLE_CONFIG] ?? ROLE_CONFIG.waiter
   const RoleIcon = config.icon
   const initials = employee.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
@@ -65,7 +66,10 @@ export default function EmployeeCard({ employee, onEdit }: Props) {
             ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20'
             : 'bg-rose-500/10 text-rose-600 border-rose-500/20'
         }`}>{employee.status}</span>
-        <Button variant="ghost" size="sm" className="text-xs" onClick={() => onEdit?.(employee)}>Edit</Button>
+        <div className="flex gap-1">
+          <Button variant="ghost" size="sm" className="text-xs" onClick={() => onEdit?.(employee)}>Edit</Button>
+          {onDelete && <Button variant="ghost" size="sm" className="text-xs text-red-500 hover:text-red-600" onClick={() => onDelete(employee)}><Trash2 className="w-3.5 h-3.5" /></Button>}
+        </div>
       </div>
     </div>
   )
