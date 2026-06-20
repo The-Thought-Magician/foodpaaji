@@ -98,18 +98,24 @@ export function ItemModal({ item, categories, onClose, onSave }: ItemModalProps)
 }
 
 interface CategoryModalProps {
+  initial?: CategoryData | null
   onClose: () => void
   onSave: (data: { name: string; description: string; sort_order: number; is_active: boolean }) => void
 }
 
-export function CategoryModal({ onClose, onSave }: CategoryModalProps) {
-  const [form, setForm] = useState({ name: '', description: '', sort_order: 0, is_active: true })
+export function CategoryModal({ initial, onClose, onSave }: CategoryModalProps) {
+  const [form, setForm] = useState({
+    name: initial?.name ?? '',
+    description: initial?.description ?? '',
+    sort_order: initial?.sort_order ?? 0,
+    is_active: initial?.is_active ?? true,
+  })
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
       <div className="bg-card rounded-2xl shadow-xl max-w-md w-full">
         <div className="p-6 border-b border-border flex items-center justify-between">
-          <h3 className="text-lg font-semibold">Add New Category</h3>
+          <h3 className="text-lg font-semibold">{initial ? 'Edit Category' : 'Add New Category'}</h3>
           <button onClick={onClose} className="p-2 hover:bg-muted rounded-lg"><X className="w-4 h-4" /></button>
         </div>
         <form onSubmit={e => { e.preventDefault(); onSave(form) }} className="p-6 space-y-4">
@@ -140,7 +146,7 @@ export function CategoryModal({ onClose, onSave }: CategoryModalProps) {
               onChange={e => setForm(f => ({ ...f, is_active: e.target.checked }))} />
           </label>
           <div className="flex gap-3 pt-4">
-            <Button type="submit" className="flex-1 gradient-spice text-white">Create Category</Button>
+            <Button type="submit" className="flex-1 gradient-spice text-white">{initial ? 'Update' : 'Create'} Category</Button>
             <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
           </div>
         </form>

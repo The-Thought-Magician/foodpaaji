@@ -23,6 +23,7 @@ export function MenuManagement() {
   const [editingItem, setEditingItem] = useState<MenuItemData | null>(null)
   const [showItemModal, setShowItemModal] = useState(false)
   const [showCategoryModal, setShowCategoryModal] = useState(false)
+  const [editingCategory, setEditingCategory] = useState<CategoryData | null>(null)
 
   const loadCategories = useCallback(async () => {
     try {
@@ -85,10 +86,13 @@ export function MenuManagement() {
 
   const handleSaveCategory = async (data: { name: string; description: string; sort_order: number; is_active: boolean }) => {
     try {
-      await invoke('create_menu_category', {
-        request: { ...data, restaurant_id: RESTAURANT_ID },
-      })
+      if (editingCategory) {
+        await invoke('update_menu_category', { id: editingCategory.id, request: { ...data, restaurant_id: RESTAURANT_ID } })
+      } else {
+        await invoke('create_menu_category', { request: { ...data, restaurant_id: RESTAURANT_ID } })
+      }
       setShowCategoryModal(false)
+      setEditingCategory(null)
       loadCategories()
     } catch (e) {
       console.error(e)
@@ -216,7 +220,7 @@ export function MenuManagement() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {categories.map(cat => (
               <CategoryCard key={cat.id} category={cat}
-                onEdit={() => {}}
+                onEdit={() => { setEditingCategory(cat); setShowCategoryModal(true) }}
                 onDelete={() => handleDeleteCategory(cat.id)} />
             ))}
           </div>
@@ -230,7 +234,7 @@ export function MenuManagement() {
       )}
 
       {showCategoryModal && (
-        <CategoryModal onClose={() => setShowCategoryModal(false)} onSave={handleSaveCategory} />
+        <CategoryModal initial={editingCategory} onClose={() => { setShowCategoryModal(false); setEditingCategory(null) }} onSave={handleSaveCategory} />
       )}
     </div>
   )
