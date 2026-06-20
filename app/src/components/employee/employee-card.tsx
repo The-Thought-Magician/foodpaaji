@@ -1,5 +1,7 @@
 'use client'
 
+import { useState, useEffect } from 'react'
+import { invoke } from '@tauri-apps/api/core'
 import { Button } from '@/components/ui/button'
 import { MoreVertical, Phone, Calendar, Crown, Shield, Utensils, Coffee, Trash2 } from 'lucide-react'
 import type { Employee } from '@/types/employee'
@@ -23,13 +25,22 @@ export default function EmployeeCard({ employee, onEdit, onDelete, onView }: Pro
   const config = ROLE_CONFIG[employee.role as keyof typeof ROLE_CONFIG] ?? ROLE_CONFIG.waiter
   const RoleIcon = config.icon
   const initials = employee.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
+  const [avatarSrc, setAvatarSrc] = useState<string | null>(null)
+
+  useEffect(() => {
+    invoke<{ success: boolean; data?: string }>('get_employee_image', { employeeId: employee.id })
+      .then(res => setAvatarSrc(res.success && res.data ? res.data : null))
+      .catch(() => setAvatarSrc(null))
+  }, [employee.id])
 
   return (
     <div className="card-hover bg-card rounded-2xl p-5 border border-border animate-fade-in">
       <div className="flex items-start justify-between mb-4">
         <div className="flex items-center gap-3">
-          <div className={`w-12 h-12 ${config.color} rounded-xl flex items-center justify-center text-white font-bold shadow-md`}>
-            {initials}
+          <div className={`w-12 h-12 ${config.color} rounded-xl overflow-hidden flex items-center justify-center text-white font-bold shadow-md`}>
+            {avatarSrc
+              ? <img src={avatarSrc} alt={employee.name} className="w-full h-full object-cover" />
+              : initials}
           </div>
           <div>
             <h4 className="font-semibold text-foreground">{employee.name}</h4>
