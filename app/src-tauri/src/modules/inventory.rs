@@ -163,3 +163,61 @@ pub async fn bulk_update_inventory_items(
     }
     Ok(ApiResponse { success: true, data: Some(updated), message: Some(format!("{} items updated", updated)), error: None })
 }
+
+#[derive(Deserialize)]
+pub struct UpdateInventoryItemRequest {
+    pub id: i64,
+    pub restaurant_id: i64,
+    pub category_id: Option<i64>,
+    pub supplier_id: Option<i64>,
+    pub name: String,
+    pub description: Option<String>,
+    pub sku: Option<String>,
+    pub barcode: Option<String>,
+    pub unit_type: String,
+    pub base_unit: String,
+    pub conversion_factor: Option<f64>,
+    pub minimum_stock: Option<f64>,
+    pub maximum_stock: Option<f64>,
+    pub reorder_point: Option<f64>,
+    pub cost_price: Option<f64>,
+    pub selling_price: Option<f64>,
+    pub tax_rate: Option<f64>,
+    pub expiry_tracking: Option<bool>,
+    pub batch_tracking: Option<bool>,
+    pub location: Option<String>,
+}
+
+#[tauri::command]
+pub async fn update_inventory_item(
+    request: UpdateInventoryItemRequest,
+    db: State<'_, DbPool>,
+) -> Result<ApiResponse<InventoryItem>, String> {
+    let result = sqlx::query(
+        "UPDATE inventory_items SET category_id=?, supplier_id=?, name=?, description=?,
+         sku=?, barcode=?, unit_type=?, base_unit=?, conversion_factor=?,
+         minimum_stock=?, maximum_stock=?, reorder_point=?, cost_price=?,
+         selling_price=?, tax_rate=?, expiry_tracking=?, batch_tracking=?,
+         location=?, updated_at=CURRENT_TIMESTAMP
+         WHERE id=? AND restaurant_id=?"
+    )
+    .bind(request.category_id).bind(request.supplier_id).bind(&request.name)
+    .bind(&request.description).bind(&request.sku).bind(&request.barcode)
+    .bind(&request.unit_type).bind(&request.base_unit)
+    .bind(request.conversion_factor.unwrap_or(1.0))
+    .bind(request.minimum_stock.unwrap_or(0.0)).bind(request.maximum_stock.unwrap_or(0.0))
+    .bind(request.reorder_point.unwrap_or(0.0)).bind(request.cost_price.unwrap_or(0.0))
+    .bind(request.selling_price.unwrap_or(0.0)).bind(request.tax_rate.unwrap_or(0.0))
+    .bind(request.expiry_tracking.unwrap_or(false)).bind(request.batch_tracking.unwrap_or(false))
+    .bind(&request.location).bind(request.id).bind(request.restaurant_id)
+    .execute(&*db).await
+    .map_err(|e| format!("Database error: {}", e))?;
+
+    if result.rows_affected() == 0 {
+        return Ok(ApiResponse { success: false, data: None, message: None, error: Some("Item not found or access denied".to_string()) });
+    }
+    match get_inventory_item_by_id(request.id, &db).await {
+        Ok(item) => Ok(ApiResponse { success: true, data: Some(item), message: Some("Inventory item updated successfully".to_string()), error: None }),
+        Err(e) => Ok(ApiResponse { success: false, data: None, message: None, error: Some(e) }),
+    }
+}
