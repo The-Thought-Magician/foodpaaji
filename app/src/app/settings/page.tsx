@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent } from '@/components/ui/card'
-import { Settings, Store, CreditCard, Percent, Download, Upload } from 'lucide-react'
+import { Settings, Store, CreditCard, Percent, Download, Upload, FlaskConical } from 'lucide-react'
 import { getSettings } from '@/lib/settings'
 
 const SETTINGS_KEY = 'foodpaaji_settings'
@@ -19,6 +19,8 @@ export default function SettingsPage() {
   const [backupPath, setBackupPath] = useState('')
   const [restorePath, setRestorePath] = useState('')
   const [backupMsg, setBackupMsg] = useState('')
+  const [seedMsg, setSeedMsg] = useState('')
+  const [seeding, setSeeding] = useState(false)
 
   const runBackup = async () => {
     if (!backupPath.trim()) return
@@ -27,6 +29,17 @@ export default function SettingsPage() {
       setBackupMsg(ok ? 'Backup created successfully' : 'Backup failed')
     } catch (e) { setBackupMsg(`Error: ${e}`) }
     setTimeout(() => setBackupMsg(''), 3000)
+  }
+
+  const seedData = async () => {
+    if (!confirm('This will insert demo menu items, inventory, and customers. Continue?')) return
+    setSeeding(true)
+    try {
+      const res = await invoke<{ success: boolean; message?: string }>('seed_sample_data', { restaurantId: 1 })
+      setSeedMsg(res.success ? (res.message ?? 'Demo data seeded successfully') : 'Seed failed')
+    } catch (e) { setSeedMsg(`Error: ${e}`) }
+    setSeeding(false)
+    setTimeout(() => setSeedMsg(''), 4000)
   }
 
   const runRestore = async () => {
@@ -135,6 +148,19 @@ export default function SettingsPage() {
             </div>
           </div>
           {backupMsg && <p className={`text-sm font-medium ${backupMsg.startsWith('Error') ? 'text-red-500' : 'text-green-600'}`}>{backupMsg}</p>}
+        </CardContent>
+      </Card>
+      <Card>
+        <CardContent className="p-6 space-y-4">
+          <div className="flex items-center gap-2 mb-2">
+            <FlaskConical className="w-4 h-4 text-muted-foreground" />
+            <h3 className="font-semibold">Demo Data</h3>
+          </div>
+          <p className="text-sm text-muted-foreground">Populate the app with sample menu items, inventory, customers, and tables to explore features.</p>
+          <Button variant="outline" onClick={seedData} disabled={seeding}>
+            <FlaskConical className="w-4 h-4 mr-1" />{seeding ? 'Seeding...' : 'Seed Demo Data'}
+          </Button>
+          {seedMsg && <p className={`text-sm font-medium ${seedMsg.startsWith('Error') ? 'text-red-500' : 'text-green-600'}`}>{seedMsg}</p>}
         </CardContent>
       </Card>
     </div>
