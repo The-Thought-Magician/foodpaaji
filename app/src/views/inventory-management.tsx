@@ -3,17 +3,18 @@
 import { useState, useEffect, useMemo, useCallback } from 'react'
 import { invoke } from '@tauri-apps/api/core'
 import { Button } from '@/components/ui/button'
-import { Package, Plus, Search, X, Trash2, BarChart3, ArrowLeftRight } from 'lucide-react'
+import { Package, Plus, Search, X, Trash2, BarChart3, ArrowLeftRight, FileText } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import InventoryCard, { type InventoryItem } from '@/components/inventory/inventory-card'
 import WasteTracking from '@/components/inventory/waste-tracking'
 import InventoryAnalytics from '@/components/inventory/inventory-analytics'
 import InventoryTransfers from '@/components/inventory/inventory-transfers'
+import InventoryReports from '@/components/inventory/inventory-reports'
 import { DeleteInventoryDialog, RestockDialog, EditInventoryDialog } from '@/components/inventory/inventory-dialogs'
 
 const RESTAURANT_ID = 1
 const ITEMS_PER_PAGE = 12
-type Tab = 'items' | 'waste' | 'analytics' | 'transfers'
+type Tab = 'items' | 'waste' | 'analytics' | 'transfers' | 'reports'
 
 export function InventoryManagement() {
   const [items, setItems] = useState<InventoryItem[]>([])
@@ -103,11 +104,17 @@ export function InventoryManagement() {
             tab === 'transfers' ? 'bg-background shadow text-foreground' : 'text-muted-foreground hover:text-foreground')}>
           <ArrowLeftRight className="w-4 h-4" /> Transfers
         </button>
+        <button onClick={() => setTab('reports')}
+          className={cn('px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2',
+            tab === 'reports' ? 'bg-background shadow text-foreground' : 'text-muted-foreground hover:text-foreground')}>
+          <FileText className="w-4 h-4" /> Reports
+        </button>
       </div>
 
       {tab === 'waste' && <WasteTracking />}
       {tab === 'analytics' && <InventoryAnalytics />}
       {tab === 'transfers' && <InventoryTransfers />}
+      {tab === 'reports' && <InventoryReports />}
 
       {tab === 'items' && (
         <>
