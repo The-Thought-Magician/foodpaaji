@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { invoke } from '@tauri-apps/api/core'
 import { Button } from '@/components/ui/button'
 import { 
   User, 
@@ -55,14 +56,33 @@ export function EmployeeDashboard({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [employee.id])
 
+  const [clockedIn, setClockedIn] = useState(false)
+
   const loadEmployeeStats = async () => {
-    // This would normally fetch real stats from the backend
-    setStats({
-      totalShifts: 42,
-      hoursWorked: 168,
-      lastLogin: employee.last_login || new Date().toISOString(),
-      profileCompletion: calculateProfileCompletion()
-    })
+    try {
+      const today = new Date()
+      const monthStart = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().split('T')[0]
+      const todayStr = today.toISOString().split('T')[0]
+      const res = await invoke<{ success: boolean; data: { total_hours: number; total_days: number } }>(
+        'get_attendance_report',
+        { request: { employee_id: employee.id, start_date: monthStart, end_date: todayStr, restaurant_id: 1 } }
+      )
+      if (res.success && res.data) {
+        setStats({ totalShifts: res.data.total_days, hoursWorked: Math.round(res.data.total_hours * 10) / 10, lastLogin: employee.last_login || '', profileCompletion: calculateProfileCompletion() })
+      }
+    } catch (e) { console.error(e) }
+  }
+
+  const handleClockToggle = async () => {
+    try {
+      if (clockedIn) {
+        await invoke('clock_out', { request: { employee_id: employee.id, notes: null } })
+      } else {
+        await invoke('clock_in', { request: { employee_id: employee.id, notes: null } })
+      }
+      setClockedIn(v => !v)
+      loadEmployeeStats()
+    } catch (e) { console.error(e) }
   }
 
   const calculateProfileCompletion = (): number => {
@@ -212,9 +232,9 @@ export function EmployeeDashboard({
                 <Shield className="h-6 w-6" />
                 <span className="text-sm">Change Password</span>
               </Button>
-              <Button variant="outline" className="h-auto p-4 flex flex-col items-center space-y-2">
+              <Button variant="outline" onClick={handleClockToggle} className={`h-auto p-4 flex flex-col items-center space-y-2 ${clockedIn ? 'border-green-500 text-green-600' : ''}`}>
                 <Clock className="h-6 w-6" />
-                <span className="text-sm">Time Tracking</span>
+                <span className="text-sm">{clockedIn ? 'Clock Out' : 'Clock In'}</span>
               </Button>
               <Button variant="outline" className="h-auto p-4 flex flex-col items-center space-y-2">
                 <Calendar className="h-6 w-6" />
