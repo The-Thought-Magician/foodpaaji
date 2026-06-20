@@ -20,3 +20,6 @@ pub mod billing;
 pub mod customers;
 pub mod reservations;
 pub mod promotions;
+pub mod orders;
+pub mod receipts;
+pub mod coupons;

@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE coupons SET used_count = used_count + 1 WHERE id = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": []
+  },
+  "hash": "6380df7e578a3fe1b4af005db0df5838dad86ecfd3813d6cd021d28190ed8091"
+}

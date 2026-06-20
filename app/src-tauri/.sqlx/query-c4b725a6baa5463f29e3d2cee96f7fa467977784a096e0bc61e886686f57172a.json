@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO coupons (code, description, discount_type, discount_value, min_order_amount, max_uses, valid_until) VALUES (?, ?, ?, ?, ?, ?, ?)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 7
+    },
+    "nullable": []
+  },
+  "hash": "c4b725a6baa5463f29e3d2cee96f7fa467977784a096e0bc61e886686f57172a"
+}

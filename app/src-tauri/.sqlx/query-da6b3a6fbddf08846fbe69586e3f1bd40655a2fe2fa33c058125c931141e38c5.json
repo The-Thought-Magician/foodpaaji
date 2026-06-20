@@ -1,0 +1,50 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT bill_number, table_number, subtotal, discount_amount, tax_amount, total_amount FROM bills WHERE id = ?",
+  "describe": {
+    "columns": [
+      {
+        "name": "bill_number",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "table_number",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "subtotal",
+        "ordinal": 2,
+        "type_info": "Float"
+      },
+      {
+        "name": "discount_amount",
+        "ordinal": 3,
+        "type_info": "Float"
+      },
+      {
+        "name": "tax_amount",
+        "ordinal": 4,
+        "type_info": "Float"
+      },
+      {
+        "name": "total_amount",
+        "ordinal": 5,
+        "type_info": "Float"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false,
+      true,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "da6b3a6fbddf08846fbe69586e3f1bd40655a2fe2fa33c058125c931141e38c5"
+}

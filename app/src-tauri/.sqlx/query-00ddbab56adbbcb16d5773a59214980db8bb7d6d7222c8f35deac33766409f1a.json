@@ -1,0 +1,56 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT id, order_number, customer_id, table_number, status, notes, created_at FROM orders WHERE id = ?",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Integer"
+      },
+      {
+        "name": "order_number",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "customer_id",
+        "ordinal": 2,
+        "type_info": "Integer"
+      },
+      {
+        "name": "table_number",
+        "ordinal": 3,
+        "type_info": "Text"
+      },
+      {
+        "name": "status",
+        "ordinal": 4,
+        "type_info": "Text"
+      },
+      {
+        "name": "notes",
+        "ordinal": 5,
+        "type_info": "Text"
+      },
+      {
+        "name": "created_at",
+        "ordinal": 6,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false,
+      false,
+      true,
+      true,
+      false,
+      true,
+      false
+    ]
+  },
+  "hash": "00ddbab56adbbcb16d5773a59214980db8bb7d6d7222c8f35deac33766409f1a"
+}

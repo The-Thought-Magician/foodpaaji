@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO bill_items (bill_id, menu_item_id, item_name, quantity, unit_price, discount_amount, total_price) VALUES (?, ?, ?, ?, ?, 0, ?)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 6
+    },
+    "nullable": []
+  },
+  "hash": "ebe650218ba27e8ac6297f6af873a0a6aa335ba1f99ea44453d4d05ac8ad5bad"
+}

@@ -1,0 +1,44 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT id, receipt_number, content, printed_at, created_at FROM receipts WHERE bill_id = ? ORDER BY created_at DESC LIMIT 1",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Integer"
+      },
+      {
+        "name": "receipt_number",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "content",
+        "ordinal": 2,
+        "type_info": "Text"
+      },
+      {
+        "name": "printed_at",
+        "ordinal": 3,
+        "type_info": "Text"
+      },
+      {
+        "name": "created_at",
+        "ordinal": 4,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      true,
+      false,
+      false,
+      true,
+      false
+    ]
+  },
+  "hash": "8d9c8f98e0b8ade24a159238cd361a8370f32cb46d5435bc2a52ddbb7931e8b7"
+}

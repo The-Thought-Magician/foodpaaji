@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE orders SET status = 'served', updated_at = datetime('now') WHERE id = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": []
+  },
+  "hash": "3d3a9d62b9171b3b73078a3b2290075b3bd065c53218e1456ccfa89dae013d70"
+}

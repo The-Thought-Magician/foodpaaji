@@ -1,0 +1,38 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT item_name, quantity, unit_price, total_price FROM bill_items WHERE bill_id = ?",
+  "describe": {
+    "columns": [
+      {
+        "name": "item_name",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "quantity",
+        "ordinal": 1,
+        "type_info": "Integer"
+      },
+      {
+        "name": "unit_price",
+        "ordinal": 2,
+        "type_info": "Float"
+      },
+      {
+        "name": "total_price",
+        "ordinal": 3,
+        "type_info": "Float"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "f8eae21d175630e8315c59dde1f15cccfe0910333c07dbe7a9ab4307527f6e97"
+}

@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO receipts (bill_id, receipt_number, content) VALUES (?, ?, ?)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": []
+  },
+  "hash": "085b4adda42885c1c5dc594b42913a98429a33c4f15de869c059c0f5e82e96a3"
+}

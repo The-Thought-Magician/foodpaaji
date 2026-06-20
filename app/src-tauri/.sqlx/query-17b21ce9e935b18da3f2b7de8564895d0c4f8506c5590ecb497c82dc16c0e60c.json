@@ -1,0 +1,38 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT item_name, quantity, unit_price, menu_item_id FROM order_items WHERE order_id = ?",
+  "describe": {
+    "columns": [
+      {
+        "name": "item_name",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "quantity",
+        "ordinal": 1,
+        "type_info": "Integer"
+      },
+      {
+        "name": "unit_price",
+        "ordinal": 2,
+        "type_info": "Float"
+      },
+      {
+        "name": "menu_item_id",
+        "ordinal": 3,
+        "type_info": "Integer"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true
+    ]
+  },
+  "hash": "17b21ce9e935b18da3f2b7de8564895d0c4f8506c5590ecb497c82dc16c0e60c"
+}

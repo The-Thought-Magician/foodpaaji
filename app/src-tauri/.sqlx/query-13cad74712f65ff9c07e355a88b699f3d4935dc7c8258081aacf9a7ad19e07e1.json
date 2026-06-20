@@ -1,0 +1,26 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT customer_id, table_number FROM orders WHERE id = ?",
+  "describe": {
+    "columns": [
+      {
+        "name": "customer_id",
+        "ordinal": 0,
+        "type_info": "Integer"
+      },
+      {
+        "name": "table_number",
+        "ordinal": 1,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      true,
+      true
+    ]
+  },
+  "hash": "13cad74712f65ff9c07e355a88b699f3d4935dc7c8258081aacf9a7ad19e07e1"
+}
