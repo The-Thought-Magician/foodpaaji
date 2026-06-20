@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { FileText, Plus, IndianRupee, Receipt, TrendingUp, Eye } from 'lucide-react'
+import { UpiQr } from '@/components/ui/upi-qr'
 
 interface Bill {
   id: number
@@ -202,7 +203,12 @@ export function BillingManagement() {
                 </SelectContent>
               </Select>
             </div>
-            {payMethod === 'upi' && <div><Label>UPI Reference</Label><Input value={upiRef} onChange={e => setUpiRef(e.target.value)} placeholder="Transaction ID" /></div>}
+            {payMethod === 'upi' && (
+              <div className="space-y-3">
+                <UpiQr amount={parseFloat(payAmount) || 0} upiId="restaurant@upi" name="FoodPaaji" note={showPayment?.bill_number} />
+                <div><Label>UPI Reference</Label><Input value={upiRef} onChange={e => setUpiRef(e.target.value)} placeholder="Transaction ID after payment" /></div>
+              </div>
+            )}
             <Button className="w-full gradient-spice text-white" onClick={recordPayment}>Confirm Payment</Button>
           </div>
         </DialogContent>
