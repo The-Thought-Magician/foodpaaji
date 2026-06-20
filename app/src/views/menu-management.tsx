@@ -3,6 +3,9 @@
 import { useState, useEffect, useCallback } from 'react'
 import { invoke } from '@tauri-apps/api/core'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Utensils, Plus, Search, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { MenuDashboard } from '@/components/menu/menu-dashboard'
@@ -24,6 +27,8 @@ export function MenuManagement() {
   const [showItemModal, setShowItemModal] = useState(false)
   const [showCategoryModal, setShowCategoryModal] = useState(false)
   const [editingCategory, setEditingCategory] = useState<CategoryData | null>(null)
+  const [quickPriceItem, setQuickPriceItem] = useState<MenuItemData | null>(null)
+  const [quickPrice, setQuickPrice] = useState('')
 
   const loadCategories = useCallback(async () => {
     try {
@@ -82,6 +87,17 @@ export function MenuManagement() {
     } catch (e) {
       console.error(e)
     }
+  }
+
+  const saveQuickPrice = async () => {
+    if (!quickPriceItem) return
+    const price = parseFloat(quickPrice)
+    if (isNaN(price) || price < 0) return
+    try {
+      await invoke('update_menu_item_price', { request: { menu_item_id: quickPriceItem.id, restaurant_id: RESTAURANT_ID, new_price: price, reason: null } })
+      setQuickPriceItem(null); setQuickPrice('')
+      loadItems()
+    } catch (e) { console.error(e) }
   }
 
   const handleSaveCategory = async (data: { name: string; description: string; sort_order: number; is_active: boolean }) => {
@@ -183,7 +199,8 @@ export function MenuManagement() {
               <MenuItemCard key={item.id} item={item}
                 onEdit={() => { setEditingItem(item); setShowItemModal(true) }}
                 onDelete={() => handleDeleteItem(item.id)}
-                onToggle={() => handleToggleItem(item)} />
+                onToggle={() => handleToggleItem(item)}
+                onQuickPrice={() => { setQuickPriceItem(item); setQuickPrice(item.price.toString()) }} />
             ))}
           </div>
 
@@ -236,6 +253,16 @@ export function MenuManagement() {
       {showCategoryModal && (
         <CategoryModal initial={editingCategory} onClose={() => { setShowCategoryModal(false); setEditingCategory(null) }} onSave={handleSaveCategory} />
       )}
+
+      <Dialog open={!!quickPriceItem} onOpenChange={() => { setQuickPriceItem(null); setQuickPrice('') }}>
+        <DialogContent className="max-w-xs">
+          <DialogHeader><DialogTitle>Update Price — {quickPriceItem?.name}</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <div><Label>New Price (₹)</Label><Input type="number" step="0.01" min="0" value={quickPrice} onChange={e => setQuickPrice(e.target.value)} autoFocus /></div>
+            <Button className="w-full gradient-spice text-white" onClick={saveQuickPrice} disabled={!quickPrice}>Save Price</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

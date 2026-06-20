@@ -23,9 +23,10 @@ interface Props {
   onEdit: () => void
   onDelete: () => void
   onToggle: () => void
+  onQuickPrice?: () => void
 }
 
-export function MenuItemCard({ item, onEdit, onDelete, onToggle }: Props) {
+export function MenuItemCard({ item, onEdit, onDelete, onToggle, onQuickPrice }: Props) {
   return (
     <div className="card-hover bg-card rounded-2xl overflow-hidden border border-border">
       <div className="relative h-36 bg-muted">
@@ -75,6 +76,7 @@ export function MenuItemCard({ item, onEdit, onDelete, onToggle }: Props) {
           <Button variant="outline" size="sm" className="flex-1" onClick={onEdit}>
             <Edit className="w-3.5 h-3.5 mr-1" />Edit
           </Button>
+          {onQuickPrice && <Button variant="ghost" size="sm" className="text-xs text-muted-foreground" onClick={onQuickPrice}>₹</Button>}
           <Button
             variant="ghost"
             size="sm"
