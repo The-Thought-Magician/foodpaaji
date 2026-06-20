@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo, useCallback } from 'react'
 import { invoke } from '@tauri-apps/api/core'
 import { Button } from '@/components/ui/button'
-import { Package, Plus, Search, X, Trash2, BarChart3, ArrowLeftRight, FileText, DollarSign } from 'lucide-react'
+import { Package, Plus, Search, X, Trash2, BarChart3, ArrowLeftRight, FileText, DollarSign, Bell } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import InventoryCard, { type InventoryItem } from '@/components/inventory/inventory-card'
 import WasteTracking from '@/components/inventory/waste-tracking'
@@ -11,11 +11,12 @@ import InventoryAnalytics from '@/components/inventory/inventory-analytics'
 import InventoryTransfers from '@/components/inventory/inventory-transfers'
 import InventoryReports from '@/components/inventory/inventory-reports'
 import InventoryValuation from '@/components/inventory/inventory-valuation'
+import LowStockAlerts from '@/components/inventory/low-stock-alerts'
 import { DeleteInventoryDialog, RestockDialog, EditInventoryDialog, AdjustStockDialog } from '@/components/inventory/inventory-dialogs'
 
 const RESTAURANT_ID = 1
 const ITEMS_PER_PAGE = 12
-type Tab = 'items' | 'waste' | 'analytics' | 'transfers' | 'reports' | 'valuation'
+type Tab = 'items' | 'waste' | 'analytics' | 'transfers' | 'reports' | 'valuation' | 'alerts'
 
 export function InventoryManagement() {
   const [items, setItems] = useState<InventoryItem[]>([])
@@ -116,6 +117,11 @@ export function InventoryManagement() {
             tab === 'valuation' ? 'bg-background shadow text-foreground' : 'text-muted-foreground hover:text-foreground')}>
           <DollarSign className="w-4 h-4" /> Valuation
         </button>
+        <button onClick={() => setTab('alerts')}
+          className={cn('px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2',
+            tab === 'alerts' ? 'bg-background shadow text-foreground' : 'text-muted-foreground hover:text-foreground')}>
+          <Bell className="w-4 h-4" /> Alerts
+        </button>
       </div>
 
       {tab === 'waste' && <WasteTracking />}
@@ -123,6 +129,7 @@ export function InventoryManagement() {
       {tab === 'transfers' && <InventoryTransfers />}
       {tab === 'reports' && <InventoryReports />}
       {tab === 'valuation' && <InventoryValuation />}
+      {tab === 'alerts' && <LowStockAlerts />}
 
       {tab === 'items' && (
         <>
