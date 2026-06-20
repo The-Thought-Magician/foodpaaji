@@ -72,6 +72,30 @@ export function CustomerManagement() {
     } catch (e) { console.error(e) }
   }
 
+  const [loyaltyTarget, setLoyaltyTarget] = useState<Customer | null>(null)
+  const [loyaltyMode, setLoyaltyMode] = useState<'add' | 'redeem'>('add')
+  const [loyaltyPoints, setLoyaltyPoints] = useState('')
+  const [loyaltyBillAmt, setLoyaltyBillAmt] = useState('')
+
+  const openLoyalty = (c: Customer, mode: 'add' | 'redeem') => {
+    setLoyaltyTarget(c); setLoyaltyMode(mode); setLoyaltyPoints(''); setLoyaltyBillAmt('')
+  }
+
+  const submitLoyalty = async () => {
+    if (!loyaltyTarget) return
+    const pts = parseInt(loyaltyPoints) || 0
+    if (pts <= 0) return
+    try {
+      if (loyaltyMode === 'add') {
+        await invoke('add_loyalty_points', { customerId: loyaltyTarget.id, points: pts, billAmount: parseFloat(loyaltyBillAmt) || 0 })
+      } else {
+        await invoke('redeem_loyalty_points', { customerId: loyaltyTarget.id, points: pts })
+      }
+      setLoyaltyTarget(null)
+      loadCustomers(); loadStats()
+    } catch (e) { console.error(e) }
+  }
+
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-4 gap-4">
@@ -119,8 +143,10 @@ export function CustomerManagement() {
                 <div className="bg-muted rounded p-2"><p className="font-bold">₹{c.total_spent.toFixed(0)}</p><p className="text-muted-foreground">Spent</p></div>
                 <div className="bg-muted rounded p-2"><p className="font-bold">{c.loyalty_points}</p><p className="text-muted-foreground">Points</p></div>
               </div>
-              <div className="mt-3 flex gap-2">
+              <div className="mt-3 flex gap-2 flex-wrap">
                 <Button variant="outline" size="sm" className="flex-1" onClick={() => openEdit(c)}>Edit</Button>
+                <Button variant="outline" size="sm" onClick={() => openLoyalty(c, 'add')}><Star className="w-3 h-3 mr-1" />+Pts</Button>
+                <Button variant="outline" size="sm" onClick={() => openLoyalty(c, 'redeem')}>Redeem</Button>
                 <Button variant="outline" size="sm" className="text-destructive" onClick={() => deleteCustomer(c.id)}>Delete</Button>
               </div>
             </CardContent>
@@ -128,6 +154,22 @@ export function CustomerManagement() {
         ))}
         {customers.length === 0 && <p className="col-span-3 text-center text-muted-foreground py-12">No customers found</p>}
       </div>
+
+      <Dialog open={!!loyaltyTarget} onOpenChange={() => setLoyaltyTarget(null)}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader><DialogTitle>{loyaltyMode === 'add' ? 'Add' : 'Redeem'} Loyalty Points — {loyaltyTarget?.name}</DialogTitle></DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">Current balance: <strong>{loyaltyTarget?.loyalty_points} pts</strong></p>
+            <div><Label>Points</Label><Input type="number" min="1" value={loyaltyPoints} onChange={e => setLoyaltyPoints(e.target.value)} /></div>
+            {loyaltyMode === 'add' && (
+              <div><Label>Bill Amount (₹)</Label><Input type="number" min="0" value={loyaltyBillAmt} onChange={e => setLoyaltyBillAmt(e.target.value)} /></div>
+            )}
+            <Button className="w-full gradient-spice text-white" onClick={submitLoyalty}>
+              {loyaltyMode === 'add' ? 'Add Points' : 'Redeem Points'}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={showForm} onOpenChange={setShowForm}>
         <DialogContent>
