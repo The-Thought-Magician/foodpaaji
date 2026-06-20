@@ -9,7 +9,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Calendar, Plus, Clock, Users, QrCode } from 'lucide-react'
+import { Calendar, Plus, Clock, Users, QrCode, CheckCircle, XCircle } from 'lucide-react'
 import { TableQrManager } from '@/components/reservations/table-qr'
 
 interface Reservation {
@@ -48,7 +48,17 @@ export function ReservationManagement() {
   const [reservations, setReservations] = useState<Reservation[]>([])
   const [tables, setTables] = useState<Table[]>([])
   const [date, setDate] = useState(new Date().toISOString().split('T')[0])
-  const [activeTab, setActiveTab] = useState<'reservations' | 'qr'>('reservations')
+  const [activeTab, setActiveTab] = useState<'reservations' | 'qr' | 'availability'>('reservations')
+  const [availDate, setAvailDate] = useState(new Date().toISOString().split('T')[0])
+  const [availTime, setAvailTime] = useState('19:00')
+  const [availTables, setAvailTables] = useState<{ id: number; table_number: string; capacity: number; location?: string; available: boolean }[]>([])
+
+  const checkAvailability = async () => {
+    try {
+      const res = await invoke<{ success: boolean; data: typeof availTables }>('get_table_availability', { date: availDate, time: availTime })
+      if (res.success) setAvailTables(res.data)
+    } catch (e) { console.error(e) }
+  }
   const [showForm, setShowForm] = useState(false)
   const [editingId, setEditingId] = useState<number | null>(null)
   const [form, setForm] = useState({ customer_name: '', customer_phone: '', table_id: '', party_size: '2', reservation_date: '', reservation_time: '19:00', duration_minutes: '90', special_requests: '' })
@@ -119,9 +129,40 @@ export function ReservationManagement() {
         <button onClick={() => setActiveTab('qr')} className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors ${activeTab === 'qr' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'}`}>
           <QrCode className="w-4 h-4" />Table QR Codes
         </button>
+        <button onClick={() => setActiveTab('availability')} className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors ${activeTab === 'availability' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'}`}>
+          <CheckCircle className="w-4 h-4" />Availability
+        </button>
       </div>
 
       {activeTab === 'qr' && <TableQrManager />}
+
+      {activeTab === 'availability' && (
+        <div className="space-y-4">
+          <div className="flex items-center gap-3 flex-wrap">
+            <Input type="date" value={availDate} onChange={e => setAvailDate(e.target.value)} className="w-40" />
+            <Input type="time" value={availTime} onChange={e => setAvailTime(e.target.value)} className="w-32" />
+            <Button onClick={checkAvailability} className="gradient-spice text-white">Check Availability</Button>
+          </div>
+          {availTables.length > 0 && (
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+              {availTables.map(t => (
+                <Card key={t.id} className={`border-2 ${t.available ? 'border-green-200 bg-green-50/50' : 'border-red-200 bg-red-50/50'}`}>
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="font-bold text-lg">T{t.table_number}</span>
+                      {t.available ? <CheckCircle className="w-5 h-5 text-green-500" /> : <XCircle className="w-5 h-5 text-red-500" />}
+                    </div>
+                    <p className="text-sm text-muted-foreground"><Users className="inline w-3 h-3 mr-1" />{t.capacity} seats</p>
+                    {t.location && <p className="text-xs text-muted-foreground mt-1">{t.location}</p>}
+                    <p className={`text-xs font-medium mt-2 ${t.available ? 'text-green-600' : 'text-red-500'}`}>{t.available ? 'Available' : 'Occupied'}</p>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+          {availTables.length === 0 && <p className="text-center text-muted-foreground py-10 text-sm">Select date and time, then click Check Availability</p>}
+        </div>
+      )}
 
       {activeTab === 'reservations' && <>
       <div className="flex items-center justify-between">
