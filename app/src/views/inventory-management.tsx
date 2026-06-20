@@ -3,15 +3,16 @@
 import { useState, useEffect, useMemo, useCallback } from 'react'
 import { invoke } from '@tauri-apps/api/core'
 import { Button } from '@/components/ui/button'
-import { Package, Plus, Search, X, Trash2 } from 'lucide-react'
+import { Package, Plus, Search, X, Trash2, BarChart3 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import InventoryCard, { type InventoryItem } from '@/components/inventory/inventory-card'
 import WasteTracking from '@/components/inventory/waste-tracking'
+import InventoryAnalytics from '@/components/inventory/inventory-analytics'
 import { DeleteInventoryDialog, RestockDialog, EditInventoryDialog } from '@/components/inventory/inventory-dialogs'
 
 const RESTAURANT_ID = 1
 const ITEMS_PER_PAGE = 12
-type Tab = 'items' | 'waste'
+type Tab = 'items' | 'waste' | 'analytics'
 
 export function InventoryManagement() {
   const [items, setItems] = useState<InventoryItem[]>([])
@@ -91,9 +92,15 @@ export function InventoryManagement() {
             tab === 'waste' ? 'bg-background shadow text-foreground' : 'text-muted-foreground hover:text-foreground')}>
           <Trash2 className="w-4 h-4" /> Waste Tracking
         </button>
+        <button onClick={() => setTab('analytics')}
+          className={cn('px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2',
+            tab === 'analytics' ? 'bg-background shadow text-foreground' : 'text-muted-foreground hover:text-foreground')}>
+          <BarChart3 className="w-4 h-4" /> Analytics
+        </button>
       </div>
 
       {tab === 'waste' && <WasteTracking />}
+      {tab === 'analytics' && <InventoryAnalytics />}
 
       {tab === 'items' && (
         <>
