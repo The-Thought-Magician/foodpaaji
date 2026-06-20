@@ -1,11 +1,12 @@
 'use client'
 
 import { useState } from 'react'
+import { invoke } from '@tauri-apps/api/core'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent } from '@/components/ui/card'
-import { Settings, Store, CreditCard, Percent } from 'lucide-react'
+import { Settings, Store, CreditCard, Percent, Download, Upload } from 'lucide-react'
 import { getSettings } from '@/lib/settings'
 
 const SETTINGS_KEY = 'foodpaaji_settings'
@@ -15,6 +16,28 @@ type RestaurantSettings = ReturnType<typeof getSettings>
 export default function SettingsPage() {
   const [settings, setSettings] = useState<RestaurantSettings>(getSettings)
   const [saved, setSaved] = useState(false)
+  const [backupPath, setBackupPath] = useState('')
+  const [restorePath, setRestorePath] = useState('')
+  const [backupMsg, setBackupMsg] = useState('')
+
+  const runBackup = async () => {
+    if (!backupPath.trim()) return
+    try {
+      const ok = await invoke<boolean>('backup_database', { targetPath: backupPath.trim() })
+      setBackupMsg(ok ? 'Backup created successfully' : 'Backup failed')
+    } catch (e) { setBackupMsg(`Error: ${e}`) }
+    setTimeout(() => setBackupMsg(''), 3000)
+  }
+
+  const runRestore = async () => {
+    if (!restorePath.trim()) return
+    if (!confirm('Restore will overwrite current data. Continue?')) return
+    try {
+      const ok = await invoke<boolean>('restore_database', { sourcePath: restorePath.trim() })
+      setBackupMsg(ok ? 'Restored successfully — restart app to apply' : 'Restore failed')
+    } catch (e) { setBackupMsg(`Error: ${e}`) }
+    setTimeout(() => setBackupMsg(''), 5000)
+  }
 
   const update = (field: keyof RestaurantSettings, value: string | number) => {
     setSettings(s => ({ ...s, [field]: value }))
@@ -86,6 +109,34 @@ export default function SettingsPage() {
       <Button className="gradient-spice text-white" onClick={save}>
         {saved ? 'Saved!' : 'Save Settings'}
       </Button>
+
+      <Card>
+        <CardContent className="p-6 space-y-4">
+          <div className="flex items-center gap-2 mb-2">
+            <Download className="w-4 h-4 text-muted-foreground" />
+            <h3 className="font-semibold">Database Backup & Restore</h3>
+          </div>
+          <div className="space-y-2">
+            <Label>Backup — destination file path</Label>
+            <div className="flex gap-2">
+              <Input placeholder="/home/user/backup.db" value={backupPath} onChange={e => setBackupPath(e.target.value)} />
+              <Button variant="outline" onClick={runBackup} disabled={!backupPath.trim()}>
+                <Download className="w-4 h-4 mr-1" />Backup
+              </Button>
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label>Restore — source file path</Label>
+            <div className="flex gap-2">
+              <Input placeholder="/home/user/backup.db" value={restorePath} onChange={e => setRestorePath(e.target.value)} />
+              <Button variant="outline" className="text-red-500 border-red-200 hover:bg-red-50" onClick={runRestore} disabled={!restorePath.trim()}>
+                <Upload className="w-4 h-4 mr-1" />Restore
+              </Button>
+            </div>
+          </div>
+          {backupMsg && <p className={`text-sm font-medium ${backupMsg.startsWith('Error') ? 'text-red-500' : 'text-green-600'}`}>{backupMsg}</p>}
+        </CardContent>
+      </Card>
     </div>
   )
 }
