@@ -26,6 +26,7 @@ pub mod menu_types;
 pub mod menu;
 pub mod menu_items;
 pub mod menu_images;
+pub mod menu_image_management;
 pub mod pricing;
 pub mod pricing_bulk;
 pub mod billing;
