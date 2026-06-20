@@ -72,6 +72,15 @@ export function CustomerManagement() {
     } catch (e) { console.error(e) }
   }
 
+  const [viewCustomer, setViewCustomer] = useState<Customer & { address?: string } | null>(null)
+
+  const viewProfile = async (id: number) => {
+    try {
+      const res = await invoke<{ success: boolean; data: Customer & { address?: string } }>('get_customer', { customerId: id })
+      if (res.success && res.data) setViewCustomer(res.data)
+    } catch (e) { console.error(e) }
+  }
+
   const [loyaltyTarget, setLoyaltyTarget] = useState<Customer | null>(null)
   const [loyaltyMode, setLoyaltyMode] = useState<'add' | 'redeem'>('add')
   const [loyaltyPoints, setLoyaltyPoints] = useState('')
@@ -144,6 +153,7 @@ export function CustomerManagement() {
                 <div className="bg-muted rounded p-2"><p className="font-bold">{c.loyalty_points}</p><p className="text-muted-foreground">Points</p></div>
               </div>
               <div className="mt-3 flex gap-2 flex-wrap">
+                <Button variant="outline" size="sm" onClick={() => viewProfile(c.id)}>View</Button>
                 <Button variant="outline" size="sm" className="flex-1" onClick={() => openEdit(c)}>Edit</Button>
                 <Button variant="outline" size="sm" onClick={() => openLoyalty(c, 'add')}><Star className="w-3 h-3 mr-1" />+Pts</Button>
                 <Button variant="outline" size="sm" onClick={() => openLoyalty(c, 'redeem')}>Redeem</Button>
@@ -154,6 +164,27 @@ export function CustomerManagement() {
         ))}
         {customers.length === 0 && <p className="col-span-3 text-center text-muted-foreground py-12">No customers found</p>}
       </div>
+
+      <Dialog open={!!viewCustomer} onOpenChange={() => setViewCustomer(null)}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader><DialogTitle>Customer Profile</DialogTitle></DialogHeader>
+          {viewCustomer && (
+            <div className="space-y-3 text-sm">
+              <div className="flex items-center gap-3 pb-3 border-b">
+                <div className="w-12 h-12 gradient-accent rounded-full flex items-center justify-center text-white font-bold text-lg">{viewCustomer.name.charAt(0).toUpperCase()}</div>
+                <div><p className="font-semibold text-base">{viewCustomer.name}</p><p className="text-muted-foreground">{viewCustomer.phone || 'No phone'}</p></div>
+              </div>
+              {viewCustomer.email && <p><span className="text-muted-foreground">Email:</span> {viewCustomer.email}</p>}
+              {viewCustomer.address && <p><span className="text-muted-foreground">Address:</span> {viewCustomer.address}</p>}
+              <div className="grid grid-cols-3 gap-2 text-center pt-2">
+                <div className="bg-muted rounded p-3"><p className="font-bold text-lg">{viewCustomer.visit_count}</p><p className="text-muted-foreground text-xs">Visits</p></div>
+                <div className="bg-muted rounded p-3"><p className="font-bold text-lg">₹{viewCustomer.total_spent.toFixed(0)}</p><p className="text-muted-foreground text-xs">Spent</p></div>
+                <div className="bg-muted rounded p-3"><p className="font-bold text-lg">{viewCustomer.loyalty_points}</p><p className="text-muted-foreground text-xs">Points</p></div>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={!!loyaltyTarget} onOpenChange={() => setLoyaltyTarget(null)}>
         <DialogContent className="max-w-sm">
