@@ -57,6 +57,7 @@ export function EmployeeDashboard({
   }, [employee.id])
 
   const [clockedIn, setClockedIn] = useState(false)
+  const [onBreak, setOnBreak] = useState(false)
 
   const loadEmployeeStats = async () => {
     try {
@@ -236,9 +237,9 @@ export function EmployeeDashboard({
                 <Clock className="h-6 w-6" />
                 <span className="text-sm">{clockedIn ? 'Clock Out' : 'Clock In'}</span>
               </Button>
-              <Button variant="outline" className="h-auto p-4 flex flex-col items-center space-y-2">
+              <Button variant="outline" disabled={!clockedIn} onClick={async () => { try { await invoke(onBreak ? 'end_break' : 'start_break', { request: { employee_id: employee.id, break_type: 'meal', notes: null } }); setOnBreak(v => !v) } catch (e) { console.error(e) } }} className={`h-auto p-4 flex flex-col items-center space-y-2 ${onBreak ? 'border-amber-500 text-amber-600' : ''}`}>
                 <Calendar className="h-6 w-6" />
-                <span className="text-sm">Schedule</span>
+                <span className="text-sm">{onBreak ? 'End Break' : 'Take Break'}</span>
               </Button>
               <Button variant="outline" className="h-auto p-4 flex flex-col items-center space-y-2">
                 <Settings className="h-6 w-6" />
