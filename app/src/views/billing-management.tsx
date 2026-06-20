@@ -66,6 +66,7 @@ export function BillingManagement() {
   const [payMethod, setPayMethod] = useState('cash')
   const [upiRef, setUpiRef] = useState('')
   const [showDetails, setShowDetails] = useState<null | { bill: Bill; items: BillDetailItem[]; payments: BillPayment[] }>(null)
+  const [paymentHistory, setPaymentHistory] = useState<BillPayment[]>([])
 
   const viewDetails = async (bill: Bill) => {
     try {
@@ -120,12 +121,30 @@ export function BillingManagement() {
     } catch (e) { console.error(e) }
   }
 
+  const openPayment = async (bill: Bill) => {
+    const res = await invoke<{ success: boolean; data: { items: BillDetailItem[]; payments: BillPayment[] } }>('get_bill_details', { billId: bill.id }).catch(() => null)
+    const existing = res?.success ? res.data.payments : []
+    setPaymentHistory(existing)
+    const alreadyPaid = existing.reduce((s, p) => s + p.amount, 0)
+    const remaining = Math.max(0, bill.total_amount - alreadyPaid)
+    setPayAmount(remaining.toFixed(2))
+    setPayMethod('cash'); setUpiRef('')
+    setShowPayment(bill)
+  }
+
   const recordPayment = async () => {
     if (!showPayment) return
     try {
-      await invoke('record_payment', { billId: showPayment.id, amount: parseFloat(payAmount), method: payMethod, upiReference: upiRef || null, upiApp: null })
-      setShowPayment(null)
-      loadBills(); loadSummary()
+      const res = await invoke<{ success: boolean; bill_paid?: boolean }>('record_payment', { billId: showPayment.id, amount: parseFloat(payAmount), method: payMethod, upiReference: upiRef || null, upiApp: null })
+      if (res.success) {
+        const newPmt: BillPayment = { amount: parseFloat(payAmount), method: payMethod, paid_at: new Date().toISOString() }
+        const updated = [...paymentHistory, newPmt]
+        setPaymentHistory(updated)
+        const totalPaid = updated.reduce((s, p) => s + p.amount, 0)
+        const remaining = Math.max(0, showPayment.total_amount - totalPaid)
+        if (remaining <= 0 || res.bill_paid) { setShowPayment(null); loadBills(); loadSummary() }
+        else { setPayAmount(remaining.toFixed(2)); setUpiRef('') }
+      }
     } catch (e) { console.error(e) }
   }
 
@@ -177,7 +196,7 @@ export function BillingManagement() {
                 </Button>
                 {bill.status === 'open' && (
                   <>
-                    <Button size="sm" onClick={() => { setShowPayment(bill); setPayAmount(bill.total_amount.toFixed(2)) }}>Pay</Button>
+                    <Button size="sm" onClick={() => openPayment(bill)}>Pay</Button>
                     <Button size="sm" variant="ghost" className="text-red-500 hover:text-red-600" onClick={() => updateBillStatus(bill.id, 'cancelled')}>Void</Button>
                   </>
                 )}
@@ -221,29 +240,27 @@ export function BillingManagement() {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={!!showPayment} onOpenChange={() => setShowPayment(null)}>
+      <Dialog open={!!showPayment} onOpenChange={() => { setShowPayment(null); loadBills(); loadSummary() }}>
         <DialogContent>
-          <DialogHeader><DialogTitle>Record Payment — {showPayment?.bill_number}</DialogTitle></DialogHeader>
-          <div className="space-y-4">
-            <p className="text-lg font-bold">Total: ₹{showPayment?.total_amount.toFixed(2)}</p>
-            <div><Label>Amount</Label><Input type="number" value={payAmount} onChange={e => setPayAmount(e.target.value)} /></div>
-            <div>
-              <Label>Payment Method</Label>
-              <Select value={payMethod} onValueChange={(v: string | null) => setPayMethod(v ?? 'cash')}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {['cash', 'upi', 'card', 'wallet', 'credit'].map(m => <SelectItem key={m} value={m}>{m.toUpperCase()}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-            {payMethod === 'upi' && (
-              <div className="space-y-3">
-                <UpiQr amount={parseFloat(payAmount) || 0} upiId={getSettings().upi_id} name={getSettings().restaurant_name} note={showPayment?.bill_number} />
-                <div><Label>UPI Reference</Label><Input value={upiRef} onChange={e => setUpiRef(e.target.value)} placeholder="Transaction ID after payment" /></div>
+          <DialogHeader><DialogTitle>Payment — {showPayment?.bill_number}</DialogTitle></DialogHeader>
+          {showPayment && (() => {
+            const paid = paymentHistory.reduce((s, p) => s + p.amount, 0)
+            const remaining = Math.max(0, showPayment.total_amount - paid)
+            return (
+              <div className="space-y-4 mt-2">
+                <div className="flex justify-between text-sm">
+                  <span>Total: <strong>₹{showPayment.total_amount.toFixed(2)}</strong></span>
+                  {paid > 0 && <span>Paid: <strong className="text-green-600">₹{paid.toFixed(2)}</strong></span>}
+                  <span>Due: <strong className={remaining > 0 ? 'text-red-600' : 'text-green-600'}>₹{remaining.toFixed(2)}</strong></span>
+                </div>
+                {paymentHistory.length > 0 && <div className="text-xs text-muted-foreground space-y-0.5">{paymentHistory.map((p, i) => <div key={i} className="flex justify-between"><span>{p.method.toUpperCase()}</span><span>₹{p.amount.toFixed(2)}</span></div>)}</div>}
+                <div><Label>Amount</Label><Input type="number" value={payAmount} onChange={e => setPayAmount(e.target.value)} /></div>
+                <Select value={payMethod} onValueChange={(v: string | null) => setPayMethod(v ?? 'cash')}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{['cash', 'upi', 'card', 'wallet', 'credit'].map(m => <SelectItem key={m} value={m}>{m.toUpperCase()}</SelectItem>)}</SelectContent></Select>
+                {payMethod === 'upi' && <div className="space-y-3"><UpiQr amount={parseFloat(payAmount) || 0} upiId={getSettings().upi_id} name={getSettings().restaurant_name} note={showPayment.bill_number} /><div><Label>UPI Reference</Label><Input value={upiRef} onChange={e => setUpiRef(e.target.value)} placeholder="Transaction ID after payment" /></div></div>}
+                <Button className="w-full gradient-spice text-white" onClick={recordPayment}>Confirm Payment</Button>
               </div>
-            )}
-            <Button className="w-full gradient-spice text-white" onClick={recordPayment}>Confirm Payment</Button>
-          </div>
+            )
+          })()}
         </DialogContent>
       </Dialog>
       <Dialog open={!!showDetails} onOpenChange={() => setShowDetails(null)}>
@@ -251,37 +268,11 @@ export function BillingManagement() {
           <DialogHeader><DialogTitle>{showDetails?.bill.bill_number} — Details</DialogTitle></DialogHeader>
           <div className="space-y-4">
             <div className="space-y-1">
-              {showDetails?.items.map((it, i) => (
-                <div key={i} className="flex justify-between text-sm">
-                  <span>{it.item_name} × {it.quantity}</span>
-                  <span>₹{it.total_price.toFixed(2)}</span>
-                </div>
-              ))}
-              <div className="flex justify-between font-bold border-t pt-2">
-                <span>Total</span><span>₹{showDetails?.bill.total_amount.toFixed(2)}</span>
-              </div>
+              {showDetails?.items.map((it, i) => <div key={i} className="flex justify-between text-sm"><span>{it.item_name} × {it.quantity}</span><span>₹{it.total_price.toFixed(2)}</span></div>)}
+              <div className="flex justify-between font-bold border-t pt-2"><span>Total</span><span>₹{showDetails?.bill.total_amount.toFixed(2)}</span></div>
             </div>
-            {showDetails?.payments && showDetails.payments.length > 0 && (
-              <div>
-                <p className="text-sm font-medium mb-1">Payments</p>
-                {showDetails.payments.map((p, i) => (
-                  <div key={i} className="flex justify-between text-sm text-muted-foreground">
-                    <span>{p.method.toUpperCase()} · {new Date(p.paid_at).toLocaleString()}</span>
-                    <span>₹{p.amount.toFixed(2)}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-            <Button variant="outline" className="w-full" onClick={async () => {
-              if (!showDetails) return
-              const res = await invoke<{ success: boolean; data: { content: string } }>('get_receipt', { billId: showDetails.bill.id }).catch(() => null)
-              if (res?.success) {
-                const w = window.open('', '_blank')
-                if (w) { w.document.write(`<pre style="font-family:monospace">${res.data.content}</pre>`); w.print() }
-              }
-            }}>
-              <Receipt className="w-4 h-4 mr-2" />Reprint Receipt
-            </Button>
+            {showDetails?.payments && showDetails.payments.length > 0 && <div><p className="text-sm font-medium mb-1">Payments</p>{showDetails.payments.map((p, i) => <div key={i} className="flex justify-between text-sm text-muted-foreground"><span>{p.method.toUpperCase()} · {new Date(p.paid_at).toLocaleString()}</span><span>₹{p.amount.toFixed(2)}</span></div>)}</div>}
+            <Button variant="outline" className="w-full" onClick={async () => { if (!showDetails) return; const res = await invoke<{ success: boolean; data: { content: string } }>('get_receipt', { billId: showDetails.bill.id }).catch(() => null); if (res?.success) { const w = window.open('', '_blank'); if (w) { w.document.write(`<pre style="font-family:monospace">${res.data.content}</pre>`); w.print() } } }}><Receipt className="w-4 h-4 mr-2" />Reprint Receipt</Button>
           </div>
         </DialogContent>
       </Dialog>
