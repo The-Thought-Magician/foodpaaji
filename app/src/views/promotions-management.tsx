@@ -53,6 +53,23 @@ export function PromotionsManagement() {
   const [showAnnouncementForm, setShowAnnouncementForm] = useState(false)
   const [promoForm, setPromoForm] = useState({ title: '', description: '', promo_code: '', discount_type: 'percent', discount_value: '10', min_order_amount: '0', max_discount_amount: '', usage_limit: '', start_date: '', end_date: '' })
   const [announcementForm, setAnnouncementForm] = useState({ title: '', body: '', target: 'all', priority: 'normal', expires_at: '' })
+  const [testCode, setTestCode] = useState('')
+  const [testAmt, setTestAmt] = useState('')
+  const [testResult, setTestResult] = useState<{ valid: boolean; message?: string; discount_amount?: number; promo_id?: number } | null>(null)
+
+  const testPromoCode = async () => {
+    if (!testCode.trim()) return
+    try {
+      const res = await invoke<{ valid: boolean; message?: string; discount_amount?: number; promo_id?: number }>(
+        'validate_promo_code', { code: testCode, orderAmount: parseFloat(testAmt) || 0 }
+      )
+      setTestResult(res)
+      if (res.valid && res.promo_id) {
+        await invoke('apply_promo', { promoId: res.promo_id }).catch(console.error)
+        loadPromotions()
+      }
+    } catch (e) { console.error(e) }
+  }
 
   const loadPromotions = async () => {
     try {
@@ -154,6 +171,24 @@ export function PromotionsManagement() {
           ))}
           {promotions.length === 0 && <p className="col-span-2 text-center text-muted-foreground py-12">No promotions yet</p>}
         </div>
+
+        <Card className="border-dashed">
+          <CardContent className="p-4 space-y-3">
+            <p className="text-sm font-medium text-muted-foreground">Test Promo Code</p>
+            <div className="flex gap-2">
+              <Input placeholder="Code (e.g. SAVE20)" value={testCode} onChange={e => { setTestCode(e.target.value); setTestResult(null) }} className="flex-1" />
+              <Input type="number" placeholder="Order ₹" value={testAmt} onChange={e => setTestAmt(e.target.value)} className="w-28" />
+              <Button variant="outline" onClick={testPromoCode} disabled={!testCode.trim()}>Validate</Button>
+            </div>
+            {testResult && (
+              <p className={`text-sm font-medium ${testResult.valid ? 'text-green-600' : 'text-red-500'}`}>
+                {testResult.valid
+                  ? `Valid — saves ₹${testResult.discount_amount?.toFixed(2) ?? 0} (usage count incremented)`
+                  : testResult.message ?? 'Invalid code'}
+              </p>
+            )}
+          </CardContent>
+        </Card>
       </TabsContent>
 
       <TabsContent value="announcements" className="space-y-4 mt-4">
