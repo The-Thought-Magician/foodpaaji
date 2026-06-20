@@ -49,7 +49,7 @@ export function PosView() {
   const [couponCode, setCouponCode] = useState('')
   const [coupon, setCoupon] = useState<CouponResult | null>(null)
   const [orders, setOrders] = useState<Order[]>([])
-  const [showReceipt, setShowReceipt] = useState<{ content: string; number: string } | null>(null)
+  const [showReceipt, setShowReceipt] = useState<{ id: number; content: string; number: string } | null>(null)
   const [showConvert, setShowConvert] = useState<Order | null>(null)
   const [taxPercent, setTaxPercent] = useState(() => getSettings().default_tax_percent)
   const [discountPercent, setDiscountPercent] = useState(0)
@@ -122,8 +122,8 @@ export function PosView() {
         orderId: showConvert.id, discountPercent, taxPercent
       })
       if (res.success) {
-        const receipt = await invoke<{ success: boolean; data: { content: string; receipt_number: string } }>('generate_receipt', { billId: res.bill_id })
-        if (receipt.success) setShowReceipt({ content: receipt.data.content, number: receipt.data.receipt_number })
+        const receipt = await invoke<{ success: boolean; data: { receipt_id: number; content: string; receipt_number: string } }>('generate_receipt', { billId: res.bill_id })
+        if (receipt.success) setShowReceipt({ id: receipt.data.receipt_id, content: receipt.data.content, number: receipt.data.receipt_number })
         setShowConvert(null)
         loadOrders()
       }
@@ -252,6 +252,11 @@ export function PosView() {
           <pre className="text-xs font-mono bg-muted p-4 rounded-lg whitespace-pre overflow-x-auto">{showReceipt?.content}</pre>
           <div className="flex gap-2">
             <Button className="flex-1" variant="outline" onClick={() => { if (showReceipt) navigator.clipboard?.writeText(showReceipt.content) }}>Copy</Button>
+            <Button className="flex-1" variant="outline" onClick={async () => {
+              if (!showReceipt) return
+              await invoke('mark_receipt_printed', { receiptId: showReceipt.id }).catch(console.error)
+              window.print()
+            }}>Print</Button>
             <Button className="flex-1 gradient-spice text-white" onClick={() => setShowReceipt(null)}>Done</Button>
           </div>
         </DialogContent>
