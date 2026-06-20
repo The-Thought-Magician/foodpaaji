@@ -11,7 +11,7 @@ import InventoryAnalytics from '@/components/inventory/inventory-analytics'
 import InventoryTransfers from '@/components/inventory/inventory-transfers'
 import InventoryReports from '@/components/inventory/inventory-reports'
 import InventoryValuation from '@/components/inventory/inventory-valuation'
-import { DeleteInventoryDialog, RestockDialog, EditInventoryDialog } from '@/components/inventory/inventory-dialogs'
+import { DeleteInventoryDialog, RestockDialog, EditInventoryDialog, AdjustStockDialog } from '@/components/inventory/inventory-dialogs'
 
 const RESTAURANT_ID = 1
 const ITEMS_PER_PAGE = 12
@@ -29,6 +29,7 @@ export function InventoryManagement() {
   const [deleteItem, setDeleteItem] = useState<InventoryItem | null>(null)
   const [restockItem, setRestockItem] = useState<InventoryItem | null>(null)
   const [restockQty, setRestockQty] = useState('')
+  const [adjustItem, setAdjustItem] = useState<InventoryItem | null>(null)
 
   const loadItems = useCallback(() => {
     invoke<{ success: boolean; data?: InventoryItem[] }>('get_inventory_items', { restaurantId: RESTAURANT_ID })
@@ -161,7 +162,8 @@ export function InventoryManagement() {
                   <InventoryCard key={item.id} item={item}
                     onEdit={() => { setEditItem(item); setShowForm(true) }}
                     onDelete={() => setDeleteItem(item)}
-                    onRestock={() => { setRestockItem(item); setRestockQty('') }} />
+                    onRestock={() => { setRestockItem(item); setRestockQty('') }}
+                    onAdjust={() => setAdjustItem(item)} />
                 ))}
               </div>
               {totalPages > 1 && (
@@ -189,6 +191,7 @@ export function InventoryManagement() {
         </>
       )}
 
+      <AdjustStockDialog item={adjustItem} onClose={() => setAdjustItem(null)} onAdjusted={loadItems} />
       <DeleteInventoryDialog item={deleteItem} onClose={() => setDeleteItem(null)} onDeleted={loadItems} />
       <RestockDialog item={restockItem} qty={restockQty} onQtyChange={setRestockQty}
         onClose={() => { setRestockItem(null); setRestockQty('') }} onRestocked={loadItems} />

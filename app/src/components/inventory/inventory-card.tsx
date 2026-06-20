@@ -24,6 +24,7 @@ interface Props {
   onEdit: () => void
   onDelete: () => void
   onRestock: () => void
+  onAdjust?: () => void
 }
 
 const CATEGORY_COLORS: Record<number, string> = {
@@ -45,7 +46,7 @@ const STATUS_STYLES = {
   out_of_stock: { label: 'Out of Stock', color: 'bg-rose-500/10 text-rose-600 border-rose-500/20' },
 }
 
-export default function InventoryCard({ item, onEdit, onDelete, onRestock }: Props) {
+export default function InventoryCard({ item, onEdit, onDelete, onRestock, onAdjust }: Props) {
   const status = stockStatus(item)
   const statusInfo = STATUS_STYLES[status]
   const isLow = status !== 'in_stock'
@@ -112,8 +113,9 @@ export default function InventoryCard({ item, onEdit, onDelete, onRestock }: Pro
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" onClick={onRestock}
             className={cn('text-xs', isLow && 'border-rose-500/30 text-rose-600 hover:bg-rose-500/10')}>
-            Update Stock
+            Restock
           </Button>
+          {onAdjust && <Button variant="ghost" size="sm" className="text-xs text-muted-foreground" onClick={onAdjust}>Adjust</Button>}
           <button onClick={onEdit} className="p-2 hover:bg-muted rounded-lg transition-colors">
             <Edit className="w-4 h-4 text-muted-foreground" />
           </button>

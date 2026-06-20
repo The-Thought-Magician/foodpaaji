@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import { invoke } from '@tauri-apps/api/core'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -157,6 +158,53 @@ export function EditInventoryDialog({ open, item, onClose, onSaved }: EditDialog
           onSubmit={handleSubmit}
           onCancel={onClose}
         />
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+interface AdjustStockDialogProps {
+  item: InventoryItem | null
+  onClose: () => void
+  onAdjusted: () => void
+}
+
+export function AdjustStockDialog({ item, onClose, onAdjusted }: AdjustStockDialogProps) {
+  const [newStock, setNewStock] = useState('')
+  const [reason, setReason] = useState('')
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!item || !reason.trim()) return
+    const level = parseFloat(newStock)
+    if (isNaN(level) || level < 0) return
+    await invoke('adjust_stock_level', {
+      request: { restaurant_id: RESTAURANT_ID, inventory_item_id: item.id, new_stock_level: level, reason, user_id: 1 }
+    }).catch(console.error)
+    onAdjusted()
+    onClose()
+    setNewStock(''); setReason('')
+  }
+
+  return (
+    <Dialog open={!!item} onOpenChange={open => { if (!open) onClose() }}>
+      <DialogContent className="max-w-sm">
+        <DialogHeader><DialogTitle>Adjust Stock — {item?.name}</DialogTitle></DialogHeader>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <p className="text-sm text-muted-foreground">Current: <strong>{item?.current_stock} {item?.base_unit}</strong></p>
+          <div>
+            <Label>New Stock Level ({item?.base_unit})</Label>
+            <Input type="number" step="0.01" min="0" placeholder="0.00" value={newStock} onChange={e => setNewStock(e.target.value)} autoFocus />
+          </div>
+          <div>
+            <Label>Reason *</Label>
+            <Input placeholder="e.g. Physical count correction" value={reason} onChange={e => setReason(e.target.value)} />
+          </div>
+          <div className="flex gap-2 justify-end">
+            <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
+            <Button type="submit" className="gradient-spice text-white" disabled={!newStock || !reason.trim()}>Adjust</Button>
+          </div>
+        </form>
       </DialogContent>
     </Dialog>
   )

@@ -113,6 +113,13 @@ export function BillingManagement() {
     } catch (e) { console.error(e) }
   }
 
+  const updateBillStatus = async (billId: number, status: string) => {
+    try {
+      await invoke('update_bill_status', { billId, status })
+      loadBills()
+    } catch (e) { console.error(e) }
+  }
+
   const recordPayment = async () => {
     if (!showPayment) return
     try {
@@ -169,9 +176,10 @@ export function BillingManagement() {
                   <Eye className="w-4 h-4 mr-1" />Details
                 </Button>
                 {bill.status === 'open' && (
-                  <Button size="sm" onClick={() => { setShowPayment(bill); setPayAmount(bill.total_amount.toFixed(2)) }}>
-                    Pay
-                  </Button>
+                  <>
+                    <Button size="sm" onClick={() => { setShowPayment(bill); setPayAmount(bill.total_amount.toFixed(2)) }}>Pay</Button>
+                    <Button size="sm" variant="ghost" className="text-red-500 hover:text-red-600" onClick={() => updateBillStatus(bill.id, 'cancelled')}>Void</Button>
+                  </>
                 )}
               </div>
             </CardContent>
