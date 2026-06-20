@@ -10,7 +10,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Plus, Tag, Megaphone, ToggleLeft, ToggleRight } from 'lucide-react'
+import { Plus, Tag, Megaphone, ToggleLeft, ToggleRight, Ticket } from 'lucide-react'
+import { CouponManagement } from '@/components/promotions/coupon-management'
 
 interface Promotion {
   id: number
@@ -119,6 +120,7 @@ export function PromotionsManagement() {
       <TabsList>
         <TabsTrigger value="promotions"><Tag className="w-4 h-4 mr-2" />Promotions</TabsTrigger>
         <TabsTrigger value="announcements"><Megaphone className="w-4 h-4 mr-2" />Announcements</TabsTrigger>
+        <TabsTrigger value="coupons"><Ticket className="w-4 h-4 mr-2" />Coupons</TabsTrigger>
       </TabsList>
 
       <TabsContent value="promotions" className="space-y-4 mt-4">
@@ -181,6 +183,10 @@ export function PromotionsManagement() {
           ))}
           {announcements.length === 0 && <p className="text-center text-muted-foreground py-12">No announcements yet</p>}
         </div>
+      </TabsContent>
+
+      <TabsContent value="coupons" className="mt-4">
+        <CouponManagement />
       </TabsContent>
 
       <Dialog open={showPromoForm} onOpenChange={setShowPromoForm}>
