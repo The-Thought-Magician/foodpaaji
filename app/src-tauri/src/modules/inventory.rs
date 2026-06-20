@@ -377,11 +377,50 @@ pub async fn create_supplier(
 
 async fn get_supplier_by_id(id: i64, db: &DbPool) -> Result<Supplier, String> {
     sqlx::query_as::<_, Supplier>(
-        "SELECT id, restaurant_id, name, contact_person, email, phone, address, 
+        "SELECT id, restaurant_id, name, contact_person, email, phone, address,
          gstin, payment_terms, is_active, created_at, updated_at FROM suppliers WHERE id = ?"
     )
     .bind(id)
     .fetch_one(db)
     .await
     .map_err(|e| format!("Database error: {}", e))
+}
+
+#[derive(Deserialize)]
+pub struct BulkUpdateRequest {
+    pub restaurant_id: i64,
+    pub item_ids: Vec<i64>,
+    pub operation_type: String,
+    pub field: Option<String>,
+    pub value: Option<f64>,
+    pub percentage: Option<f64>,
+}
+
+#[tauri::command]
+pub async fn bulk_update_inventory_items(
+    request: BulkUpdateRequest,
+    db: State<'_, DbPool>,
+) -> Result<ApiResponse<i64>, String> {
+    let mut updated = 0i64;
+    for item_id in &request.item_ids {
+        let sql = match (request.operation_type.as_str(), request.field.as_deref()) {
+            ("PRICE_UPDATE", Some("cost_price")) =>
+                format!("UPDATE inventory_items SET cost_price = {}, updated_at = CURRENT_TIMESTAMP WHERE id = {} AND restaurant_id = {}", request.value.unwrap_or(0.0), item_id, request.restaurant_id),
+            ("PRICE_UPDATE", Some("selling_price")) =>
+                format!("UPDATE inventory_items SET selling_price = {}, updated_at = CURRENT_TIMESTAMP WHERE id = {} AND restaurant_id = {}", request.value.unwrap_or(0.0), item_id, request.restaurant_id),
+            ("STOCK_ADJUSTMENT", _) =>
+                format!("UPDATE inventory_items SET current_stock = current_stock + {}, updated_at = CURRENT_TIMESTAMP WHERE id = {} AND restaurant_id = {}", request.value.unwrap_or(0.0), item_id, request.restaurant_id),
+            ("REORDER_LEVELS", Some(field @ ("minimum_stock" | "maximum_stock" | "reorder_point"))) =>
+                format!("UPDATE inventory_items SET {} = {}, updated_at = CURRENT_TIMESTAMP WHERE id = {} AND restaurant_id = {}", field, request.value.unwrap_or(0.0), item_id, request.restaurant_id),
+            ("PERCENTAGE_MARKUP", Some("cost_price")) =>
+                format!("UPDATE inventory_items SET cost_price = cost_price * {}, updated_at = CURRENT_TIMESTAMP WHERE id = {} AND restaurant_id = {}", 1.0 + request.percentage.unwrap_or(0.0) / 100.0, item_id, request.restaurant_id),
+            ("PERCENTAGE_MARKUP", Some("selling_price")) =>
+                format!("UPDATE inventory_items SET selling_price = selling_price * {}, updated_at = CURRENT_TIMESTAMP WHERE id = {} AND restaurant_id = {}", 1.0 + request.percentage.unwrap_or(0.0) / 100.0, item_id, request.restaurant_id),
+            _ => continue,
+        };
+        if sqlx::query(&sql).execute(&*db).await.is_ok() {
+            updated += 1;
+        }
+    }
+    Ok(ApiResponse { success: true, data: Some(updated), message: Some(format!("{} items updated", updated)), error: None })
 }
