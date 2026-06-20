@@ -13,10 +13,12 @@ import { MenuItemCard, type MenuItemData } from '@/components/menu/menu-item-car
 import { CategoryCard, type CategoryData } from '@/components/menu/category-card'
 import { ItemModal, CategoryModal } from '@/components/menu/menu-modals'
 import PricingManagement from '@/components/menu/pricing-management'
+import MenuCategories from '@/components/menu/menu-categories'
+import RecipeManagement from '@/components/menu/recipe-management'
 
 const RESTAURANT_ID = 1
 
-type Tab = 'dashboard' | 'items' | 'categories' | 'pricing'
+type Tab = 'dashboard' | 'items' | 'categories' | 'pricing' | 'recipes'
 
 export function MenuManagement() {
   const [activeTab, setActiveTab] = useState<Tab>('dashboard')
@@ -138,6 +140,7 @@ export function MenuManagement() {
     { key: 'items', label: 'Menu Items' },
     { key: 'categories', label: 'Categories' },
     { key: 'pricing', label: 'Pricing' },
+    { key: 'recipes', label: 'Recipes' },
   ]
 
   return (
@@ -226,27 +229,11 @@ export function MenuManagement() {
       )}
 
       {activeTab === 'categories' && (
-        <div className="space-y-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-2xl font-bold" style={{ fontFamily: 'Outfit, sans-serif' }}>Categories</h2>
-              <p className="text-muted-foreground">Organize your menu into categories</p>
-            </div>
-            <Button onClick={() => setShowCategoryModal(true)} className="gradient-spice text-white shadow-lg">
-              <Plus className="w-4 h-4 mr-2" />Add Category
-            </Button>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {categories.map(cat => (
-              <CategoryCard key={cat.id} category={cat}
-                onEdit={() => { setEditingCategory(cat); setShowCategoryModal(true) }}
-                onDelete={() => handleDeleteCategory(cat.id)} />
-            ))}
-          </div>
-        </div>
+        <MenuCategories restaurantId={RESTAURANT_ID} onCategoriesChange={loadCategories} />
       )}
 
       {activeTab === 'pricing' && <PricingManagement restaurantId={RESTAURANT_ID} categories={categories as []} onPricesChange={loadItems} />}
+      {activeTab === 'recipes' && <RecipeManagement />}
 
       {showItemModal && (
         <ItemModal item={editingItem} categories={categories}
