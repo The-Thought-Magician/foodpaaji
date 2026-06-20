@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo, useCallback } from 'react'
 import { invoke } from '@tauri-apps/api/core'
 import { Button } from '@/components/ui/button'
-import { Package, Plus, Search, X, Trash2, BarChart3, ArrowLeftRight, FileText, DollarSign, Bell } from 'lucide-react'
+import { Package, Plus, Search, X, Trash2, BarChart3, ArrowLeftRight, FileText, DollarSign, Bell, Truck } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import InventoryCard, { type InventoryItem } from '@/components/inventory/inventory-card'
 import WasteTracking from '@/components/inventory/waste-tracking'
@@ -12,11 +12,12 @@ import InventoryTransfers from '@/components/inventory/inventory-transfers'
 import InventoryReports from '@/components/inventory/inventory-reports'
 import InventoryValuation from '@/components/inventory/inventory-valuation'
 import LowStockAlerts from '@/components/inventory/low-stock-alerts'
+import SupplierManagement from '@/components/inventory/supplier-management'
 import { DeleteInventoryDialog, RestockDialog, EditInventoryDialog, AdjustStockDialog } from '@/components/inventory/inventory-dialogs'
 
 const RESTAURANT_ID = 1
 const ITEMS_PER_PAGE = 12
-type Tab = 'items' | 'waste' | 'analytics' | 'transfers' | 'reports' | 'valuation' | 'alerts'
+type Tab = 'items' | 'waste' | 'analytics' | 'transfers' | 'reports' | 'valuation' | 'alerts' | 'suppliers'
 
 export function InventoryManagement() {
   const [items, setItems] = useState<InventoryItem[]>([])
@@ -122,6 +123,11 @@ export function InventoryManagement() {
             tab === 'alerts' ? 'bg-background shadow text-foreground' : 'text-muted-foreground hover:text-foreground')}>
           <Bell className="w-4 h-4" /> Alerts
         </button>
+        <button onClick={() => setTab('suppliers')}
+          className={cn('px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2',
+            tab === 'suppliers' ? 'bg-background shadow text-foreground' : 'text-muted-foreground hover:text-foreground')}>
+          <Truck className="w-4 h-4" /> Suppliers
+        </button>
       </div>
 
       {tab === 'waste' && <WasteTracking />}
@@ -130,6 +136,7 @@ export function InventoryManagement() {
       {tab === 'reports' && <InventoryReports />}
       {tab === 'valuation' && <InventoryValuation />}
       {tab === 'alerts' && <LowStockAlerts />}
+      {tab === 'suppliers' && <SupplierManagement />}
 
       {tab === 'items' && (
         <>
