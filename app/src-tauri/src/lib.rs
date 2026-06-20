@@ -9,9 +9,21 @@ use modules::attendance::{clock_in, clock_out, start_break, end_break, get_atten
 use modules::util::{backup_database, restore_database, seed_sample_data};
 use modules::auth::{generate_jwt, verify_jwt};
 use modules::fs_check::cross_platform_fs_check;
+use modules::inventory::{get_inventory_items, search_inventory_items, create_inventory_item, get_inventory_categories, create_inventory_category, get_suppliers, create_supplier};
+use modules::stock_movements::{create_stock_movement, get_stock_movements, adjust_stock_level};
+use modules::low_stock_alerts::{get_low_stock_alerts, get_alert_summary, acknowledge_alert, bulk_acknowledge_alerts, clear_acknowledged_alerts, check_and_create_alerts};
+use modules::unit_conversions::{get_unit_conversions, create_unit_conversion, convert_units, get_available_units, setup_default_conversions};
+use modules::inventory_valuation::{calculate_inventory_valuation, compare_valuation_methods};
+use modules::inventory_reports::{get_stock_summary_report, get_movement_report, get_low_stock_report, get_inventory_analytics, get_top_moving_items_report, get_slow_moving_items_report};
+use modules::auto_stock_deduction::{process_order_completion, validate_stock_availability, create_menu_recipe, get_menu_recipe};
+use modules::inventory_transfers::{create_inventory_transfer, approve_transfer, complete_transfer, get_inventory_transfers};
 use modules::menu::{create_menu_category, get_menu_categories, get_menu_category_by_id, update_menu_category, delete_menu_category, create_menu_item, get_menu_items_by_category, get_menu_item_by_id, delete_menu_item};
 use modules::menu_images::{upload_menu_item_image, upload_menu_category_image, get_menu_image, delete_menu_item_image, delete_menu_category_image};
 use modules::pricing::{calculate_menu_item_price, bulk_calculate_prices, update_menu_item_price, get_pricing_analytics, sync_cost_prices_from_recipes};
+use modules::billing::{create_bill, get_bills, get_bill_details, update_bill_status, record_payment, get_billing_summary};
+use modules::customers::{create_customer, get_customers, get_customer, update_customer, delete_customer, add_loyalty_points, redeem_loyalty_points, get_customer_stats};
+use modules::reservations::{get_tables, create_table, create_reservation, get_reservations, update_reservation_status, update_reservation, get_table_availability};
+use modules::promotions::{create_promotion, get_promotions, validate_promo_code, apply_promo, toggle_promotion, create_announcement, get_announcements, dismiss_announcement};
 use tauri::Manager;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -37,6 +49,43 @@ pub fn run() {
       generate_jwt,
       verify_jwt,
       cross_platform_fs_check,
+      get_inventory_items,
+      search_inventory_items,
+      create_inventory_item,
+      get_inventory_categories,
+      create_inventory_category,
+      get_suppliers,
+      create_supplier,
+      create_stock_movement,
+      get_stock_movements,
+      adjust_stock_level,
+      get_low_stock_alerts,
+      get_alert_summary,
+      acknowledge_alert,
+      bulk_acknowledge_alerts,
+      clear_acknowledged_alerts,
+      check_and_create_alerts,
+      get_unit_conversions,
+      create_unit_conversion,
+      convert_units,
+      get_available_units,
+      setup_default_conversions,
+      calculate_inventory_valuation,
+      compare_valuation_methods,
+      get_stock_summary_report,
+      get_movement_report,
+      get_low_stock_report,
+      get_inventory_analytics,
+      get_top_moving_items_report,
+      get_slow_moving_items_report,
+      process_order_completion,
+      validate_stock_availability,
+      create_menu_recipe,
+      get_menu_recipe,
+      create_inventory_transfer,
+      approve_transfer,
+      complete_transfer,
+      get_inventory_transfers,
       create_menu_category,
       get_menu_categories,
       get_menu_category_by_id,
@@ -56,13 +105,41 @@ pub fn run() {
       update_menu_item_price,
       get_pricing_analytics,
       sync_cost_prices_from_recipes,
+      create_bill,
+      get_bills,
+      get_bill_details,
+      update_bill_status,
+      record_payment,
+      get_billing_summary,
+      create_customer,
+      get_customers,
+      get_customer,
+      update_customer,
+      delete_customer,
+      add_loyalty_points,
+      redeem_loyalty_points,
+      get_customer_stats,
+      get_tables,
+      create_table,
+      create_reservation,
+      get_reservations,
+      update_reservation_status,
+      update_reservation,
+      get_table_availability,
+      create_promotion,
+      get_promotions,
+      validate_promo_code,
+      apply_promo,
+      toggle_promotion,
+      create_announcement,
+      get_announcements,
+      dismiss_announcement,
     ])
     .setup(|app| {
-      // Enable logging in all builds with sensible defaults
       let level = if cfg!(debug_assertions) { log::LevelFilter::Debug } else { log::LevelFilter::Info };
       let builder = tauri_plugin_log::Builder::default().level(level);
       app.handle().plugin(builder.build())?;
-      
+
       let app_handle = app.handle().clone();
       tauri::async_runtime::spawn(async move {
         match init_database().await {
@@ -75,7 +152,7 @@ pub fn run() {
           }
         }
       });
-      
+
       Ok(())
     })
     .run(tauri::generate_context!())

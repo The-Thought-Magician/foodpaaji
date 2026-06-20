@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO announcements (title, body, target, priority, expires_at) VALUES (?, ?, ?, ?, ?)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 5
+    },
+    "nullable": []
+  },
+  "hash": "920c3426e4e489e5a681015aaa35824e24d0fd2b2c35c720f50c917c31c5ecbd"
+}

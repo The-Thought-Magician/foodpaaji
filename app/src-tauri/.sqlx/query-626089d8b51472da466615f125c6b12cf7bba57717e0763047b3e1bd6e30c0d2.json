@@ -1,0 +1,80 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT r.id, r.customer_name, r.customer_phone, r.table_id, t.table_number, r.party_size, r.reservation_date, r.reservation_time, r.duration_minutes, r.status, r.special_requests FROM reservations r LEFT JOIN tables t ON r.table_id = t.id WHERE r.reservation_date = ? AND r.status = ? ORDER BY r.reservation_time",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Integer"
+      },
+      {
+        "name": "customer_name",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "customer_phone",
+        "ordinal": 2,
+        "type_info": "Text"
+      },
+      {
+        "name": "table_id",
+        "ordinal": 3,
+        "type_info": "Integer"
+      },
+      {
+        "name": "table_number",
+        "ordinal": 4,
+        "type_info": "Text"
+      },
+      {
+        "name": "party_size",
+        "ordinal": 5,
+        "type_info": "Integer"
+      },
+      {
+        "name": "reservation_date",
+        "ordinal": 6,
+        "type_info": "Text"
+      },
+      {
+        "name": "reservation_time",
+        "ordinal": 7,
+        "type_info": "Text"
+      },
+      {
+        "name": "duration_minutes",
+        "ordinal": 8,
+        "type_info": "Integer"
+      },
+      {
+        "name": "status",
+        "ordinal": 9,
+        "type_info": "Text"
+      },
+      {
+        "name": "special_requests",
+        "ordinal": 10,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      true,
+      false,
+      false,
+      true,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true
+    ]
+  },
+  "hash": "626089d8b51472da466615f125c6b12cf7bba57717e0763047b3e1bd6e30c0d2"
+}

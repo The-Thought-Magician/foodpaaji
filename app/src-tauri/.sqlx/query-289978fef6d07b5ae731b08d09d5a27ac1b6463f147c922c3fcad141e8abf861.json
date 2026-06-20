@@ -1,0 +1,92 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT id, title, description, promo_code, discount_type, discount_value, min_order_amount, max_discount_amount, usage_limit, usage_count, start_date, end_date, is_active FROM promotions ORDER BY created_at DESC",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Integer"
+      },
+      {
+        "name": "title",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "description",
+        "ordinal": 2,
+        "type_info": "Text"
+      },
+      {
+        "name": "promo_code",
+        "ordinal": 3,
+        "type_info": "Text"
+      },
+      {
+        "name": "discount_type",
+        "ordinal": 4,
+        "type_info": "Text"
+      },
+      {
+        "name": "discount_value",
+        "ordinal": 5,
+        "type_info": "Float"
+      },
+      {
+        "name": "min_order_amount",
+        "ordinal": 6,
+        "type_info": "Float"
+      },
+      {
+        "name": "max_discount_amount",
+        "ordinal": 7,
+        "type_info": "Float"
+      },
+      {
+        "name": "usage_limit",
+        "ordinal": 8,
+        "type_info": "Integer"
+      },
+      {
+        "name": "usage_count",
+        "ordinal": 9,
+        "type_info": "Integer"
+      },
+      {
+        "name": "start_date",
+        "ordinal": 10,
+        "type_info": "Text"
+      },
+      {
+        "name": "end_date",
+        "ordinal": 11,
+        "type_info": "Text"
+      },
+      {
+        "name": "is_active",
+        "ordinal": 12,
+        "type_info": "Integer"
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      false,
+      false,
+      true,
+      true,
+      false,
+      false,
+      false,
+      true,
+      true,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "289978fef6d07b5ae731b08d09d5a27ac1b6463f147c922c3fcad141e8abf861"
+}

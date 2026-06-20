@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT loyalty_points FROM customers WHERE id = ?",
+  "describe": {
+    "columns": [
+      {
+        "name": "loyalty_points",
+        "ordinal": 0,
+        "type_info": "Integer"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "4573f6343c7b5c2334b85e78649a51efd10a33cd96f6aa91e26babe11de1592a"
+}

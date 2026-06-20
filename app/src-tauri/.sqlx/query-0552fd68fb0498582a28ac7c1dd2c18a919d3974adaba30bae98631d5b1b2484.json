@@ -1,0 +1,38 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT id, table_number, capacity, location FROM tables WHERE is_active = 1 ORDER BY capacity",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Integer"
+      },
+      {
+        "name": "table_number",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "capacity",
+        "ordinal": 2,
+        "type_info": "Integer"
+      },
+      {
+        "name": "location",
+        "ordinal": 3,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true
+    ]
+  },
+  "hash": "0552fd68fb0498582a28ac7c1dd2c18a919d3974adaba30bae98631d5b1b2484"
+}

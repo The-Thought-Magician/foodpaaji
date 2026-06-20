@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE reservations SET customer_name = ?, customer_phone = ?, table_id = ?, party_size = ?, reservation_date = ?, reservation_time = ?, duration_minutes = ?, special_requests = ?, updated_at = datetime('now') WHERE id = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 9
+    },
+    "nullable": []
+  },
+  "hash": "f0aec1a8d9e9b4018157eabf05e0bb5188e2ddb5801d902af7f8396a117cd325"
+}

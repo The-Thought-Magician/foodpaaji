@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO tables (table_number, capacity, location) VALUES (?, ?, ?)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": []
+  },
+  "hash": "88a71902c9ab8ba9fdb402a0816e3b124589abaca1f32d6949fbcc85c0cd02ec"
+}

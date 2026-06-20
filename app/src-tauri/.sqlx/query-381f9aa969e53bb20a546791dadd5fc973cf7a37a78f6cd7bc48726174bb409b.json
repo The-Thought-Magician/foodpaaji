@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT COALESCE(SUM(amount), 0.0) as total FROM payments WHERE bill_id = ? AND status = 'completed'",
+  "describe": {
+    "columns": [
+      {
+        "name": "total",
+        "ordinal": 0,
+        "type_info": "Float"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "381f9aa969e53bb20a546791dadd5fc973cf7a37a78f6cd7bc48726174bb409b"
+}

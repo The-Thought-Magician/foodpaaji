@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO payments (bill_id, amount, method, upi_reference, upi_app, status, paid_at) VALUES (?, ?, ?, ?, ?, 'completed', ?)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 6
+    },
+    "nullable": []
+  },
+  "hash": "d3c0860e82b058964b3f0aa66eec8faa0c465bedbc05089ae1b5a4502cc698e6"
+}

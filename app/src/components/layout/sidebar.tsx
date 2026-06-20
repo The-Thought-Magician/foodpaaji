@@ -14,13 +14,17 @@ import {
   ChevronLeft,
   ChevronRight,
   Store,
+  UserCircle,
+  FileText,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const navItems = [
   { id: '/', label: 'Dashboard', icon: LayoutDashboard },
+  { id: '/billing', label: 'Billing', icon: FileText },
   { id: '/pos', label: 'Point of Sale', icon: Receipt },
   { id: '/employees', label: 'Employees', icon: Users },
+  { id: '/customers', label: 'Customers', icon: UserCircle },
   { id: '/inventory', label: 'Inventory', icon: Package },
   { id: '/menu', label: 'Menu', icon: Utensils },
   { id: '/reservations', label: 'Reservations', icon: Calendar },

@@ -1,0 +1,50 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT id, amount, method, upi_reference, status, paid_at FROM payments WHERE bill_id = ?",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Integer"
+      },
+      {
+        "name": "amount",
+        "ordinal": 1,
+        "type_info": "Float"
+      },
+      {
+        "name": "method",
+        "ordinal": 2,
+        "type_info": "Text"
+      },
+      {
+        "name": "upi_reference",
+        "ordinal": 3,
+        "type_info": "Text"
+      },
+      {
+        "name": "status",
+        "ordinal": 4,
+        "type_info": "Text"
+      },
+      {
+        "name": "paid_at",
+        "ordinal": 5,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      true,
+      false,
+      false,
+      true,
+      false,
+      true
+    ]
+  },
+  "hash": "6b488189f2da872f95940ee9f11491076649c63864c540c25bad1a0a3b59f105"
+}

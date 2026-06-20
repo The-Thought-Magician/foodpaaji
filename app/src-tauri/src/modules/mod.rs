@@ -16,3 +16,7 @@ pub mod inventory_transfers;
 pub mod menu;
 pub mod menu_images;
 pub mod pricing;
+pub mod billing;
+pub mod customers;
+pub mod reservations;
+pub mod promotions;

@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE customers SET name = ?, phone = ?, email = ?, address = ?, updated_at = datetime('now') WHERE id = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 5
+    },
+    "nullable": []
+  },
+  "hash": "a984dd7f6ba4b967bb3035ba292c0959df82a81b5a9b21a14043f40fb58d5809"
+}

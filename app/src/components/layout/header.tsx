@@ -8,8 +8,10 @@ import { cn } from '@/lib/utils'
 
 const pageTitles: Record<string, string> = {
   '/': 'Dashboard',
+  '/billing': 'Billing',
   '/pos': 'Point of Sale',
   '/employees': 'Employee Management',
+  '/customers': 'Customer Management',
   '/inventory': 'Inventory Management',
   '/menu': 'Menu Management',
   '/reservations': 'Table Reservations',

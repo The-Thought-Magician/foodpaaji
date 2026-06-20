@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE promotions SET usage_count = usage_count + 1 WHERE id = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": []
+  },
+  "hash": "a40321d8df9ff0062bdaac1d31bae4e8fe0ab5212e32c5d18936c6330f548e51"
+}

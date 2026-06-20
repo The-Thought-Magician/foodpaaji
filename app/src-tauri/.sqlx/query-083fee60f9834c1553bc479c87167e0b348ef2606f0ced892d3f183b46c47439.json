@@ -1,0 +1,32 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT COUNT(*) as total_bills, COALESCE(SUM(total_amount), 0.0) as total_revenue, COALESCE(SUM(CASE WHEN status='paid' THEN total_amount ELSE 0 END), 0.0) as collected FROM bills WHERE date(created_at) = ?",
+  "describe": {
+    "columns": [
+      {
+        "name": "total_bills",
+        "ordinal": 0,
+        "type_info": "Integer"
+      },
+      {
+        "name": "total_revenue",
+        "ordinal": 1,
+        "type_info": "Float"
+      },
+      {
+        "name": "collected",
+        "ordinal": 2,
+        "type_info": "Float"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "083fee60f9834c1553bc479c87167e0b348ef2606f0ced892d3f183b46c47439"
+}

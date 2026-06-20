@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO reservations (customer_name, customer_phone, table_id, party_size, reservation_date, reservation_time, duration_minutes, special_requests) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 8
+    },
+    "nullable": []
+  },
+  "hash": "6feb0625928676fe9baa804b35e7c27e69d5f7b8e2d314f8e940dd2a3b6120bf"
+}

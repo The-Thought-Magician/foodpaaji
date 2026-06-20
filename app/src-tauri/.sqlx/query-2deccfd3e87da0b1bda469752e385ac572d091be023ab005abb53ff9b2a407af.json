@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO promotions (title, description, promo_code, discount_type, discount_value, min_order_amount, max_discount_amount, usage_limit, start_date, end_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 10
+    },
+    "nullable": []
+  },
+  "hash": "2deccfd3e87da0b1bda469752e385ac572d091be023ab005abb53ff9b2a407af"
+}

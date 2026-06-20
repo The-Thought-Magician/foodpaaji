@@ -1,0 +1,92 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT id, bill_number, customer_id, table_number, subtotal, discount_amount, discount_percent, tax_amount, tax_percent, total_amount, status, notes, created_at FROM bills WHERE status = ? ORDER BY created_at DESC LIMIT ?",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Integer"
+      },
+      {
+        "name": "bill_number",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "customer_id",
+        "ordinal": 2,
+        "type_info": "Integer"
+      },
+      {
+        "name": "table_number",
+        "ordinal": 3,
+        "type_info": "Text"
+      },
+      {
+        "name": "subtotal",
+        "ordinal": 4,
+        "type_info": "Float"
+      },
+      {
+        "name": "discount_amount",
+        "ordinal": 5,
+        "type_info": "Float"
+      },
+      {
+        "name": "discount_percent",
+        "ordinal": 6,
+        "type_info": "Float"
+      },
+      {
+        "name": "tax_amount",
+        "ordinal": 7,
+        "type_info": "Float"
+      },
+      {
+        "name": "tax_percent",
+        "ordinal": 8,
+        "type_info": "Float"
+      },
+      {
+        "name": "total_amount",
+        "ordinal": 9,
+        "type_info": "Float"
+      },
+      {
+        "name": "status",
+        "ordinal": 10,
+        "type_info": "Text"
+      },
+      {
+        "name": "notes",
+        "ordinal": 11,
+        "type_info": "Text"
+      },
+      {
+        "name": "created_at",
+        "ordinal": 12,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      true,
+      false,
+      true,
+      true,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      false
+    ]
+  },
+  "hash": "5cb1850b3e27d8abd6c9c09ad8dedc4dcbf76efecc99cc75289d4ff4a859bf74"
+}

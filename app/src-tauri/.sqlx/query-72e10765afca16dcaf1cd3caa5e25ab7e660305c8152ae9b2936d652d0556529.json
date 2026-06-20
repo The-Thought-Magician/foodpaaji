@@ -1,0 +1,38 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT COUNT(*) as total, COALESCE(SUM(total_spent), 0.0) as revenue, COALESCE(AVG(total_spent), 0.0) as avg_spend, COALESCE(SUM(loyalty_points), 0) as total_points FROM customers WHERE is_active = 1",
+  "describe": {
+    "columns": [
+      {
+        "name": "total",
+        "ordinal": 0,
+        "type_info": "Integer"
+      },
+      {
+        "name": "revenue",
+        "ordinal": 1,
+        "type_info": "Float"
+      },
+      {
+        "name": "avg_spend",
+        "ordinal": 2,
+        "type_info": "Float"
+      },
+      {
+        "name": "total_points",
+        "ordinal": 3,
+        "type_info": "Integer"
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "72e10765afca16dcaf1cd3caa5e25ab7e660305c8152ae9b2936d652d0556529"
+}

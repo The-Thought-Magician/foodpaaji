@@ -1,0 +1,62 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT id, menu_item_id, item_name, quantity, unit_price, discount_amount, total_price, notes FROM bill_items WHERE bill_id = ?",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Integer"
+      },
+      {
+        "name": "menu_item_id",
+        "ordinal": 1,
+        "type_info": "Integer"
+      },
+      {
+        "name": "item_name",
+        "ordinal": 2,
+        "type_info": "Text"
+      },
+      {
+        "name": "quantity",
+        "ordinal": 3,
+        "type_info": "Integer"
+      },
+      {
+        "name": "unit_price",
+        "ordinal": 4,
+        "type_info": "Float"
+      },
+      {
+        "name": "discount_amount",
+        "ordinal": 5,
+        "type_info": "Float"
+      },
+      {
+        "name": "total_price",
+        "ordinal": 6,
+        "type_info": "Float"
+      },
+      {
+        "name": "notes",
+        "ordinal": 7,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      true,
+      true,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true
+    ]
+  },
+  "hash": "d61c877ff7bba99a7884701120fb642d5a926f632887c595ba87c90413cdab85"
+}

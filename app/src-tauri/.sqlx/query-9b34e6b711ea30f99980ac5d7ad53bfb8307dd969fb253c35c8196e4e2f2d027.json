@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT DISTINCT table_id FROM reservations WHERE reservation_date = ? AND reservation_time BETWEEN time(?, '-90 minutes') AND time(?, '+90 minutes') AND status NOT IN ('cancelled', 'no_show') AND table_id IS NOT NULL",
+  "describe": {
+    "columns": [
+      {
+        "name": "table_id",
+        "ordinal": 0,
+        "type_info": "Integer"
+      }
+    ],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": [
+      true
+    ]
+  },
+  "hash": "9b34e6b711ea30f99980ac5d7ad53bfb8307dd969fb253c35c8196e4e2f2d027"
+}

@@ -1,0 +1,74 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT id, name, phone, email, address, loyalty_points, total_spent, visit_count, is_active, created_at FROM customers WHERE is_active = 1 ORDER BY name LIMIT ?",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Integer"
+      },
+      {
+        "name": "name",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "phone",
+        "ordinal": 2,
+        "type_info": "Text"
+      },
+      {
+        "name": "email",
+        "ordinal": 3,
+        "type_info": "Text"
+      },
+      {
+        "name": "address",
+        "ordinal": 4,
+        "type_info": "Text"
+      },
+      {
+        "name": "loyalty_points",
+        "ordinal": 5,
+        "type_info": "Integer"
+      },
+      {
+        "name": "total_spent",
+        "ordinal": 6,
+        "type_info": "Float"
+      },
+      {
+        "name": "visit_count",
+        "ordinal": 7,
+        "type_info": "Integer"
+      },
+      {
+        "name": "is_active",
+        "ordinal": 8,
+        "type_info": "Integer"
+      },
+      {
+        "name": "created_at",
+        "ordinal": 9,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false,
+      false,
+      true,
+      true,
+      true,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "91b0925446977201a1a74caaea3f2f6e8cee37467bfb8aa9c3ff174801096761"
+}
