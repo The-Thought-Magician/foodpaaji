@@ -3,12 +3,15 @@
 import { useState, useEffect, useMemo } from 'react'
 import { invoke } from '@tauri-apps/api/core'
 import { Button } from '@/components/ui/button'
-import { Package, Plus, Search, X } from 'lucide-react'
+import { Package, Plus, Search, X, Trash2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import InventoryCard, { type InventoryItem } from '@/components/inventory/inventory-card'
+import WasteTracking from '@/components/inventory/waste-tracking'
 
 const RESTAURANT_ID = 1
 const ITEMS_PER_PAGE = 12
+
+type Tab = 'items' | 'waste'
 
 export function InventoryManagement() {
   const [items, setItems] = useState<InventoryItem[]>([])
@@ -16,6 +19,7 @@ export function InventoryManagement() {
   const [search, setSearch] = useState('')
   const [filterStatus, setFilterStatus] = useState<'all' | 'in_stock' | 'low_stock' | 'out_of_stock'>('all')
   const [page, setPage] = useState(1)
+  const [tab, setTab] = useState<Tab>('items')
 
   useEffect(() => {
     invoke<{ success: boolean; data?: InventoryItem[] }>('get_inventory_items', { restaurantId: RESTAURANT_ID })
@@ -69,63 +73,82 @@ export function InventoryManagement() {
         </Button>
       </div>
 
-      <div className="flex flex-col lg:flex-row gap-4">
-        <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-4 h-4" />
-          <input type="text" placeholder="Search items by name or SKU..."
-            value={search} onChange={e => setSearch(e.target.value)}
-            className="w-full pl-10 pr-10 py-2.5 bg-card border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all" />
-          {search && (
-            <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
-              <X className="w-4 h-4" />
-            </button>
-          )}
-        </div>
-        <select value={filterStatus} onChange={e => setFilterStatus(e.target.value as typeof filterStatus)}
-          className="px-4 py-2.5 bg-card border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer text-sm">
-          <option value="all">All Status</option>
-          <option value="in_stock">In Stock</option>
-          <option value="low_stock">Low Stock</option>
-          <option value="out_of_stock">Out of Stock</option>
-        </select>
+      <div className="flex gap-1 bg-muted p-1 rounded-xl w-fit">
+        <button onClick={() => setTab('items')}
+          className={cn('px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2',
+            tab === 'items' ? 'bg-background shadow text-foreground' : 'text-muted-foreground hover:text-foreground')}>
+          <Package className="w-4 h-4" /> Items
+        </button>
+        <button onClick={() => setTab('waste')}
+          className={cn('px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2',
+            tab === 'waste' ? 'bg-background shadow text-foreground' : 'text-muted-foreground hover:text-foreground')}>
+          <Trash2 className="w-4 h-4" /> Waste Tracking
+        </button>
       </div>
 
-      {filtered.length === 0 ? (
-        <div className="text-center py-20 bg-card rounded-2xl border border-border">
-          <div className="w-20 h-20 bg-muted rounded-2xl flex items-center justify-center mx-auto mb-4">
-            <Package className="w-10 h-10 text-muted-foreground" />
-          </div>
-          <h3 className="text-lg font-semibold mb-2">No items found</h3>
-          <p className="text-muted-foreground">{search || filterStatus !== 'all' ? 'Try adjusting your filters' : 'Add your first inventory item to get started'}</p>
-        </div>
-      ) : (
+      {tab === 'waste' && <WasteTracking />}
+
+      {tab === 'items' && (
         <>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {paginated.map(item => (
-              <InventoryCard key={item.id} item={item}
-                onEdit={() => {}} onDelete={() => {}} onRestock={() => {}} />
-            ))}
+          <div className="flex flex-col lg:flex-row gap-4">
+            <div className="relative flex-1 max-w-md">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-4 h-4" />
+              <input type="text" placeholder="Search items by name or SKU..."
+                value={search} onChange={e => setSearch(e.target.value)}
+                className="w-full pl-10 pr-10 py-2.5 bg-card border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all" />
+              {search && (
+                <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                  <X className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+            <select value={filterStatus} onChange={e => setFilterStatus(e.target.value as typeof filterStatus)}
+              className="px-4 py-2.5 bg-card border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer text-sm">
+              <option value="all">All Status</option>
+              <option value="in_stock">In Stock</option>
+              <option value="low_stock">Low Stock</option>
+              <option value="out_of_stock">Out of Stock</option>
+            </select>
           </div>
 
-          {totalPages > 1 && (
-            <div className="flex items-center justify-between">
-              <p className="text-sm text-muted-foreground">
-                Showing {((page - 1) * ITEMS_PER_PAGE) + 1} to {Math.min(page * ITEMS_PER_PAGE, filtered.length)} of {filtered.length} items
-              </p>
-              <div className="flex items-center gap-2">
-                <Button variant="outline" size="sm" onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}>Previous</Button>
-                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                  const p = Math.max(1, Math.min(totalPages - 4, page - 2)) + i
-                  return (
-                    <button key={p} onClick={() => setPage(p)}
-                      className={cn('w-9 h-9 rounded-lg text-sm font-medium transition-all', page === p ? 'gradient-spice text-white shadow-md' : 'hover:bg-muted')}>
-                      {p}
-                    </button>
-                  )
-                })}
-                <Button variant="outline" size="sm" onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}>Next</Button>
+          {filtered.length === 0 ? (
+            <div className="text-center py-20 bg-card rounded-2xl border border-border">
+              <div className="w-20 h-20 bg-muted rounded-2xl flex items-center justify-center mx-auto mb-4">
+                <Package className="w-10 h-10 text-muted-foreground" />
               </div>
+              <h3 className="text-lg font-semibold mb-2">No items found</h3>
+              <p className="text-muted-foreground">{search || filterStatus !== 'all' ? 'Try adjusting your filters' : 'Add your first inventory item to get started'}</p>
             </div>
+          ) : (
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {paginated.map(item => (
+                  <InventoryCard key={item.id} item={item}
+                    onEdit={() => {}} onDelete={() => {}} onRestock={() => {}} />
+                ))}
+              </div>
+
+              {totalPages > 1 && (
+                <div className="flex items-center justify-between">
+                  <p className="text-sm text-muted-foreground">
+                    Showing {((page - 1) * ITEMS_PER_PAGE) + 1} to {Math.min(page * ITEMS_PER_PAGE, filtered.length)} of {filtered.length} items
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <Button variant="outline" size="sm" onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}>Previous</Button>
+                    {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                      const p = Math.max(1, Math.min(totalPages - 4, page - 2)) + i
+                      return (
+                        <button key={p} onClick={() => setPage(p)}
+                          className={cn('w-9 h-9 rounded-lg text-sm font-medium transition-all', page === p ? 'gradient-spice text-white shadow-md' : 'hover:bg-muted')}>
+                          {p}
+                        </button>
+                      )
+                    })}
+                    <Button variant="outline" size="sm" onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}>Next</Button>
+                  </div>
+                </div>
+              )}
+            </>
           )}
         </>
       )}
