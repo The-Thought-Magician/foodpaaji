@@ -15,11 +15,12 @@ import LowStockAlerts from '@/components/inventory/low-stock-alerts'
 import SupplierManagement from '@/components/inventory/supplier-management'
 import BulkInventoryUpdate from '@/components/inventory/bulk-inventory-update'
 import StockMovementHistory from '@/components/inventory/stock-movement-history'
+import UnitConversions from '@/components/inventory/unit-conversions'
 import { DeleteInventoryDialog, RestockDialog, EditInventoryDialog, AdjustStockDialog } from '@/components/inventory/inventory-dialogs'
 
 const RESTAURANT_ID = 1
 const ITEMS_PER_PAGE = 12
-type Tab = 'items' | 'waste' | 'analytics' | 'transfers' | 'reports' | 'valuation' | 'alerts' | 'suppliers' | 'bulk' | 'movements'
+type Tab = 'items' | 'waste' | 'analytics' | 'transfers' | 'reports' | 'valuation' | 'alerts' | 'suppliers' | 'bulk' | 'movements' | 'units'
 
 export function InventoryManagement() {
   const [items, setItems] = useState<InventoryItem[]>([])
@@ -140,6 +141,11 @@ export function InventoryManagement() {
             tab === 'movements' ? 'bg-background shadow text-foreground' : 'text-muted-foreground hover:text-foreground')}>
           <History className="w-4 h-4" /> Movements
         </button>
+        <button onClick={() => setTab('units')}
+          className={cn('px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2',
+            tab === 'units' ? 'bg-background shadow text-foreground' : 'text-muted-foreground hover:text-foreground')}>
+          Units
+        </button>
       </div>
 
       {tab === 'waste' && <WasteTracking />}
@@ -151,6 +157,7 @@ export function InventoryManagement() {
       {tab === 'suppliers' && <SupplierManagement />}
       {tab === 'bulk' && <BulkInventoryUpdate />}
       {tab === 'movements' && <StockMovementHistory />}
+      {tab === 'units' && <UnitConversions />}
 
       {tab === 'items' && (
         <>
