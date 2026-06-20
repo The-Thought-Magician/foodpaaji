@@ -1,3 +1,5 @@
+'use client'
+
 import { useState, useMemo } from 'react'
 import { invoke } from '@tauri-apps/api/core'
 import { Button } from '@/components/ui/button'
@@ -70,8 +72,8 @@ export function InventoryManagement() {
   const [filterStatus, setFilterStatus] = useState<'all' | 'in_stock' | 'low_stock' | 'out_of_stock'>('all')
   const [currentPage, setCurrentPage] = useState(1)
   const [showAddForm, setShowAddForm] = useState(false)
-  // const [sortBy, setSortBy] = useState<'name' | 'stock' | 'price'>('name')
-  // const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc')
+  const [sortBy] = useState<'name' | 'stock' | 'price'>('name')
+  const [sortOrder] = useState<'asc' | 'desc'>('asc')
 
   const itemsPerPage = 12
 
@@ -147,7 +149,7 @@ export function InventoryManagement() {
       if (typeof aVal === 'string') {
         return sortOrder === 'asc' ? aVal.localeCompare(bVal as string) : (bVal as string).localeCompare(aVal)
       }
-      return sortOrder === 'asc' ? aVal - bVal : bVal - aVal
+      return sortOrder === 'asc' ? (aVal as number) - (bVal as number) : (bVal as number) - (aVal as number)
     })
 
     return result

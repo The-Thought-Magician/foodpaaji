@@ -1,3 +1,5 @@
+'use client'
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -7,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Search, Filter, Download, TrendingUp, TrendingDown, RotateCcw, RefreshCw } from 'lucide-react';
-import { invoke } from '@tauri-apps/api/tauri';
+import { invoke } from '@tauri-apps/api/core';
 
 interface StockMovement {
   id: number;
@@ -119,7 +121,7 @@ export default function StockMovementHistory() {
     setFilters(prev => ({
       ...prev,
       [key]: value,
-      page: key !== 'page' ? 1 : value
+      page: key !== 'page' ? 1 : (value as number)
     }));
   };
 
@@ -233,7 +235,7 @@ export default function StockMovementHistory() {
               <Label htmlFor="item_filter">Specific Item</Label>
               <Select
                 value={filters.inventory_item_id?.toString() || ''}
-                onValueChange={(value) => handleFilterChange('inventory_item_id', value ? parseInt(value) : undefined)}
+                onValueChange={(value: string | null) => handleFilterChange('inventory_item_id', value ? parseInt(value) : undefined)}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="All items" />
@@ -259,7 +261,7 @@ export default function StockMovementHistory() {
               <Label htmlFor="movement_type">Movement Type</Label>
               <Select
                 value={filters.movement_type || ''}
-                onValueChange={(value) => handleFilterChange('movement_type', value || undefined)}
+                onValueChange={(value: string | null) => handleFilterChange('movement_type', value || undefined)}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="All types" />
@@ -302,7 +304,7 @@ export default function StockMovementHistory() {
               <Label htmlFor="page_size">Show:</Label>
               <Select
                 value={filters.limit.toString()}
-                onValueChange={(value) => handleFilterChange('limit', parseInt(value))}
+                onValueChange={(value: string | null) => handleFilterChange('limit', parseInt(value ?? '10'))}
               >
                 <SelectTrigger className="w-20">
                   <SelectValue />

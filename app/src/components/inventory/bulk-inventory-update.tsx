@@ -1,3 +1,5 @@
+'use client'
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -9,7 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Calculator, Save, X } from 'lucide-react';
-import { invoke } from '@tauri-apps/api/tauri';
+import { invoke } from '@tauri-apps/api/core';
 
 interface InventoryItem {
   id: number;
@@ -231,7 +233,7 @@ export default function BulkInventoryUpdate() {
               <Label htmlFor="operation_type">Operation Type</Label>
               <Select
                 value={operation.type}
-                onValueChange={(value: 'PRICE_UPDATE' | 'STOCK_ADJUSTMENT' | 'REORDER_LEVELS' | 'PERCENTAGE_MARKUP') => setOperation({ type: value })}
+                onValueChange={(value: string | null) => setOperation({ type: value as 'PRICE_UPDATE' | 'STOCK_ADJUSTMENT' | 'REORDER_LEVELS' | 'PERCENTAGE_MARKUP' })}
               >
                 <SelectTrigger>
                   <SelectValue />
@@ -251,7 +253,7 @@ export default function BulkInventoryUpdate() {
                   <Label htmlFor="price_field">Price Field</Label>
                   <Select
                     value={operation.field || ''}
-                    onValueChange={(value) => setOperation(prev => ({ ...prev, field: value }))}
+                    onValueChange={(value: string | null) => setOperation(prev => ({ ...prev, field: value || undefined }))}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Select field" />
@@ -295,7 +297,7 @@ export default function BulkInventoryUpdate() {
                   <Label htmlFor="reorder_field">Level Type</Label>
                   <Select
                     value={operation.field || ''}
-                    onValueChange={(value) => setOperation(prev => ({ ...prev, field: value }))}
+                    onValueChange={(value: string | null) => setOperation(prev => ({ ...prev, field: value || undefined }))}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Select level" />
@@ -326,7 +328,7 @@ export default function BulkInventoryUpdate() {
                   <Label htmlFor="markup_field">Price Field</Label>
                   <Select
                     value={operation.field || ''}
-                    onValueChange={(value) => setOperation(prev => ({ ...prev, field: value }))}
+                    onValueChange={(value: string | null) => setOperation(prev => ({ ...prev, field: value || undefined }))}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Select field" />

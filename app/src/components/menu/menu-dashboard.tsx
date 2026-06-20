@@ -1,3 +1,5 @@
+'use client'
+
 import { useState, useEffect } from 'react'
 import {
   Utensils,
@@ -213,7 +215,7 @@ export function MenuDashboard({ onNavigate }: MenuDashboardProps) {
             item_count: Math.floor(Math.random() * 15) + 3,
             description: cat.description,
             icon: undefined,
-            display_order: cat.sort_order,
+            display_order: cat.display_order,
           }))
         setCategories(activeCategories)
 
@@ -224,7 +226,7 @@ export function MenuDashboard({ onNavigate }: MenuDashboardProps) {
         const featuredResults = await Promise.all(featuredItemsPromises)
         const allFeatured: MenuItem[] = []
 
-        featuredResults.forEach((result: { success: boolean; data?: MenuItem[] }) => {
+        ;(featuredResults as { success: boolean; data?: MenuItem[] }[]).forEach((result) => {
           if (result.success && result.data) {
             const featured = result.data
               .filter((item: MenuItem) => item.is_featured && item.is_active)
@@ -237,8 +239,8 @@ export function MenuDashboard({ onNavigate }: MenuDashboardProps) {
                 image_url: item.image_path,
                 is_available: item.is_available,
                 is_vegetarian: item.is_vegetarian || false,
-                spice_level: (item as MenuItem & { spice_level?: number }).spice_level || 0,
-                preparation_time: (item as MenuItem & { preparation_time?: number }).preparation_time || 15,
+                spice_level: item.spice_level || 'mild',
+                preparation_time: item.preparation_time || 15,
                 stock_count: 10,
                 low_stock_threshold: 5,
                 total_orders: Math.floor(Math.random() * 100) + 20,

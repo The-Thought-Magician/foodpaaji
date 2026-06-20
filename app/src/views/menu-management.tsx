@@ -1,3 +1,5 @@
+'use client'
+
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import {
@@ -135,12 +137,12 @@ export function MenuManagement() {
   ]
 
   const mockCategories: MenuCategory[] = [
-    { id: 1, name: 'Starters', is_active: true, item_count: 12 },
-    { id: 2, name: 'Main Course', is_active: true, item_count: 18 },
-    { id: 3, name: 'Breads', is_active: true, item_count: 8 },
-    { id: 4, name: 'Rice & Biryani', is_active: true, item_count: 6 },
-    { id: 5, name: 'Desserts', is_active: true, item_count: 5 },
-    { id: 6, name: 'Beverages', is_active: true, item_count: 7 }
+    { id: 1, name: 'Starters', is_active: true, item_count: 12, display_order: 1 },
+    { id: 2, name: 'Main Course', is_active: true, item_count: 18, display_order: 2 },
+    { id: 3, name: 'Breads', is_active: true, item_count: 8, display_order: 3 },
+    { id: 4, name: 'Rice & Biryani', is_active: true, item_count: 6, display_order: 4 },
+    { id: 5, name: 'Desserts', is_active: true, item_count: 5, display_order: 5 },
+    { id: 6, name: 'Beverages', is_active: true, item_count: 7, display_order: 6 }
   ]
 
   const filteredItems = mockItems.filter(item => {

@@ -1,3 +1,5 @@
+'use client'
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -8,7 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { AlertTriangle, CheckCircle, Circle, Trash2, RefreshCw, Filter, Search, Package } from 'lucide-react';
-import { invoke } from '@tauri-apps/api/tauri';
+import { invoke } from '@tauri-apps/api/core';
 
 interface LowStockAlert {
   id: number;
@@ -327,7 +329,7 @@ export default function LowStockAlerts() {
               <Label htmlFor="alert_level">Alert Level</Label>
               <Select
                 value={filters.alert_level || ''}
-                onValueChange={(value) => setFilters(prev => ({ ...prev, alert_level: value || undefined, page: 1 }))}
+                onValueChange={(value: string | null) => setFilters(prev => ({ ...prev, alert_level: value || undefined, page: 1 }))}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="All levels" />
@@ -345,7 +347,7 @@ export default function LowStockAlerts() {
               <Label htmlFor="status">Status</Label>
               <Select
                 value={filters.is_acknowledged !== undefined ? filters.is_acknowledged.toString() : ''}
-                onValueChange={(value) => setFilters(prev => ({ 
+                onValueChange={(value: string | null) => setFilters(prev => ({ 
                   ...prev, 
                   is_acknowledged: value === '' ? undefined : value === 'true',
                   page: 1
@@ -366,7 +368,7 @@ export default function LowStockAlerts() {
               <Label htmlFor="limit">Per Page</Label>
               <Select
                 value={filters.limit.toString()}
-                onValueChange={(value) => setFilters(prev => ({ ...prev, limit: parseInt(value), page: 1 }))}
+                onValueChange={(value: string | null) => setFilters(prev => ({ ...prev, limit: parseInt(value ?? '10'), page: 1 }))}
               >
                 <SelectTrigger>
                   <SelectValue />

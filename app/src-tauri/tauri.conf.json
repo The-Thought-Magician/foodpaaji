@@ -4,10 +4,10 @@
   "version": "0.1.0",
   "identifier": "com.foodpaaji.restaurant",
   "build": {
-    "frontendDist": "../dist",
-    "devUrl": "http://localhost:5173",
-    "beforeDevCommand": "npm run frontend:dev",
-    "beforeBuildCommand": "npm run frontend:build"
+    "frontendDist": "../out",
+    "devUrl": "http://localhost:3000",
+    "beforeDevCommand": "pnpm frontend:dev",
+    "beforeBuildCommand": "pnpm frontend:build"
   },
   "app": {
     "windows": [

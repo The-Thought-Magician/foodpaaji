@@ -1,3 +1,5 @@
+'use client'
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -8,7 +10,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { Calculator, Save, X } from 'lucide-react';
-import { invoke } from '@tauri-apps/api/tauri';
+import { invoke } from '@tauri-apps/api/core';
 
 interface InventoryCategory {
   id: number;
@@ -126,7 +128,7 @@ export default function InventoryItemForm({ initialData, onSubmit, onCancel, isE
     }
   };
 
-  const handleInputChange = (field: keyof InventoryItemFormData, value: string | number | boolean) => {
+  const handleInputChange = (field: keyof InventoryItemFormData, value: string | number | boolean | null) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: '' }));
@@ -303,7 +305,7 @@ export default function InventoryItemForm({ initialData, onSubmit, onCancel, isE
               <Label htmlFor="category">Category</Label>
               <Select
                 value={formData.category_id?.toString() || ''}
-                onValueChange={(value) => handleInputChange('category_id', value ? parseInt(value) : null)}
+                onValueChange={(value: string | null) => handleInputChange('category_id', value ? parseInt(value) : null)}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select category" />
@@ -322,7 +324,7 @@ export default function InventoryItemForm({ initialData, onSubmit, onCancel, isE
               <Label htmlFor="supplier">Supplier</Label>
               <Select
                 value={formData.supplier_id?.toString() || ''}
-                onValueChange={(value) => handleInputChange('supplier_id', value ? parseInt(value) : null)}
+                onValueChange={(value: string | null) => handleInputChange('supplier_id', value ? parseInt(value) : null)}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select supplier" />
@@ -350,7 +352,7 @@ export default function InventoryItemForm({ initialData, onSubmit, onCancel, isE
               <Label htmlFor="unit_type">Unit Type</Label>
               <Select
                 value={formData.unit_type}
-                onValueChange={(value) => {
+                onValueChange={(value: string | null) => {
                   handleInputChange('unit_type', value);
                   const units = getCurrentUnits();
                   if (units.length > 0) {
@@ -374,7 +376,7 @@ export default function InventoryItemForm({ initialData, onSubmit, onCancel, isE
               <Label htmlFor="base_unit">Base Unit *</Label>
               <Select
                 value={formData.base_unit}
-                onValueChange={(value) => handleInputChange('base_unit', value)}
+                onValueChange={(value: string | null) => handleInputChange('base_unit', value)}
               >
                 <SelectTrigger>
                   <SelectValue />
@@ -424,7 +426,7 @@ export default function InventoryItemForm({ initialData, onSubmit, onCancel, isE
                 />
                 <Select
                   value={conversionTest.fromUnit}
-                  onValueChange={(value) => setConversionTest(prev => ({ ...prev, fromUnit: value }))}
+                  onValueChange={(value: string | null) => setConversionTest(prev => ({ ...prev, fromUnit: value ?? prev.fromUnit }))}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="From unit" />
@@ -437,7 +439,7 @@ export default function InventoryItemForm({ initialData, onSubmit, onCancel, isE
                 </Select>
                 <Select
                   value={conversionTest.toUnit}
-                  onValueChange={(value) => setConversionTest(prev => ({ ...prev, toUnit: value }))}
+                  onValueChange={(value: string | null) => setConversionTest(prev => ({ ...prev, toUnit: value ?? prev.toUnit }))}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="To unit" />

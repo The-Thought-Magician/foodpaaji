@@ -1,14 +1,25 @@
+'use client'
+
 import { Bell, Search, Moon, Sun, LogOut, User, ChevronDown } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useState, useEffect } from 'react'
+import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
 
-interface HeaderProps {
-  title?: string
-  sidebarCollapsed?: boolean
+const pageTitles: Record<string, string> = {
+  '/': 'Dashboard',
+  '/pos': 'Point of Sale',
+  '/employees': 'Employee Management',
+  '/inventory': 'Inventory Management',
+  '/menu': 'Menu Management',
+  '/reservations': 'Table Reservations',
+  '/promotions': 'Promotions & Offers',
+  '/settings': 'Settings',
 }
 
-export function Header({ title = "FoodPaaji" }: HeaderProps) {
+export function Header() {
+  const pathname = usePathname()
+  const title = pageTitles[pathname] ?? 'FoodPaaji'
   const [dark, setDark] = useState(false)
   const [showNotifications, setShowNotifications] = useState(false)
   const [showUserMenu, setShowUserMenu] = useState(false)

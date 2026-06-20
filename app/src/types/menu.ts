@@ -3,10 +3,14 @@ export interface MenuItem {
   name: string
   name_hi?: string
   description: string
+  short_description?: string
   category_id: number
   price: number
   image_url?: string
+  image_path?: string
   is_available: boolean
+  is_active?: boolean
+  is_featured?: boolean
   is_vegetarian: boolean
   spice_level: 'mild' | 'medium' | 'hot' | 'extra_hot'
   preparation_time: number

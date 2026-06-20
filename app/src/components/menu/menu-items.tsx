@@ -1,3 +1,5 @@
+'use client'
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -19,7 +21,7 @@ import {
   Clock,
   Leaf
 } from 'lucide-react';
-import { invoke } from '@tauri-apps/api/tauri';
+import { invoke } from '@tauri-apps/api/core';
 
 interface MenuItem {
   id?: number;
@@ -275,7 +277,7 @@ export default function MenuItems({ restaurantId, categories, onItemsChange }: M
           <Label>Select Category</Label>
           <Select
             value={selectedCategory?.toString()}
-            onValueChange={(value) => setSelectedCategory(parseInt(value))}
+            onValueChange={(value: string | null) => setSelectedCategory(parseInt(value ?? '0'))}
           >
             <SelectTrigger>
               <SelectValue placeholder="Choose a category to view items" />
@@ -442,9 +444,9 @@ export default function MenuItems({ restaurantId, categories, onItemsChange }: M
                   <Label htmlFor="category">Category</Label>
                   <Select
                     value={formData.category_id?.toString()}
-                    onValueChange={(value) => setFormData(prev => ({ 
+                    onValueChange={(value: string | null) => setFormData(prev => ({ 
                       ...prev, 
-                      category_id: parseInt(value) 
+                      category_id: parseInt(value ?? '0')
                     }))}
                   >
                     <SelectTrigger>

@@ -1,3 +1,5 @@
+'use client'
+
 import { useState } from 'react'
 import { invoke } from '@tauri-apps/api/core'
 import { Button } from '@/components/ui/button'

@@ -1,3 +1,5 @@
+'use client'
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -14,7 +16,7 @@ import {
   BarChart3,
   RefreshCw
 } from 'lucide-react';
-import { invoke } from '@tauri-apps/api/tauri';
+import { invoke } from '@tauri-apps/api/core';
 
 interface PriceCalculation {
   menu_item_id: number;
@@ -398,9 +400,9 @@ export default function PricingManagement({ restaurantId, categories, onPricesCh
               <Label>Menu Item</Label>
               <Select
                 value={calculatorForm.menu_item_id.toString()}
-                onValueChange={(value) => setCalculatorForm(prev => ({ 
+                onValueChange={(value: string | null) => setCalculatorForm(prev => ({ 
                   ...prev, 
-                  menu_item_id: parseInt(value) 
+                  menu_item_id: parseInt(value ?? '0') 
                 }))}
               >
                 <SelectTrigger>
@@ -420,7 +422,7 @@ export default function PricingManagement({ restaurantId, categories, onPricesCh
               <Label>Pricing Strategy</Label>
               <Select
                 value={calculatorForm.strategy}
-                onValueChange={(value) => setCalculatorForm(prev => ({ 
+                onValueChange={(value: string | null) => setCalculatorForm(prev => ({ 
                   ...prev, 
                   strategy: value as PricingStrategy 
                 }))}
@@ -530,10 +532,10 @@ export default function PricingManagement({ restaurantId, categories, onPricesCh
             <div>
               <Label>Categories to Update</Label>
               <Select
-                onValueChange={(value) => {
+                onValueChange={(value: string | null) => {
                   const categoryIds = value === 'all' 
                     ? categories.map(cat => cat.id) 
-                    : [parseInt(value)];
+                    : [parseInt(value ?? '0')];
                   setBulkForm(prev => ({ ...prev, category_ids: categoryIds }));
                 }}
               >
@@ -555,7 +557,7 @@ export default function PricingManagement({ restaurantId, categories, onPricesCh
               <Label>Pricing Strategy</Label>
               <Select
                 value={bulkForm.strategy}
-                onValueChange={(value) => setBulkForm(prev => ({ 
+                onValueChange={(value: string | null) => setBulkForm(prev => ({ 
                   ...prev, 
                   strategy: value as PricingStrategy 
                 }))}

@@ -1,3 +1,5 @@
+'use client'
+
 import {
   Users,
   Receipt,
@@ -118,7 +120,7 @@ export function Dashboard() {
           <h2 className="text-2xl font-bold" style={{ fontFamily: 'Outfit, sans-serif' }}>
             Welcome back, Admin
           </h2>
-          <p className="text-muted-foreground">Here's what's happening at your restaurant today</p>
+          <p className="text-muted-foreground">Here&apos;s what&apos;s happening at your restaurant today</p>
         </div>
         <div className="flex items-center gap-3">
           <Button className="gradient-spice text-white shadow-lg shadow-primary/20">
