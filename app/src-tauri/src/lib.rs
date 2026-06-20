@@ -10,7 +10,8 @@ use modules::attendance::{clock_in, clock_out, start_break, end_break, get_atten
 use modules::util::{backup_database, restore_database, seed_sample_data};
 use modules::auth::{generate_jwt, verify_jwt};
 use modules::fs_check::cross_platform_fs_check;
-use modules::inventory::{get_inventory_items, search_inventory_items, create_inventory_item, get_inventory_categories, create_inventory_category, get_suppliers, create_supplier, bulk_update_inventory_items};
+use modules::inventory::{get_inventory_items, search_inventory_items, create_inventory_item, bulk_update_inventory_items};
+use modules::inventory_suppliers::{get_inventory_categories, create_inventory_category, get_suppliers, create_supplier};
 use modules::stock_movements::{create_stock_movement, get_stock_movements, adjust_stock_level};
 use modules::low_stock_alerts::{get_low_stock_alerts, get_alert_summary, acknowledge_alert, bulk_acknowledge_alerts, clear_acknowledged_alerts, check_and_create_alerts};
 use modules::unit_conversions::{get_unit_conversions, create_unit_conversion, convert_units, get_available_units, setup_default_conversions};
