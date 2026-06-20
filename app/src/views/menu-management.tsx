@@ -15,6 +15,7 @@ import { ItemModal, CategoryModal } from '@/components/menu/menu-modals'
 import PricingManagement from '@/components/menu/pricing-management'
 import MenuCategories from '@/components/menu/menu-categories'
 import RecipeManagement from '@/components/menu/recipe-management'
+import MenuItems from '@/components/menu/menu-items'
 
 const RESTAURANT_ID = 1
 
@@ -160,72 +161,7 @@ export function MenuManagement() {
       )}
 
       {activeTab === 'items' && (
-        <div className="space-y-6">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div>
-              <h2 className="text-2xl font-bold" style={{ fontFamily: 'Outfit, sans-serif' }}>Menu Items</h2>
-              <p className="text-muted-foreground">Manage your restaurant menu items</p>
-            </div>
-            <Button onClick={() => { setEditingItem(null); setShowItemModal(true) }} className="gradient-spice text-white shadow-lg">
-              <Plus className="w-4 h-4 mr-2" />Add Item
-            </Button>
-          </div>
-
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="relative flex-1 max-w-md">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-4 h-4" />
-              <input type="text" placeholder="Search menu items..." value={search}
-                onChange={e => setSearch(e.target.value)}
-                className="w-full pl-10 pr-10 py-2.5 bg-card border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20" />
-              {search && (
-                <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-                  <X className="w-4 h-4" />
-                </button>
-              )}
-            </div>
-            <div className="flex items-center gap-2 flex-wrap">
-              <button onClick={() => setSelectedCategory(null)}
-                className={cn('px-4 py-2 rounded-lg text-sm font-medium transition-all',
-                  selectedCategory === null ? 'gradient-spice text-white shadow-md' : 'bg-card hover:bg-muted border border-border')}>
-                All
-              </button>
-              {categories.map(cat => (
-                <button key={cat.id} onClick={() => setSelectedCategory(cat.id)}
-                  className={cn('px-4 py-2 rounded-lg text-sm font-medium transition-all',
-                    selectedCategory === cat.id ? 'gradient-spice text-white shadow-md' : 'bg-card hover:bg-muted border border-border')}>
-                  {cat.name}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {filteredItems.map(item => (
-              <MenuItemCard key={item.id} item={item}
-                onEdit={() => { setEditingItem(item); setShowItemModal(true) }}
-                onDelete={() => handleDeleteItem(item.id)}
-                onToggle={() => handleToggleItem(item)}
-                onQuickPrice={() => { setQuickPriceItem(item); setQuickPrice(item.price.toString()) }} />
-            ))}
-          </div>
-
-          {filteredItems.length === 0 && (
-            <div className="text-center py-20 bg-card rounded-2xl border border-border">
-              <div className="w-20 h-20 bg-muted rounded-2xl flex items-center justify-center mx-auto mb-4">
-                <Utensils className="w-10 h-10 text-muted-foreground" />
-              </div>
-              <h3 className="text-lg font-semibold mb-2">No items found</h3>
-              <p className="text-muted-foreground mb-6">
-                {search ? 'Try adjusting your search' : 'Add your first menu item to get started'}
-              </p>
-              {!search && (
-                <Button onClick={() => setShowItemModal(true)} className="gradient-spice text-white">
-                  <Plus className="w-4 h-4 mr-2" />Add First Item
-                </Button>
-              )}
-            </div>
-          )}
-        </div>
+        <MenuItems restaurantId={RESTAURANT_ID} categories={categories} onItemsChange={loadItems} />
       )}
 
       {activeTab === 'categories' && (
