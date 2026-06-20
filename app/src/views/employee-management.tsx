@@ -10,6 +10,8 @@ import { cn } from '@/lib/utils'
 import EmployeeCard from '@/components/employee/employee-card'
 import { EmployeeForm } from '@/components/employee/employee-form'
 import { EmployeeDashboard } from '@/components/employee/employee-dashboard'
+import { PasswordChange } from '@/components/employee/password-change'
+import { EmployeeLogin } from '@/components/employee/employee-login'
 
 interface UserDto {
   id: number | null
@@ -38,6 +40,8 @@ export function EmployeeManagement() {
   const [editEmployee, setEditEmployee] = useState<Employee | undefined>()
   const [deleteTarget, setDeleteTarget] = useState<Employee | null>(null)
   const [dashboardEmployee, setDashboardEmployee] = useState<Employee | null>(null)
+  const [changePwdEmployee, setChangePwdEmployee] = useState<Employee | null>(null)
+  const [showLogin, setShowLogin] = useState(false)
 
   const loadEmployees = useCallback(() => {
     invoke<ApiResponse<UserDto[]>>('get_employees', { restaurant_id: RESTAURANT_ID })
@@ -104,9 +108,12 @@ export function EmployeeManagement() {
           <h2 className="text-2xl font-bold" style={{ fontFamily: 'Outfit, sans-serif' }}>Employee Management</h2>
           <p className="text-muted-foreground">Manage your restaurant staff and their roles</p>
         </div>
-        <Button onClick={() => setShowAddForm(true)} className="gradient-spice text-white shadow-lg">
-          <Plus className="w-4 h-4 mr-2" />Add Employee
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => setShowLogin(true)}>Employee Login</Button>
+          <Button onClick={() => setShowAddForm(true)} className="gradient-spice text-white shadow-lg">
+            <Plus className="w-4 h-4 mr-2" />Add Employee
+          </Button>
+        </div>
       </div>
 
       <div className="flex flex-col lg:flex-row gap-4">
@@ -180,7 +187,23 @@ export function EmployeeManagement() {
       {dashboardEmployee && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-card rounded-2xl shadow-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto animate-scale-in">
-            <EmployeeDashboard employee={dashboardEmployee} onLogout={() => setDashboardEmployee(null)} onChangePassword={() => {}} onViewProfile={() => {}} />
+            <EmployeeDashboard employee={dashboardEmployee} onLogout={() => setDashboardEmployee(null)} onChangePassword={() => { setChangePwdEmployee(dashboardEmployee); setDashboardEmployee(null) }} onViewProfile={() => {}} />
+          </div>
+        </div>
+      )}
+
+      {showLogin && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-card rounded-2xl shadow-xl max-w-sm w-full animate-scale-in">
+            <EmployeeLogin restaurantId={RESTAURANT_ID} onLoginSuccess={() => setShowLogin(false)} onCancel={() => setShowLogin(false)} />
+          </div>
+        </div>
+      )}
+
+      {changePwdEmployee && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-card rounded-2xl shadow-xl max-w-md w-full animate-scale-in">
+            <PasswordChange employeeId={changePwdEmployee.id} onSuccess={() => setChangePwdEmployee(null)} onCancel={() => setChangePwdEmployee(null)} />
           </div>
         </div>
       )}
