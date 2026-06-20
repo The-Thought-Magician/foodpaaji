@@ -32,6 +32,19 @@ interface BillItem {
   discount_amount: number
 }
 
+interface BillDetailItem {
+  item_name: string
+  quantity: number
+  unit_price: number
+  total_price: number
+}
+
+interface BillPayment {
+  amount: number
+  method: string
+  paid_at: string
+}
+
 const STATUS_COLOR: Record<string, string> = {
   open: 'bg-blue-100 text-blue-700',
   paid: 'bg-green-100 text-green-700',
@@ -52,6 +65,14 @@ export function BillingManagement() {
   const [payAmount, setPayAmount] = useState('')
   const [payMethod, setPayMethod] = useState('cash')
   const [upiRef, setUpiRef] = useState('')
+  const [showDetails, setShowDetails] = useState<null | { bill: Bill; items: BillDetailItem[]; payments: BillPayment[] }>(null)
+
+  const viewDetails = async (bill: Bill) => {
+    try {
+      const res = await invoke<{ success: boolean; data: { items: BillDetailItem[]; payments: BillPayment[] } }>('get_bill_details', { billId: bill.id })
+      if (res.success) setShowDetails({ bill, items: res.data.items, payments: res.data.payments })
+    } catch (e) { console.error(e) }
+  }
 
   const loadBills = useCallback(async () => {
     try {
@@ -144,9 +165,12 @@ export function BillingManagement() {
               <div className="flex items-center gap-4">
                 <span className="font-bold text-lg">₹{bill.total_amount.toFixed(2)}</span>
                 <Badge className={STATUS_COLOR[bill.status] || ''}>{bill.status}</Badge>
+                <Button size="sm" variant="outline" onClick={() => viewDetails(bill)}>
+                  <Eye className="w-4 h-4 mr-1" />Details
+                </Button>
                 {bill.status === 'open' && (
                   <Button size="sm" onClick={() => { setShowPayment(bill); setPayAmount(bill.total_amount.toFixed(2)) }}>
-                    <Eye className="w-4 h-4 mr-1" />Pay
+                    Pay
                   </Button>
                 )}
               </div>
@@ -211,6 +235,45 @@ export function BillingManagement() {
               </div>
             )}
             <Button className="w-full gradient-spice text-white" onClick={recordPayment}>Confirm Payment</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+      <Dialog open={!!showDetails} onOpenChange={() => setShowDetails(null)}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader><DialogTitle>{showDetails?.bill.bill_number} — Details</DialogTitle></DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-1">
+              {showDetails?.items.map((it, i) => (
+                <div key={i} className="flex justify-between text-sm">
+                  <span>{it.item_name} × {it.quantity}</span>
+                  <span>₹{it.total_price.toFixed(2)}</span>
+                </div>
+              ))}
+              <div className="flex justify-between font-bold border-t pt-2">
+                <span>Total</span><span>₹{showDetails?.bill.total_amount.toFixed(2)}</span>
+              </div>
+            </div>
+            {showDetails?.payments && showDetails.payments.length > 0 && (
+              <div>
+                <p className="text-sm font-medium mb-1">Payments</p>
+                {showDetails.payments.map((p, i) => (
+                  <div key={i} className="flex justify-between text-sm text-muted-foreground">
+                    <span>{p.method.toUpperCase()} · {new Date(p.paid_at).toLocaleString()}</span>
+                    <span>₹{p.amount.toFixed(2)}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+            <Button variant="outline" className="w-full" onClick={async () => {
+              if (!showDetails) return
+              const res = await invoke<{ success: boolean; data: { content: string } }>('get_receipt', { billId: showDetails.bill.id }).catch(() => null)
+              if (res?.success) {
+                const w = window.open('', '_blank')
+                if (w) { w.document.write(`<pre style="font-family:monospace">${res.data.content}</pre>`); w.print() }
+              }
+            }}>
+              <Receipt className="w-4 h-4 mr-2" />Reprint Receipt
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
