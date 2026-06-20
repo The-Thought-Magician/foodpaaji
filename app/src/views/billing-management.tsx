@@ -11,6 +11,7 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { FileText, Plus, IndianRupee, Receipt, TrendingUp, Eye } from 'lucide-react'
 import { UpiQr } from '@/components/ui/upi-qr'
+import { getSettings } from '@/lib/settings'
 
 interface Bill {
   id: number
@@ -47,7 +48,7 @@ export function BillingManagement() {
   const [items, setItems] = useState<BillItem[]>([{ item_name: '', quantity: 1, unit_price: 0, discount_amount: 0 }])
   const [tableNumber, setTableNumber] = useState('')
   const [discountPercent, setDiscountPercent] = useState(0)
-  const [taxPercent, setTaxPercent] = useState(5)
+  const [taxPercent, setTaxPercent] = useState(() => getSettings().default_tax_percent)
   const [payAmount, setPayAmount] = useState('')
   const [payMethod, setPayMethod] = useState('cash')
   const [upiRef, setUpiRef] = useState('')
@@ -205,7 +206,7 @@ export function BillingManagement() {
             </div>
             {payMethod === 'upi' && (
               <div className="space-y-3">
-                <UpiQr amount={parseFloat(payAmount) || 0} upiId="restaurant@upi" name="FoodPaaji" note={showPayment?.bill_number} />
+                <UpiQr amount={parseFloat(payAmount) || 0} upiId={getSettings().upi_id} name={getSettings().restaurant_name} note={showPayment?.bill_number} />
                 <div><Label>UPI Reference</Label><Input value={upiRef} onChange={e => setUpiRef(e.target.value)} placeholder="Transaction ID after payment" /></div>
               </div>
             )}

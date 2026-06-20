@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Label } from '@/components/ui/label'
 import { Plus, Minus, Trash2, ShoppingCart, Receipt, Tag } from 'lucide-react'
 import { MenuPicker } from '@/components/pos/menu-picker'
+import { getSettings } from '@/lib/settings'
 
 interface CartItem {
   item_name: string
@@ -50,7 +51,7 @@ export function PosView() {
   const [orders, setOrders] = useState<Order[]>([])
   const [showReceipt, setShowReceipt] = useState<{ content: string; number: string } | null>(null)
   const [showConvert, setShowConvert] = useState<Order | null>(null)
-  const [taxPercent, setTaxPercent] = useState(5)
+  const [taxPercent, setTaxPercent] = useState(() => getSettings().default_tax_percent)
   const [discountPercent, setDiscountPercent] = useState(0)
 
   const loadOrders = useCallback(async () => {

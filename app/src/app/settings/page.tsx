@@ -6,43 +6,14 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent } from '@/components/ui/card'
 import { Settings, Store, CreditCard, Percent } from 'lucide-react'
-
-interface RestaurantSettings {
-  restaurant_name: string
-  upi_id: string
-  gstin: string
-  default_tax_percent: number
-  service_charge_percent: number
-  address: string
-  phone: string
-}
+import { getSettings } from '@/lib/settings'
 
 const SETTINGS_KEY = 'foodpaaji_settings'
 
-function loadSettings(): RestaurantSettings {
-  if (typeof window === 'undefined') return defaultSettings()
-  try {
-    const s = localStorage.getItem(SETTINGS_KEY)
-    return s ? JSON.parse(s) : defaultSettings()
-  } catch {
-    return defaultSettings()
-  }
-}
-
-function defaultSettings(): RestaurantSettings {
-  return {
-    restaurant_name: 'FoodPaaji',
-    upi_id: 'restaurant@upi',
-    gstin: '',
-    default_tax_percent: 5,
-    service_charge_percent: 0,
-    address: '',
-    phone: '',
-  }
-}
+type RestaurantSettings = ReturnType<typeof getSettings>
 
 export default function SettingsPage() {
-  const [settings, setSettings] = useState<RestaurantSettings>(loadSettings)
+  const [settings, setSettings] = useState<RestaurantSettings>(getSettings)
   const [saved, setSaved] = useState(false)
 
   const update = (field: keyof RestaurantSettings, value: string | number) => {
