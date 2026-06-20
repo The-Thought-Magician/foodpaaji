@@ -12,10 +12,11 @@ import { MenuDashboard } from '@/components/menu/menu-dashboard'
 import { MenuItemCard, type MenuItemData } from '@/components/menu/menu-item-card'
 import { CategoryCard, type CategoryData } from '@/components/menu/category-card'
 import { ItemModal, CategoryModal } from '@/components/menu/menu-modals'
+import PricingManagement from '@/components/menu/pricing-management'
 
 const RESTAURANT_ID = 1
 
-type Tab = 'dashboard' | 'items' | 'categories'
+type Tab = 'dashboard' | 'items' | 'categories' | 'pricing'
 
 export function MenuManagement() {
   const [activeTab, setActiveTab] = useState<Tab>('dashboard')
@@ -136,6 +137,7 @@ export function MenuManagement() {
     { key: 'dashboard', label: 'Dashboard' },
     { key: 'items', label: 'Menu Items' },
     { key: 'categories', label: 'Categories' },
+    { key: 'pricing', label: 'Pricing' },
   ]
 
   return (
@@ -243,6 +245,8 @@ export function MenuManagement() {
           </div>
         </div>
       )}
+
+      {activeTab === 'pricing' && <PricingManagement restaurantId={RESTAURANT_ID} categories={categories as []} onPricesChange={loadItems} />}
 
       {showItemModal && (
         <ItemModal item={editingItem} categories={categories}
