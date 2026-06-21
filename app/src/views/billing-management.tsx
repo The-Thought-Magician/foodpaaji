@@ -145,7 +145,8 @@ export function BillingManagement() {
         const remaining = Math.max(0, showPayment.total_amount - totalPaid)
         if (remaining <= 0 || res.bill_paid) {
           if (showPayment.customer_id) {
-            const pts = Math.floor(showPayment.total_amount / 10)
+            const loyaltyRate = getSettings().loyalty_points_per_100
+            const pts = Math.floor(showPayment.total_amount * loyaltyRate / 100)
             if (pts > 0) invoke('add_loyalty_points', { customerId: showPayment.customer_id, points: pts, billAmount: showPayment.total_amount }).catch(console.error)
           }
           setShowPayment(null); loadBills(); loadSummary()

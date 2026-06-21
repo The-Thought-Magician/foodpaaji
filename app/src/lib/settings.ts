@@ -9,6 +9,7 @@ interface AppSettings {
   address: string
   phone: string
   receipt_footer: string
+  loyalty_points_per_100: number
 }
 
 const defaults: AppSettings = {
@@ -20,7 +21,10 @@ const defaults: AppSettings = {
   address: '',
   phone: '',
   receipt_footer: 'Thank you! Visit again',
+  loyalty_points_per_100: 10,
 }
+
+export type { AppSettings }
 
 export function getSettings(): AppSettings {
   if (typeof window === 'undefined') return defaults

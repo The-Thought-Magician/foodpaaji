@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent } from '@/components/ui/card'
-import { Settings, Store, CreditCard, Percent, Download, Upload, FlaskConical } from 'lucide-react'
+import { Settings, Store, CreditCard, Percent, Download, Upload, FlaskConical, Star } from 'lucide-react'
 import { getSettings } from '@/lib/settings'
 
 const SETTINGS_KEY = 'foodpaaji_settings'
@@ -87,6 +87,13 @@ export default function SettingsPage() {
       fields: [
         { label: 'Default Tax %', key: 'default_tax_percent' as const, type: 'number' },
         { label: 'Service Charge %', key: 'service_charge_percent' as const, type: 'number' },
+      ],
+    },
+    {
+      icon: Star,
+      title: 'Loyalty Program',
+      fields: [
+        { label: 'Points earned per ₹100 spent', key: 'loyalty_points_per_100' as const, type: 'number' },
       ],
     },
   ]

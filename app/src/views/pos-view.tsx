@@ -131,7 +131,7 @@ export function PosView() {
         if (receipt.success) setShowReceipt({ id: receipt.data.receipt_id, content: receipt.data.content, number: receipt.data.receipt_number })
         const orderItems = (details.success && details.data?.items || []).filter(i => i.menu_item_id).map(i => ({ menu_item_id: i.menu_item_id!, quantity: i.quantity, notes: i.notes ?? null }))
         if (orderItems.length > 0) await invoke('process_order_completion', { request: { restaurant_id: 1, order_id: showConvert.id, order_items: orderItems, user_id: 1 } }).catch(console.error)
-        if (showConvert.customer_id) { if (redeemPoints && selectedCustomer?.loyalty_points) await invoke('redeem_loyalty_points', { customerId: showConvert.customer_id, points: selectedCustomer.loyalty_points, billId: res.bill_id }).catch(console.error); const pts = Math.floor(res.total_amount / 10); if (pts > 0) invoke('add_loyalty_points', { customerId: showConvert.customer_id, points: pts, billAmount: res.total_amount }).catch(console.error) }
+        if (showConvert.customer_id) { if (redeemPoints && selectedCustomer?.loyalty_points) await invoke('redeem_loyalty_points', { customerId: showConvert.customer_id, points: selectedCustomer.loyalty_points, billId: res.bill_id }).catch(console.error); const loyaltyRate = getSettings().loyalty_points_per_100; const pts = Math.floor(res.total_amount * loyaltyRate / 100); if (pts > 0) invoke('add_loyalty_points', { customerId: showConvert.customer_id, points: pts, billAmount: res.total_amount }).catch(console.error) }
         setRedeemPoints(false); setShowConvert(null); loadOrders()
       }
     } catch (e) { console.error(e) }
