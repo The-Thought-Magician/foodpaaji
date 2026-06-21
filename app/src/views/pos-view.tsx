@@ -72,6 +72,7 @@ export function PosView() {
   const [showConvert, setShowConvert] = useState<Order | null>(null)
   const [taxPercent, setTaxPercent] = useState(() => getSettings().default_tax_percent)
   const [discountPercent, setDiscountPercent] = useState(0)
+  const [showAllOrders, setShowAllOrders] = useState(false)
 
   const loadOrders = useCallback(async () => {
     try {
@@ -85,10 +86,8 @@ export function PosView() {
   const searchCustomers = async (q: string) => {
     setCustomerSearch(q)
     if (!q.trim()) { setCustomerResults([]); return }
-    try {
-      const res = await invoke<{ success: boolean; data?: Customer[] }>('get_customers', { search: q, limit: 5 })
-      if (res.success && res.data) setCustomerResults(res.data)
-    } catch (e) { console.error(e) }
+    const res = await invoke<{ success: boolean; data?: Customer[] }>('get_customers', { search: q, limit: 5 }).catch(() => null)
+    if (res?.success && res.data) setCustomerResults(res.data)
   }
 
   const addItem = () => setCart([...cart, { item_name: '', quantity: 1, unit_price: 0 }])
@@ -229,9 +228,9 @@ export function PosView() {
       </div>
 
       <div className="flex flex-col space-y-4 overflow-hidden">
-        <h3 className="font-semibold">Active Orders</h3>
+        <div className="flex items-center justify-between"><h3 className="font-semibold">{showAllOrders ? 'All Orders' : 'Active Orders'}</h3><button className="text-xs text-muted-foreground hover:text-foreground" onClick={() => setShowAllOrders(v => !v)}>{showAllOrders ? 'Active only' : 'Show all'}</button></div>
         <div className="flex-1 overflow-y-auto space-y-2">
-          {orders.filter(o => o.status !== 'served' && o.status !== 'cancelled').map(order => (
+          {(showAllOrders ? orders : orders.filter(o => o.status !== 'served' && o.status !== 'cancelled')).map(order => (
             <Card key={order.id} className="card-hover">
               <CardContent className="p-4">
                 <div className="flex items-center justify-between mb-2">
@@ -251,9 +250,7 @@ export function PosView() {
               </CardContent>
             </Card>
           ))}
-          {orders.filter(o => o.status !== 'served' && o.status !== 'cancelled').length === 0 && (
-            <p className="text-center text-muted-foreground py-8">No active orders</p>
-          )}
+          {(showAllOrders ? orders : orders.filter(o => o.status !== 'served' && o.status !== 'cancelled')).length === 0 && <p className="text-center text-muted-foreground py-8">No orders</p>}
         </div>
       </div>
 
