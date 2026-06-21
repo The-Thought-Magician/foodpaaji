@@ -157,14 +157,14 @@ export function BillingManagement() {
     const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(new Blob([[hdr, ...rows].join('\n')], { type: 'text/csv' })), download: `bills-${new Date().toISOString().split('T')[0]}.csv` })
     a.click()
   }
-
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
           { label: "Today's Bills", value: summary.today_bills, icon: FileText, format: (v: number) => v.toString() },
           { label: "Today's Revenue", value: summary.today_revenue, icon: IndianRupee, format: (v: number) => `₹${v.toFixed(0)}` },
           { label: "Collected", value: summary.today_collected, icon: TrendingUp, format: (v: number) => `₹${v.toFixed(0)}` },
+          { label: "Outstanding", value: summary.today_revenue - summary.today_collected, icon: Receipt, format: (v: number) => `₹${v.toFixed(0)}` },
         ].map(s => (
           <Card key={s.label} className="stat-card">
             <CardContent className="p-4 flex items-center gap-3">
