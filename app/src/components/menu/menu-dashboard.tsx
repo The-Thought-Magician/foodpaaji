@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Utensils, FolderOpen, IndianRupee, CheckCircle, RefreshCw, Plus, Star } from 'lucide-react'
+import { Utensils, FolderOpen, IndianRupee, CheckCircle, RefreshCw, Plus, Star, TrendingUp } from 'lucide-react'
 import { invoke } from '@tauri-apps/api/core'
 import { Button } from '@/components/ui/button'
 import type { MenuCategory, MenuItem } from '@/types/menu'
@@ -28,18 +28,21 @@ export function MenuDashboard({ onNavigate }: Props) {
   const [categories, setCategories] = useState<MenuCategory[]>([])
   const [featuredItems, setFeaturedItems] = useState<MenuItem[]>([])
   const [popular, setPopular] = useState<PopularItem[]>([])
+  const [trending, setTrending] = useState<{ menu_item_id: number; item_name: string; order_count: number; total_quantity: number }[]>([])
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
 
   const load = async () => {
     setRefreshing(true)
     try {
-      const [analyticsRes, categoriesRes, popRes] = await Promise.all([
+      const [analyticsRes, categoriesRes, popRes, trendRes] = await Promise.all([
         invoke<{ success: boolean; data?: MenuAnalytics }>('get_pricing_analytics', { restaurantId: RESTAURANT_ID }),
         invoke<{ success: boolean; data?: MenuCategory[] }>('get_menu_categories', { restaurantId: RESTAURANT_ID }),
         invoke<{ success: boolean; data?: PopularItem[] }>('get_popular_menu_items', { limit: 5 }),
+        invoke<{ success: boolean; data?: typeof trending }>('get_trending_items', { days: 7, limit: 5 }).catch(() => ({ success: false })),
       ])
       if (popRes.success && popRes.data) setPopular(popRes.data)
+      if (trendRes.success && 'data' in trendRes && trendRes.data) setTrending(trendRes.data)
 
       if (analyticsRes.success && analyticsRes.data) setAnalytics(analyticsRes.data)
 
@@ -143,6 +146,27 @@ export function MenuDashboard({ onNavigate }: Props) {
                 <span className="flex-1 font-medium">{item.item_name}</span>
                 <span className="text-sm text-muted-foreground">{item.total_qty} sold</span>
                 <span className="text-sm font-semibold">₹{item.total_revenue.toFixed(0)}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {trending.length > 0 && (
+        <div className="bg-card rounded-2xl border border-border overflow-hidden">
+          <div className="p-6 border-b border-border">
+            <h3 className="font-semibold text-lg flex items-center gap-2" style={{ fontFamily: 'Outfit, sans-serif' }}>
+              <TrendingUp className="w-5 h-5" />Trending This Week
+            </h3>
+            <p className="text-sm text-muted-foreground">Most ordered items in the last 7 days</p>
+          </div>
+          <div className="divide-y divide-border">
+            {trending.map((item, i) => (
+              <div key={item.menu_item_id} className="px-6 py-3 flex items-center gap-4">
+                <span className="w-6 text-center text-sm font-bold text-muted-foreground">#{i + 1}</span>
+                <span className="flex-1 font-medium">{item.item_name}</span>
+                <span className="text-sm text-muted-foreground">{item.order_count} orders</span>
+                <span className="text-sm text-muted-foreground">{item.total_quantity} qty</span>
               </div>
             ))}
           </div>
