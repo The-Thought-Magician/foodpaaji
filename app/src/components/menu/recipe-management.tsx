@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Plus, Trash2, Save, ChefHat } from 'lucide-react'
 
-interface MenuItem { id: number; name: string; category_id: number }
+interface MenuItem { id: number; name: string; category_id: number; price: number }
 interface InventoryItem { id: number; name: string; unit: string }
 interface Ingredient { inventory_item_id: number; quantity: number; unit: string; cost_per_unit?: number | null }
 interface SavedIngredient { id?: number; menu_item_id: number; inventory_item_id: number; quantity_required: number; unit: string; cost_per_unit?: number | null }
@@ -129,6 +129,18 @@ export default function RecipeManagement() {
                 </Button>
               </div>
             ))}
+            {(() => {
+              const totalCost = ingredients.reduce((sum, i) => sum + (i.quantity * (i.cost_per_unit ?? 0)), 0)
+              const sellingPrice = selectedMenuItem?.price ?? 0
+              const margin = sellingPrice > 0 ? ((sellingPrice - totalCost) / sellingPrice) * 100 : null
+              return totalCost > 0 ? (
+                <div className="flex gap-4 text-sm bg-muted rounded-lg px-3 py-2">
+                  <span>Recipe Cost: <strong>₹{totalCost.toFixed(2)}</strong></span>
+                  {sellingPrice > 0 && <span>Selling: <strong>₹{sellingPrice.toFixed(2)}</strong></span>}
+                  {margin !== null && <span className={margin < 30 ? 'text-red-600 font-semibold' : 'text-green-600 font-semibold'}>Margin: {margin.toFixed(1)}%</span>}
+                </div>
+              ) : null
+            })()}
             <div className="flex items-center gap-3 pt-2">
               <Button variant="outline" size="sm" onClick={addIngredient}><Plus className="w-4 h-4 mr-1" />Add Ingredient</Button>
               <Button className="gradient-spice text-white" size="sm" onClick={saveRecipe} disabled={saving}>
