@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use sqlx::SqlitePool;
+use sqlx::{SqlitePool, Row};
 use tauri::State;
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -83,6 +83,10 @@ pub async fn add_loyalty_points(pool: State<'_, SqlitePool>, customer_id: i64, p
         points, bill_amount, customer_id
     )
     .execute(pool.inner()).await.map_err(|e| e.to_string())?;
+    sqlx::query(
+        "INSERT INTO loyalty_transactions (customer_id, type, points, bill_amount) VALUES (?, 'earn', ?, ?)"
+    ).bind(customer_id).bind(points).bind(bill_amount)
+    .execute(pool.inner()).await.map_err(|e| e.to_string())?;
     let row = sqlx::query!("SELECT loyalty_points FROM customers WHERE id = ?", customer_id)
         .fetch_one(pool.inner()).await.map_err(|e| e.to_string())?;
     Ok(serde_json::json!({ "success": true, "loyalty_points": row.loyalty_points }))
@@ -97,7 +101,27 @@ pub async fn redeem_loyalty_points(pool: State<'_, SqlitePool>, customer_id: i64
     }
     sqlx::query!("UPDATE customers SET loyalty_points = loyalty_points - ?, updated_at = datetime('now') WHERE id = ?", points, customer_id)
         .execute(pool.inner()).await.map_err(|e| e.to_string())?;
+    sqlx::query(
+        "INSERT INTO loyalty_transactions (customer_id, type, points) VALUES (?, 'redeem', ?)"
+    ).bind(customer_id).bind(points)
+    .execute(pool.inner()).await.map_err(|e| e.to_string())?;
     Ok(serde_json::json!({ "success": true, "remaining_points": row.loyalty_points - points }))
+}
+
+#[tauri::command]
+pub async fn get_loyalty_transactions(pool: State<'_, SqlitePool>, customer_id: i64) -> Result<serde_json::Value, String> {
+    let rows = sqlx::query(
+        "SELECT id, type, points, bill_amount, note, created_at FROM loyalty_transactions WHERE customer_id = ? ORDER BY created_at DESC LIMIT 50"
+    ).bind(customer_id).fetch_all(pool.inner()).await.map_err(|e| e.to_string())?;
+    let data: Vec<serde_json::Value> = rows.iter().map(|r| serde_json::json!({
+        "id": r.try_get::<i64,_>("id").unwrap_or(0),
+        "type": r.try_get::<String,_>("type").unwrap_or_default(),
+        "points": r.try_get::<i64,_>("points").unwrap_or(0),
+        "bill_amount": r.try_get::<Option<f64>,_>("bill_amount").unwrap_or(None),
+        "note": r.try_get::<Option<String>,_>("note").unwrap_or(None),
+        "created_at": r.try_get::<String,_>("created_at").unwrap_or_default(),
+    })).collect();
+    Ok(serde_json::json!({ "success": true, "data": data }))
 }
 
 #[tauri::command]

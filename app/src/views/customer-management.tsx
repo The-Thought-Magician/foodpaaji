@@ -94,17 +94,20 @@ export function CustomerManagement() {
   const [viewCustomer, setViewCustomer] = useState<Customer & { address?: string; notes?: string } | null>(null)
   const [customerBills, setCustomerBills] = useState<{ id: number; bill_number: string; total_amount: number; status: string; created_at: string; customer_id?: number }[]>([])
   const [customerFeedback, setCustomerFeedback] = useState<{ id: number; rating: number; comment?: string; created_at: string; bill_number?: string }[]>([])
+  const [loyaltyHistory, setLoyaltyHistory] = useState<{ id: number; type: string; points: number; bill_amount?: number; note?: string; created_at: string }[]>([])
 
   const viewProfile = async (id: number) => {
     try {
-      const [cr, br, fr] = await Promise.all([
+      const [cr, br, fr, lr] = await Promise.all([
         invoke<{ success: boolean; data: Customer & { address?: string; notes?: string } }>('get_customer', { customerId: id }),
         invoke<{ success: boolean; data: { id: number; bill_number: string; total_amount: number; status: string; created_at: string; customer_id?: number }[] }>('get_bills', { status: null, customerId: id, limit: 20 }),
         invoke<{ success: boolean; data: { id: number; rating: number; comment?: string; created_at: string; bill_number?: string }[] }>('get_customer_feedback', { customerId: id }).catch(() => ({ success: false, data: [] })),
+        invoke<{ success: boolean; data: { id: number; type: string; points: number; bill_amount?: number; note?: string; created_at: string }[] }>('get_loyalty_transactions', { customerId: id }).catch(() => ({ success: false, data: [] })),
       ])
       if (cr.success && cr.data) setViewCustomer(cr.data)
       if (br.success) setCustomerBills(br.data ?? [])
       if (fr.success) setCustomerFeedback(fr.data ?? [])
+      if (lr.success) setLoyaltyHistory(lr.data ?? [])
     } catch (e) { console.error(e) }
   }
 
@@ -245,6 +248,29 @@ export function CustomerManagement() {
                 <div className="bg-muted rounded p-3"><p className="font-bold text-lg">₹{viewCustomer.total_spent.toFixed(0)}</p><p className="text-muted-foreground text-xs">Spent</p></div>
                 <div className="bg-muted rounded p-3"><p className="font-bold text-lg">{viewCustomer.loyalty_points}</p><p className="text-muted-foreground text-xs">Points</p></div>
               </div>
+              {loyaltyHistory.length > 0 && (
+                <div className="pt-2 border-t">
+                  <p className="text-xs font-medium text-muted-foreground mb-2">Loyalty History</p>
+                  <div className="space-y-1 max-h-36 overflow-y-auto">
+                    {loyaltyHistory.map(tx => (
+                      <div key={tx.id} className="flex items-center justify-between text-xs">
+                        <div className="flex items-center gap-1.5">
+                          <span className={`w-1.5 h-1.5 rounded-full ${tx.type === 'earn' || tx.type === 'manual_add' ? 'bg-green-500' : 'bg-red-400'}`} />
+                          <span className="capitalize text-muted-foreground">{tx.type.replace('_', ' ')}</span>
+                          {tx.bill_amount != null && <span className="text-muted-foreground">· ₹{tx.bill_amount.toFixed(0)}</span>}
+                          {tx.note && <span className="text-muted-foreground">· {tx.note}</span>}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className={`font-semibold ${tx.type === 'earn' || tx.type === 'manual_add' ? 'text-green-600' : 'text-red-500'}`}>
+                            {tx.type === 'earn' || tx.type === 'manual_add' ? '+' : '-'}{tx.points}
+                          </span>
+                          <span className="text-muted-foreground">{new Date(tx.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
               {customerFeedback.length > 0 && (
                 <div className="pt-2 border-t">
                   <p className="text-xs font-medium text-muted-foreground mb-2">Feedback</p>
