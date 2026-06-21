@@ -170,7 +170,9 @@ export default function MenuItems({ restaurantId, categories, onItemsChange }: P
                 )}
                 <div className="flex justify-between items-center mb-2">
                   <span className="text-lg font-bold text-green-600">{fmt(item.price)}</span>
-                  {item.is_featured && <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />}
+                  <button onClick={async () => { await invoke('update_menu_item', { id: item.id, request: { is_featured: !item.is_featured } }).catch(console.error); if (selectedCategory) loadItems(selectedCategory) }} className="p-0.5 rounded transition-colors hover:bg-muted">
+                    <Star className={`h-4 w-4 ${item.is_featured ? 'fill-yellow-400 text-yellow-400' : 'text-muted-foreground'}`} />
+                  </button>
                 </div>
                 {item.preparation_time && (
                   <div className="flex items-center gap-1 text-sm text-muted-foreground mb-2">
@@ -197,9 +199,10 @@ export default function MenuItems({ restaurantId, categories, onItemsChange }: P
                   >
                     {item.is_available ? 'Available' : 'Sold Out'}
                   </button>
-                  <Badge variant={item.is_active ? 'default' : 'secondary'}>
-                    {item.is_active ? 'Active' : 'Inactive'}
-                  </Badge>
+                  <button
+                    className={`px-2 py-0.5 rounded-full text-xs font-medium border transition-colors ${item.is_active ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20 hover:bg-emerald-500/20' : 'bg-rose-500/10 text-rose-600 border-rose-500/20 hover:bg-rose-500/20'}`}
+                    onClick={async () => { await invoke('update_menu_item', { id: item.id, request: { is_active: !item.is_active } }).catch(console.error); if (selectedCategory) loadItems(selectedCategory) }}
+                  >{item.is_active ? 'Active' : 'Inactive'}</button>
                 </div>
               </CardContent>
             </Card>
