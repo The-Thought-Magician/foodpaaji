@@ -65,6 +65,7 @@ use modules::menu_performance::get_menu_performance;
 use modules::menu_export::export_menu_html;
 use modules::upi_qr::{generate_upi_qr_string, get_upi_settings, save_upi_settings};
 use modules::translations::{get_translations, upsert_translation, bulk_upsert_translations, get_available_locales, delete_translation};
+use modules::customer_export::{export_customers_csv, import_customers_csv};
 use modules::bill_refunds::{cancel_bill, partial_refund, get_bill_refunds};
 use modules::customer_addresses::{get_customer_addresses, add_customer_address, delete_customer_address, set_default_address};
 use modules::scheduled_promotions::{get_scheduled_promotions, create_scheduled_promotion, toggle_scheduled_promotion, delete_scheduled_promotion, get_active_promotions_now};
@@ -283,6 +284,8 @@ pub fn run() {
       bulk_upsert_translations,
       get_available_locales,
       delete_translation,
+      export_customers_csv,
+      import_customers_csv,
       cancel_bill,
       partial_refund,
       get_bill_refunds,

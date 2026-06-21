@@ -11,6 +11,7 @@ import { Plus, Search, Star, TrendingUp, Users, Download, Merge, Award, Shopping
 import { CustomerOrderHistory } from '@/components/customers/order-history'
 import { CustomerProfitability } from '@/components/customers/profitability'
 import { AddressManagement } from '@/components/customers/address-management'
+import { CustomerDataImportExport } from '@/components/customers/data-import-export'
 
 interface Customer {
   id: number
@@ -347,6 +348,7 @@ export function CustomerManagement() {
             )
           })}
         </div>
+        <CustomerDataImportExport />
         <Button variant="outline" onClick={exportCSV} disabled={customers.length === 0}><Download className="w-4 h-4 mr-2" />CSV</Button>
         <Button onClick={openCreate} className="gradient-spice text-white"><Plus className="w-4 h-4 mr-2" />Add Customer</Button>
       </div>

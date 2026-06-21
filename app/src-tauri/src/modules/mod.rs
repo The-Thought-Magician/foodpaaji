@@ -62,6 +62,7 @@ pub mod menu_performance;
 pub mod menu_export;
 pub mod upi_qr;
 pub mod translations;
+pub mod customer_export;
 pub mod bill_refunds;
 pub mod customer_addresses;
 pub mod scheduled_promotions;
