@@ -278,3 +278,44 @@ pub async fn get_customer_stats(pool: State<'_, SqlitePool>) -> Result<serde_jso
     ).fetch_one(pool.inner()).await.map_err(|e| e.to_string())?;
     Ok(serde_json::json!({ "success": true, "data": { "total_customers": stats.total, "total_revenue": stats.revenue, "avg_spend": stats.avg_spend, "total_loyalty_points": stats.total_points } }))
 }
+
+#[tauri::command]
+pub async fn merge_customers(
+    target_id: i64,
+    source_id: i64,
+    pool: State<'_, SqlitePool>,
+) -> Result<serde_json::Value, String> {
+    if target_id == source_id {
+        return Err("Cannot merge a customer with itself".to_string());
+    }
+
+    let source = sqlx::query("SELECT loyalty_points, total_spent, visit_count FROM customers WHERE id = ?")
+        .bind(source_id)
+        .fetch_optional(pool.inner()).await.map_err(|e| e.to_string())?
+        .ok_or_else(|| "Source customer not found".to_string())?;
+
+    // Move all related records to target
+    sqlx::query("UPDATE bills SET customer_id = ? WHERE customer_id = ?")
+        .bind(target_id).bind(source_id).execute(pool.inner()).await.map_err(|e| e.to_string())?;
+    sqlx::query("UPDATE orders SET customer_id = ? WHERE customer_id = ?")
+        .bind(target_id).bind(source_id).execute(pool.inner()).await.map_err(|e| e.to_string())?;
+    sqlx::query("UPDATE loyalty_transactions SET customer_id = ? WHERE customer_id = ?")
+        .bind(target_id).bind(source_id).execute(pool.inner()).await.map_err(|e| e.to_string())?;
+    sqlx::query("UPDATE customer_feedback SET customer_id = ? WHERE customer_id = ?")
+        .bind(target_id).bind(source_id).execute(pool.inner()).await.map_err(|e| e.to_string())?;
+
+    // Merge stats into target
+    use sqlx::Row;
+    let pts: i64 = source.try_get("loyalty_points").unwrap_or(0);
+    let spent: f64 = source.try_get("total_spent").unwrap_or(0.0);
+    let visits: i64 = source.try_get("visit_count").unwrap_or(0);
+    sqlx::query("UPDATE customers SET loyalty_points = loyalty_points + ?, total_spent = total_spent + ?, visit_count = visit_count + ? WHERE id = ?")
+        .bind(pts).bind(spent).bind(visits).bind(target_id)
+        .execute(pool.inner()).await.map_err(|e| e.to_string())?;
+
+    // Delete source
+    sqlx::query("DELETE FROM customers WHERE id = ?")
+        .bind(source_id).execute(pool.inner()).await.map_err(|e| e.to_string())?;
+
+    Ok(serde_json::json!({ "success": true, "message": "Customers merged successfully" }))
+}

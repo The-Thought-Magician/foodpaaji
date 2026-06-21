@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Card, CardContent } from '@/components/ui/card'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
-import { Plus, Search, Star, TrendingUp, Users, Download } from 'lucide-react'
+import { Plus, Search, Star, TrendingUp, Users, Download, Merge } from 'lucide-react'
 
 interface Customer {
   id: number
@@ -39,6 +39,9 @@ export function CustomerManagement() {
   const [form, setForm] = useState({ name: '', phone: '', email: '', address: '', notes: '' })
   const [segment, setSegment] = useState<'all' | 'vip' | 'loyal' | 'regular' | 'new' | 'at_risk'>('all')
   const [showAnalytics, setShowAnalytics] = useState(false)
+  const [showMerge, setShowMerge] = useState(false)
+  const [mergeTarget, setMergeTarget] = useState<Customer | null>(null)
+  const [mergeSource, setMergeSource] = useState<Customer | null>(null)
   const [analytics, setAnalytics] = useState<{
     top_spenders: { id: number; name: string; phone?: string; total_spent: number; visit_count: number; avg_order_value: number }[]
     returning_customers: number; at_risk_customers: number; retention_rate: number; churn_rate: number
@@ -50,6 +53,17 @@ export function CustomerManagement() {
     const res = await invoke<{ success: boolean; data: typeof analytics }>('get_customer_analytics').catch(() => null)
     if (res?.success && res.data) setAnalytics(res.data)
   }
+
+  const handleMerge = async () => {
+    if (!mergeTarget || !mergeSource) return
+    if (!window.confirm(`Merge "${mergeSource.name}" into "${mergeTarget.name}"? This will move all orders, bills, and loyalty points to "${mergeTarget.name}" and delete "${mergeSource.name}". This cannot be undone.`)) return
+    try {
+      await invoke('merge_customers', { targetId: mergeTarget.id, sourceId: mergeSource.id })
+      setShowMerge(false); setMergeTarget(null); setMergeSource(null)
+      loadCustomers()
+    } catch (e) { console.error(e) }
+  }
+
   const [segmentCounts, setSegmentCounts] = useState<Record<string, number>>({})
 
   const getSegment = (c: Customer) => c.segment ?? (c.total_spent >= 10000 ? 'vip' : c.total_spent >= 5000 || c.visit_count >= 6 ? 'loyal' : c.visit_count >= 2 ? 'regular' : 'new')
@@ -179,6 +193,9 @@ export function CustomerManagement() {
       <div className="flex items-center gap-2 flex-wrap">
         <Button size="sm" variant={showAnalytics ? 'default' : 'outline'} onClick={() => { setShowAnalytics(s => !s); if (!analytics) loadAnalytics() }}>
           <TrendingUp className="w-4 h-4 mr-1" />Analytics
+        </Button>
+        <Button size="sm" variant="outline" onClick={() => setShowMerge(true)}>
+          <Merge className="w-4 h-4 mr-1" />Merge Duplicates
         </Button>
       </div>
 
@@ -408,6 +425,45 @@ export function CustomerManagement() {
             <div><Label>Address</Label><Input value={form.address} onChange={e => setForm({ ...form, address: e.target.value })} /></div>
             <div><Label>Notes / Preferences</Label><textarea value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} placeholder="e.g. allergic to peanuts, prefers window seat" className="w-full mt-1 px-3 py-2 text-sm border border-border rounded-lg bg-background resize-none h-16 focus:outline-none focus:ring-2 focus:ring-primary/20" /></div>
             <Button className="w-full gradient-spice text-white" onClick={save}>Save Customer</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showMerge} onOpenChange={v => { if (!v) { setShowMerge(false); setMergeTarget(null); setMergeSource(null) } }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader><DialogTitle>Merge Duplicate Customers</DialogTitle></DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">Select two customers to merge. All orders, bills, and loyalty points from the source will be moved to the target.</p>
+            <div>
+              <Label>Keep (Target)</Label>
+              <select className="w-full border rounded-md px-3 py-2 text-sm bg-background"
+                value={mergeTarget?.id ?? ''} onChange={e => setMergeTarget(customers.find(c => c.id === Number(e.target.value)) ?? null)}>
+                <option value="">Select customer to keep...</option>
+                {customers.filter(c => c.id !== mergeSource?.id).map(c => (
+                  <option key={c.id} value={c.id}>{c.name}{c.phone ? ` (${c.phone})` : ''}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <Label>Merge &amp; Delete (Source)</Label>
+              <select className="w-full border rounded-md px-3 py-2 text-sm bg-background"
+                value={mergeSource?.id ?? ''} onChange={e => setMergeSource(customers.find(c => c.id === Number(e.target.value)) ?? null)}>
+                <option value="">Select customer to merge away...</option>
+                {customers.filter(c => c.id !== mergeTarget?.id).map(c => (
+                  <option key={c.id} value={c.id}>{c.name}{c.phone ? ` (${c.phone})` : ''}</option>
+                ))}
+              </select>
+            </div>
+            {mergeTarget && mergeSource && (
+              <div className="border rounded-lg p-3 bg-muted/30 text-sm space-y-1">
+                <p><strong>{mergeSource.name}</strong> → <strong>{mergeTarget.name}</strong></p>
+                <p className="text-muted-foreground">Points: {mergeSource.loyalty_points ?? 0} will be added to {mergeTarget.loyalty_points ?? 0}</p>
+                <p className="text-muted-foreground">Visits: {mergeSource.visit_count ?? 0} + {mergeTarget.visit_count ?? 0}</p>
+              </div>
+            )}
+            <Button className="w-full" disabled={!mergeTarget || !mergeSource} onClick={handleMerge}>
+              Merge Customers
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
