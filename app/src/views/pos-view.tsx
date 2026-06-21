@@ -62,8 +62,8 @@ export function PosView() {
   const [taxPercent, setTaxPercent] = useState(() => getSettings().default_tax_percent)
   const [discountPercent, setDiscountPercent] = useState(0)
   const [paymentMethod, setPaymentMethod] = useState<'cash' | 'upi' | 'card'>('cash')
+  const [redeemPoints, setRedeemPoints] = useState(false)
   const [showAllOrders, setShowAllOrders] = useState(false)
-
   const loadOrders = useCallback(async () => {
     try {
       const res = await invoke<{ success: boolean; data: Order[] }>('get_orders', { status: null, limit: 20 })
@@ -84,7 +84,6 @@ export function PosView() {
     const res = await invoke<{ success: boolean; data?: Customer[] }>('get_customers', { search: q, limit: 5 }).catch(() => null)
     if (res?.success && res.data) setCustomerResults(res.data)
   }
-
   const addItem = () => setCart([...cart, { item_name: '', quantity: 1, unit_price: 0 }])
   const updateCartItem = (i: number, field: keyof CartItem, value: string | number) => setCart(cart.map((item, idx) => idx === i ? { ...item, [field]: value } : item))
   const removeCartItem = (i: number) => setCart(cart.filter((_, idx) => idx !== i))
@@ -133,8 +132,8 @@ export function PosView() {
         if (receipt.success) setShowReceipt({ id: receipt.data.receipt_id, content: receipt.data.content, number: receipt.data.receipt_number })
         const orderItems = (details.success && details.data?.items || []).filter(i => i.menu_item_id).map(i => ({ menu_item_id: i.menu_item_id!, quantity: i.quantity, notes: i.notes ?? null }))
         if (orderItems.length > 0) await invoke('process_order_completion', { request: { restaurant_id: 1, order_id: showConvert.id, order_items: orderItems, user_id: 1 } }).catch(console.error)
-        if (showConvert.customer_id) { const pts = Math.floor(res.total_amount / 10); if (pts > 0) invoke('add_loyalty_points', { customerId: showConvert.customer_id, points: pts, billAmount: res.total_amount }).catch(console.error) }
-        setShowConvert(null); loadOrders()
+        if (showConvert.customer_id) { if (redeemPoints && selectedCustomer?.loyalty_points) await invoke('redeem_loyalty_points', { customerId: showConvert.customer_id, points: selectedCustomer.loyalty_points, billId: res.bill_id }).catch(console.error); const pts = Math.floor(res.total_amount / 10); if (pts > 0) invoke('add_loyalty_points', { customerId: showConvert.customer_id, points: pts, billAmount: res.total_amount }).catch(console.error) }
+        setRedeemPoints(false); setShowConvert(null); loadOrders()
       }
     } catch (e) { console.error(e) }
   }
@@ -280,6 +279,7 @@ export function PosView() {
               </div>
               {paymentMethod === 'upi' && (() => { const s = getSettings(); return s.upi_id ? <div className="flex justify-center pt-2"><UpiQr amount={0} upiId={s.upi_id} name={s.restaurant_name} note={showConvert?.order_number} size={160} /></div> : null })()}
             </div>
+            {selectedCustomer?.loyalty_points ? <label className="flex items-center gap-2 text-sm cursor-pointer"><input type="checkbox" checked={redeemPoints} onChange={e => setRedeemPoints(e.target.checked)} /><span>Redeem {selectedCustomer.loyalty_points} points (₹{selectedCustomer.loyalty_points} off)</span></label> : null}
             <Button className="w-full gradient-spice text-white" onClick={convertToBill}>Generate Bill & Receipt</Button>
           </div>
         </DialogContent>
