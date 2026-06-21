@@ -7,7 +7,8 @@ import { Input } from '@/components/ui/input'
 import { Card, CardContent } from '@/components/ui/card'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
-import { Plus, Search, Star, TrendingUp, Users, Download, Merge, Award } from 'lucide-react'
+import { Plus, Search, Star, TrendingUp, Users, Download, Merge, Award, ShoppingBag } from 'lucide-react'
+import { CustomerOrderHistory } from '@/components/customers/order-history'
 
 interface Customer {
   id: number
@@ -49,6 +50,7 @@ export function CustomerManagement() {
   const [showMerge, setShowMerge] = useState(false)
   const [mergeTarget, setMergeTarget] = useState<Customer | null>(null)
   const [mergeSource, setMergeSource] = useState<Customer | null>(null)
+  const [orderHistoryCustomer, setOrderHistoryCustomer] = useState<{ id: number; name: string } | null>(null)
   const [analytics, setAnalytics] = useState<{
     top_spenders: { id: number; name: string; phone?: string; total_spent: number; visit_count: number; avg_order_value: number }[]
     returning_customers: number; at_risk_customers: number; retention_rate: number; churn_rate: number
@@ -371,6 +373,7 @@ export function CustomerManagement() {
                 <Button variant="outline" size="sm" className="flex-1" onClick={() => openEdit(c)}>Edit</Button>
                 <Button variant="outline" size="sm" onClick={() => openLoyalty(c, 'add')}><Star className="w-3 h-3 mr-1" />+Pts</Button>
                 <Button variant="outline" size="sm" onClick={() => openLoyalty(c, 'redeem')}>Redeem</Button>
+                <Button variant="outline" size="sm" onClick={() => setOrderHistoryCustomer({ id: c.id, name: c.name })}><ShoppingBag className="w-3 h-3 mr-1" />Orders</Button>
                 <Button variant="outline" size="sm" className="text-destructive" onClick={() => deleteCustomer(c.id)}>Delete</Button>
               </div>
             </CardContent>
@@ -524,6 +527,15 @@ export function CustomerManagement() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {orderHistoryCustomer && (
+        <CustomerOrderHistory
+          customerId={orderHistoryCustomer.id}
+          customerName={orderHistoryCustomer.name}
+          open={true}
+          onClose={() => setOrderHistoryCustomer(null)}
+        />
+      )}
     </div>
   )
 }
