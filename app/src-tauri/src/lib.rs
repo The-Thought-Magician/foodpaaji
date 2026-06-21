@@ -65,6 +65,7 @@ use modules::menu_performance::get_menu_performance;
 use modules::bill_refunds::{cancel_bill, partial_refund, get_bill_refunds};
 use modules::customer_addresses::{get_customer_addresses, add_customer_address, delete_customer_address, set_default_address};
 use modules::scheduled_promotions::{get_scheduled_promotions, create_scheduled_promotion, toggle_scheduled_promotion, delete_scheduled_promotion, get_active_promotions_now};
+use modules::revenue_trends::get_revenue_trends;
 use tauri::Manager;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -281,6 +282,7 @@ pub fn run() {
       toggle_scheduled_promotion,
       delete_scheduled_promotion,
       get_active_promotions_now,
+      get_revenue_trends,
     ])
     .setup(|app| {
       let level = if cfg!(debug_assertions) { log::LevelFilter::Debug } else { log::LevelFilter::Info };

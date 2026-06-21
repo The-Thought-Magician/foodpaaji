@@ -62,3 +62,4 @@ pub mod menu_performance;
 pub mod bill_refunds;
 pub mod customer_addresses;
 pub mod scheduled_promotions;
+pub mod revenue_trends;
