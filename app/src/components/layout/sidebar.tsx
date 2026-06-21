@@ -18,6 +18,7 @@ import {
   Store,
   UserCircle,
   FileText,
+  ChefHat,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -25,6 +26,7 @@ const navItems = [
   { id: '/', label: 'Dashboard', icon: LayoutDashboard },
   { id: '/billing', label: 'Billing', icon: FileText },
   { id: '/pos', label: 'Point of Sale', icon: Receipt },
+  { id: '/kitchen', label: 'Kitchen Display', icon: ChefHat },
   { id: '/employees', label: 'Employees', icon: Users },
   { id: '/customers', label: 'Customers', icon: UserCircle },
   { id: '/inventory', label: 'Inventory', icon: Package },
