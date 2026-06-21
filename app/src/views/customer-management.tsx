@@ -17,6 +17,7 @@ interface Customer {
   loyalty_points: number
   total_spent: number
   visit_count: number
+  created_at?: string
 }
 
 interface CustomerStats {
@@ -176,6 +177,7 @@ export function CustomerManagement() {
               </div>
               {viewCustomer.email && <p><span className="text-muted-foreground">Email:</span> {viewCustomer.email}</p>}
               {viewCustomer.address && <p><span className="text-muted-foreground">Address:</span> {viewCustomer.address}</p>}
+              {viewCustomer.created_at && <p className="text-xs text-muted-foreground">Member since {new Date(viewCustomer.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</p>}
               <div className="grid grid-cols-3 gap-2 text-center pt-2">
                 <div className="bg-muted rounded p-3"><p className="font-bold text-lg">{viewCustomer.visit_count}</p><p className="text-muted-foreground text-xs">Visits</p></div>
                 <div className="bg-muted rounded p-3"><p className="font-bold text-lg">₹{viewCustomer.total_spent.toFixed(0)}</p><p className="text-muted-foreground text-xs">Spent</p></div>

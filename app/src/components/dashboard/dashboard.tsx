@@ -89,8 +89,9 @@ export function Dashboard() {
   }
 
   const stats = data ? [
-    { title: "Today's Billed", value: `₹${data.today_revenue.toFixed(0)}`, icon: Receipt, gradient: 'gradient-spice' },
-    { title: "Today's Collected", value: `₹${data.today_collected.toFixed(0)}`, icon: IndianRupee, gradient: 'bg-gradient-to-br from-green-500 to-green-600' },
+    { title: "Today's Bills", value: String(data.today_bills), icon: Receipt, gradient: 'gradient-spice' },
+    { title: "Today's Billed", value: `₹${data.today_revenue.toFixed(0)}`, icon: IndianRupee, gradient: 'bg-gradient-to-br from-green-500 to-green-600' },
+    { title: "Today's Collected", value: `₹${data.today_collected.toFixed(0)}`, icon: IndianRupee, gradient: 'bg-gradient-to-br from-emerald-600 to-emerald-700' },
     { title: 'Active Orders', value: String(activeOrders), icon: Clock, gradient: 'gradient-accent' },
     { title: 'Total Customers', value: String(data.total_customers), icon: Users, gradient: 'bg-gradient-to-br from-purple-500 to-purple-600' },
     { title: 'Low Stock Items', value: String(data.low_stock_count), icon: Package, gradient: 'bg-gradient-to-br from-rose-500 to-rose-600' },
