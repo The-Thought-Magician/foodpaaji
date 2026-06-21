@@ -75,6 +75,8 @@ export function PosView() {
   const [taxPercent, setTaxPercent] = useState(() => getSettings().default_tax_percent)
   const [discountPercent, setDiscountPercent] = useState(0)
   const [paymentMethod, setPaymentMethod] = useState<'cash' | 'upi' | 'card'>('cash')
+  const [splitPayments, setSplitPayments] = useState<{ method: 'cash' | 'upi' | 'card'; amount: string }[]>([])
+  const [splitMode, setSplitMode] = useState(false)
   const [redeemPoints, setRedeemPoints] = useState(false)
   const [showAllOrders, setShowAllOrders] = useState<boolean | 'tables'>(false)
   const loadOrders = useCallback(async () => {
@@ -140,13 +142,17 @@ export function PosView() {
         invoke<{ success: boolean; bill_id: number; total_amount: number }>('convert_order_to_bill', { orderId: showConvert.id, discountPercent, taxPercent: taxPercent + serviceChargePct, packagingFee: pkgFee > 0 ? pkgFee : null }),
       ])
       if (res.success) {
-        await invoke('record_payment', { billId: res.bill_id, amount: res.total_amount, method: paymentMethod, upiReference: null, upiApp: null }).catch(console.error)
+        if (splitMode && splitPayments.length > 0) {
+          await Promise.all(splitPayments.map(p => invoke('record_payment', { billId: res.bill_id, amount: parseFloat(p.amount) || 0, method: p.method, upiReference: null, upiApp: null }).catch(console.error)))
+        } else {
+          await invoke('record_payment', { billId: res.bill_id, amount: res.total_amount, method: paymentMethod, upiReference: null, upiApp: null }).catch(console.error)
+        }
         const s = getSettings(); const receipt = await invoke<{ success: boolean; data: { receipt_id: number; content: string; receipt_number: string } }>('generate_receipt', { billId: res.bill_id, restaurantName: s.restaurant_name, address: s.address, phone: s.phone, gstin: s.gstin, fssaiNumber: s.fssai_number || null, footer: s.receipt_footer })
         if (receipt.success) setShowReceipt({ id: receipt.data.receipt_id, content: receipt.data.content, number: receipt.data.receipt_number })
         const orderItems = (details.success && details.data?.items || []).filter(i => i.menu_item_id).map(i => ({ menu_item_id: i.menu_item_id!, quantity: i.quantity, notes: i.notes ?? null }))
         if (orderItems.length > 0) await invoke('process_order_completion', { request: { restaurant_id: 1, order_id: showConvert.id, order_items: orderItems, user_id: 1 } }).catch(console.error)
         if (showConvert.customer_id) { if (redeemPoints && selectedCustomer?.loyalty_points) await invoke('redeem_loyalty_points', { customerId: showConvert.customer_id, points: selectedCustomer.loyalty_points, billId: res.bill_id }).catch(console.error); const loyaltyRate = getSettings().loyalty_points_per_100; const pts = Math.floor(res.total_amount * loyaltyRate / 100); if (pts > 0) invoke('add_loyalty_points', { customerId: showConvert.customer_id, points: pts, billAmount: res.total_amount }).catch(console.error) }
-        setRedeemPoints(false); setShowConvert(null); loadOrders()
+        setRedeemPoints(false); setSplitPayments([]); setSplitMode(false); setShowConvert(null); loadOrders()
       }
     } catch (e) { console.error(e) }
   }
@@ -300,12 +306,46 @@ export function PosView() {
               <div><Label>Discount %</Label><Input type="number" value={discountPercent} onChange={e => setDiscountPercent(parseFloat(e.target.value) || 0)} /></div>
               <div><Label>Tax %</Label><Input type="number" value={taxPercent} onChange={e => setTaxPercent(parseFloat(e.target.value) || 0)} /></div>
             </div>
-            <div>
-              <Label className="text-sm mb-1 block">Payment Method</Label>
-              <div className="flex gap-2">
-                {(['cash', 'upi', 'card'] as const).map(m => <button key={m} onClick={() => setPaymentMethod(m)} className={`flex-1 py-2 rounded-lg text-sm font-medium border capitalize ${paymentMethod === m ? 'gradient-spice text-white border-transparent' : 'border-border hover:bg-muted'}`}>{m}</button>)}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label className="text-sm">Payment</Label>
+                <button type="button" className="text-xs text-primary underline" onClick={() => { setSplitMode(s => !s); setSplitPayments([]) }}>{splitMode ? 'Single payment' : 'Split payment'}</button>
               </div>
-              {paymentMethod === 'upi' && (() => { const s = getSettings(); const taxable = convertSubtotal * (1 - discountPercent / 100); const amt = taxable * (1 + (taxPercent + s.service_charge_percent) / 100) + pkgFee; return s.upi_id ? <div className="flex justify-center pt-2"><UpiQr amount={amt} upiId={s.upi_id} name={s.restaurant_name} note={showConvert?.order_number} size={160} /></div> : null })()}
+              {!splitMode ? (
+                <>
+                  <div className="flex gap-2">
+                    {(['cash', 'upi', 'card'] as const).map(m => <button key={m} onClick={() => setPaymentMethod(m)} className={`flex-1 py-2 rounded-lg text-sm font-medium border capitalize ${paymentMethod === m ? 'gradient-spice text-white border-transparent' : 'border-border hover:bg-muted'}`}>{m}</button>)}
+                  </div>
+                  {paymentMethod === 'upi' && (() => { const s = getSettings(); const taxable = convertSubtotal * (1 - discountPercent / 100); const amt = taxable * (1 + (taxPercent + s.service_charge_percent) / 100) + pkgFee; return s.upi_id ? <div className="flex justify-center pt-2"><UpiQr amount={amt} upiId={s.upi_id} name={s.restaurant_name} note={showConvert?.order_number} size={160} /></div> : null })()}
+                </>
+              ) : (
+                <div className="space-y-2">
+                  {(() => {
+                    const s = getSettings(); const taxable = convertSubtotal * (1 - discountPercent / 100); const total = taxable * (1 + (taxPercent + s.service_charge_percent) / 100) + pkgFee
+                    const paid = splitPayments.reduce((a, p) => a + (parseFloat(p.amount) || 0), 0)
+                    const remaining = Math.max(0, total - paid)
+                    return (
+                      <>
+                        {splitPayments.map((p, i) => (
+                          <div key={i} className="flex gap-2 items-center">
+                            <select className="text-xs border rounded px-2 py-1.5 bg-background capitalize"
+                              value={p.method} onChange={e => setSplitPayments(prev => prev.map((x, j) => j === i ? { ...x, method: e.target.value as typeof p.method } : x))}>
+                              {['cash', 'upi', 'card'].map(m => <option key={m} value={m}>{m}</option>)}
+                            </select>
+                            <Input type="number" step="0.01" min="0" placeholder="Amount" className="flex-1 h-8 text-sm"
+                              value={p.amount} onChange={e => setSplitPayments(prev => prev.map((x, j) => j === i ? { ...x, amount: e.target.value } : x))} />
+                            <button type="button" className="text-destructive text-xs px-1" onClick={() => setSplitPayments(prev => prev.filter((_, j) => j !== i))}>×</button>
+                          </div>
+                        ))}
+                        <div className="flex gap-2">
+                          <button type="button" className="text-xs text-primary underline" onClick={() => setSplitPayments(p => [...p, { method: 'cash', amount: remaining > 0 ? remaining.toFixed(2) : '' }])}>+ Add method</button>
+                          <span className="text-xs text-muted-foreground ml-auto">Paid: ₹{paid.toFixed(0)} · Remaining: ₹{remaining.toFixed(0)}</span>
+                        </div>
+                      </>
+                    )
+                  })()}
+                </div>
+              )}
             </div>
             {selectedCustomer?.loyalty_points ? <label className="flex items-center gap-2 text-sm cursor-pointer"><input type="checkbox" checked={redeemPoints} onChange={e => setRedeemPoints(e.target.checked)} /><span>Redeem {selectedCustomer.loyalty_points} points (₹{selectedCustomer.loyalty_points} off)</span></label> : null}
             <Button className="w-full gradient-spice text-white" onClick={convertToBill}>Generate Bill & Receipt</Button>
