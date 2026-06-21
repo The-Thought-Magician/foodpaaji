@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { CheckCircle, Trash2, RefreshCw, Filter, Search } from 'lucide-react'
+import { CheckCircle, Trash2, RefreshCw, Filter, Search, Download } from 'lucide-react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { AlertTable } from './alert-table'
 import type { LowStockAlert, AlertSummary, AlertFilters } from './alert-types'
@@ -104,17 +104,21 @@ export default function LowStockAlerts() {
 
   const setFilter = (patch: Partial<AlertFilters>) => setFilters(f => ({ ...f, ...patch, page: 1 }))
 
+  const exportCSV = () => {
+    if (!filtered.length) return
+    const rows = ['Item,SKU,Current Stock,Threshold,Alert Level,Acknowledged', ...filtered.map(a => `"${a.item_name}","${a.item_sku ?? ''}",${a.current_stock},${a.threshold_stock},"${a.alert_level}",${a.is_acknowledged}`)]
+    const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(new Blob([rows.join('\n')], { type: 'text/csv' })), download: `low-stock-${new Date().toISOString().split('T')[0]}.csv` })
+    a.click()
+  }
+
   return (
     <div className="space-y-6 p-6">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold">Low Stock Alerts</h1>
         <div className="flex gap-2">
-          <Button onClick={clearAcknowledged} variant="outline" size="sm">
-            <Trash2 className="h-4 w-4 mr-2" />Clear Acknowledged
-          </Button>
-          <Button onClick={loadAlerts} variant="outline" size="sm">
-            <RefreshCw className="h-4 w-4 mr-2" />Refresh
-          </Button>
+          <Button onClick={exportCSV} variant="outline" size="sm" disabled={!filtered.length}><Download className="h-4 w-4 mr-2" />Export</Button>
+          <Button onClick={clearAcknowledged} variant="outline" size="sm"><Trash2 className="h-4 w-4 mr-2" />Clear Acknowledged</Button>
+          <Button onClick={loadAlerts} variant="outline" size="sm"><RefreshCw className="h-4 w-4 mr-2" />Refresh</Button>
         </div>
       </div>
 
