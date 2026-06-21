@@ -3,16 +3,7 @@
 import { useState, useEffect } from 'react'
 import { invoke } from '@tauri-apps/api/core'
 import { Button } from '@/components/ui/button'
-import { 
-  User, 
-  Clock, 
-  Calendar, 
-  Settings, 
-  LogOut, 
-  Shield,
-  AlertCircle,
-  CheckCircle
-} from 'lucide-react'
+import { User, Clock, Calendar, Settings, LogOut, Shield, IndianRupee } from 'lucide-react'
 import type { Employee } from '@/types/employee'
 
 interface EmployeeDashboardProps {
@@ -274,25 +265,20 @@ export function EmployeeDashboard({
             </div>
           </div>
 
-          <div className="bg-card border rounded-lg p-6">
-            <h3 className="text-lg font-semibold mb-4">Notifications</h3>
-            <div className="space-y-3">
-              <div className="flex items-start space-x-3">
-                <CheckCircle className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
-                <div>
-                  <p className="text-sm font-medium">Profile Updated</p>
-                  <p className="text-xs text-muted-foreground">Your profile information has been updated successfully.</p>
-                </div>
+          {(employee.salary ?? 0) > 0 && (
+            <div className="bg-card border rounded-lg p-6">
+              <div className="flex items-center gap-2 mb-4">
+                <IndianRupee className="h-5 w-5 text-green-600" />
+                <h3 className="text-lg font-semibold">This Month</h3>
               </div>
-              <div className="flex items-start space-x-3">
-                <AlertCircle className="h-4 w-4 text-yellow-500 mt-0.5 flex-shrink-0" />
-                <div>
-                  <p className="text-sm font-medium">Schedule Change</p>
-                  <p className="text-xs text-muted-foreground">Your shift schedule for next week has been updated.</p>
-                </div>
+              <div className="space-y-3">
+                <div className="flex justify-between text-sm"><span className="text-muted-foreground">Monthly Salary</span><span className="font-semibold">₹{(employee.salary ?? 0).toLocaleString('en-IN')}</span></div>
+                <div className="flex justify-between text-sm"><span className="text-muted-foreground">Days Attended</span><span className="font-semibold">{stats.totalShifts}</span></div>
+                <div className="flex justify-between text-sm"><span className="text-muted-foreground">Hours Worked</span><span className="font-semibold">{stats.hoursWorked}h</span></div>
+                <div className="border-t pt-3 flex justify-between"><span className="text-sm font-medium">Est. Earned</span><span className="font-bold text-green-600">₹{Math.round(((employee.salary ?? 0) / 26) * stats.totalShifts).toLocaleString('en-IN')}</span></div>
               </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
     </div>
