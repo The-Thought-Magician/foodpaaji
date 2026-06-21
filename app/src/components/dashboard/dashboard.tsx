@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { invoke } from '@tauri-apps/api/core'
-import { Users, Receipt, Package, ArrowUpRight, Clock } from 'lucide-react'
+import { Users, Receipt, Package, ArrowUpRight, Clock, CalendarCheck } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
 
@@ -13,6 +13,7 @@ interface DashboardData {
   active_orders: number
   total_customers: number
   low_stock_count: number
+  today_reservations: number
 }
 
 interface RecentBill {
@@ -38,12 +39,14 @@ export function Dashboard() {
   useEffect(() => {
     async function load() {
       try {
-        const [summary, bills, orders, customers, alerts] = await Promise.all([
+        const today = new Date().toISOString().split('T')[0]
+        const [summary, bills, orders, customers, alerts, reservations] = await Promise.all([
           invoke<{ success: boolean; data: { today_bills: number; today_revenue: number; today_collected: number } }>('get_billing_summary'),
           invoke<{ success: boolean; data: RecentBill[] }>('get_bills', { status: null, limit: 5 }),
           invoke<{ success: boolean; data: { id: number }[] }>('get_orders', { status: 'pending', limit: 50 }),
           invoke<{ success: boolean; data: { total_customers: number } }>('get_customer_stats'),
           invoke<{ success: boolean; data: { total_alerts: number } }>('get_alert_summary', { restaurantId: 1 }).catch(() => ({ success: false, data: { total_alerts: 0 } })),
+          invoke<{ success: boolean; data: { id: number }[] }>('get_reservations', { date: today, status: null }).catch(() => ({ success: false, data: [] })),
         ])
 
         setData({
@@ -53,6 +56,7 @@ export function Dashboard() {
           active_orders: orders.success ? orders.data.length : 0,
           total_customers: customers.success ? customers.data.total_customers : 0,
           low_stock_count: alerts.success ? alerts.data.total_alerts : 0,
+          today_reservations: reservations.success ? reservations.data.length : 0,
         })
         setActiveOrders(orders.success ? orders.data.length : 0)
         if (bills.success) setRecentBills(bills.data)
@@ -68,6 +72,7 @@ export function Dashboard() {
     { title: 'Active Orders', value: String(activeOrders), icon: Clock, gradient: 'gradient-accent' },
     { title: 'Total Customers', value: String(data.total_customers), icon: Users, gradient: 'bg-gradient-to-br from-purple-500 to-purple-600' },
     { title: 'Low Stock Items', value: String(data.low_stock_count), icon: Package, gradient: 'bg-gradient-to-br from-rose-500 to-rose-600' },
+    { title: "Today's Reservations", value: String(data.today_reservations), icon: CalendarCheck, gradient: 'bg-gradient-to-br from-teal-500 to-teal-600' },
   ] : []
 
   return (
