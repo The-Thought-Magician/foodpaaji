@@ -276,6 +276,11 @@ export function BillingManagement() {
           <div className="space-y-4">
             <div className="space-y-1">
               {showDetails?.items.map((it, i) => <div key={i} className="flex justify-between text-sm"><span>{it.item_name} × {it.quantity}</span><span>₹{it.total_price.toFixed(2)}</span></div>)}
+              <div className="border-t pt-2 space-y-1 text-sm text-muted-foreground">
+                <div className="flex justify-between"><span>Subtotal</span><span>₹{showDetails?.bill.subtotal.toFixed(2)}</span></div>
+                {(showDetails?.bill.discount_amount ?? 0) > 0 && <div className="flex justify-between text-green-600"><span>Discount</span><span>-₹{showDetails?.bill.discount_amount.toFixed(2)}</span></div>}
+                {(showDetails?.bill.tax_amount ?? 0) > 0 && <div className="flex justify-between"><span>GST</span><span>₹{showDetails?.bill.tax_amount.toFixed(2)}</span></div>}
+              </div>
               <div className="flex justify-between font-bold border-t pt-2"><span>Total</span><span>₹{showDetails?.bill.total_amount.toFixed(2)}</span></div>
             </div>
             {showDetails?.payments && showDetails.payments.length > 0 && <div><p className="text-sm font-medium mb-1">Payments</p>{showDetails.payments.map((p, i) => <div key={i} className="flex justify-between text-sm text-muted-foreground"><span>{p.method.toUpperCase()} · {new Date(p.paid_at).toLocaleString()}</span><span>₹{p.amount.toFixed(2)}</span></div>)}</div>}
