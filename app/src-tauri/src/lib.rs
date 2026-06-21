@@ -41,6 +41,7 @@ use modules::orders::{create_order, get_orders, get_order_details, update_order_
 use modules::receipts::{generate_receipt, mark_receipt_printed, get_receipt};
 use modules::coupons::{create_coupon, validate_coupon, apply_coupon, get_coupons, toggle_coupon};
 use modules::feedback::{create_feedback, get_customer_feedback, get_feedback_summary};
+use modules::staff_shifts::{create_shift, get_shifts, delete_shift, update_shift_status};
 use tauri::Manager;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -181,6 +182,10 @@ pub fn run() {
       create_feedback,
       get_customer_feedback,
       get_feedback_summary,
+      create_shift,
+      get_shifts,
+      delete_shift,
+      update_shift_status,
     ])
     .setup(|app| {
       let level = if cfg!(debug_assertions) { log::LevelFilter::Debug } else { log::LevelFilter::Info };
