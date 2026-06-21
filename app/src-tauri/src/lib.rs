@@ -55,6 +55,7 @@ use modules::menu_recommendations::{get_frequently_ordered_together, get_trendin
 use modules::campaigns::{get_campaigns, create_campaign, update_campaign_status, delete_campaign};
 use modules::reservation_analytics::get_reservation_analytics;
 use modules::audit_log::{create_audit_entry, get_audit_log};
+use modules::menu_history::{record_menu_change, get_menu_item_history};
 use tauri::Manager;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -247,6 +248,8 @@ pub fn run() {
       get_reservation_analytics,
       create_audit_entry,
       get_audit_log,
+      record_menu_change,
+      get_menu_item_history,
     ])
     .setup(|app| {
       let level = if cfg!(debug_assertions) { log::LevelFilter::Debug } else { log::LevelFilter::Info };

@@ -8,8 +8,9 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { ChefHat, Plus, Edit, Trash2, Star, Image as ImageIcon, Clock, Leaf, Copy } from 'lucide-react'
+import { ChefHat, Plus, Edit, Trash2, Star, Image as ImageIcon, Clock, Leaf, Copy, History } from 'lucide-react'
 import { MenuItemFormDialog } from './menu-item-form-dialog'
+import { MenuItemHistoryDialog } from './menu-item-history'
 
 interface MenuItem {
   id?: number
@@ -61,6 +62,7 @@ export default function MenuItems({ restaurantId, categories, onItemsChange }: P
   const [editingItem, setEditingItem] = useState<MenuItem | null>(null)
   const [quickEditId, setQuickEditId] = useState<number | null>(null)
   const [quickPrice, setQuickPrice] = useState('')
+  const [historyItem, setHistoryItem] = useState<{ id: number; name: string } | null>(null)
 
   const saveQuickPrice = async (id: number) => {
     const price = parseFloat(quickPrice)
@@ -188,6 +190,9 @@ export default function MenuItems({ restaurantId, categories, onItemsChange }: P
                     <Button variant="outline" size="sm" onClick={() => handleDuplicate(item.id!)} title="Duplicate">
                       <Copy className="h-4 w-4" />
                     </Button>
+                    <Button variant="outline" size="sm" onClick={() => setHistoryItem({ id: item.id!, name: item.name })} title="History">
+                      <History className="h-4 w-4" />
+                    </Button>
                     <Button variant="outline" size="sm" onClick={() => handleDelete(item.id!)}>
                       <Trash2 className="h-4 w-4" />
                     </Button>
@@ -275,6 +280,15 @@ export default function MenuItems({ restaurantId, categories, onItemsChange }: P
         onClose={() => { setShowForm(false); setEditingItem(null) }}
         onSaved={() => { if (selectedCategory) loadItems(selectedCategory); onItemsChange() }}
       />
+
+      {historyItem && (
+        <MenuItemHistoryDialog
+          itemId={historyItem.id}
+          itemName={historyItem.name}
+          open={true}
+          onClose={() => setHistoryItem(null)}
+        />
+      )}
     </div>
   )
 }
