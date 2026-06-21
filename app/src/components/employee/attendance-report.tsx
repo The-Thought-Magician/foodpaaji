@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Clock, Calendar, TrendingUp } from 'lucide-react'
+import { Clock, Calendar, TrendingUp, Download } from 'lucide-react'
 
 interface AttendanceRecord {
   id: number
@@ -73,6 +73,13 @@ export default function AttendanceReport() {
 
   const fmt = (dt?: string) => dt ? new Date(dt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : '—'
 
+  const exportCSV = () => {
+    if (!report) return
+    const rows = ['Date,Clock In,Clock Out,Hours,Status,Notes', ...report.records.map(r => `"${r.date}","${fmt(r.clock_in)}","${fmt(r.clock_out)}",${r.total_hours?.toFixed(2) ?? 0},"${r.status}","${r.notes ?? ''}"`)]
+    const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(new Blob([rows.join('\n')], { type: 'text/csv' })), download: `attendance-${startDate}-${endDate}.csv` })
+    a.click()
+  }
+
   return (
     <div className="space-y-6">
       <div>
@@ -104,6 +111,7 @@ export default function AttendanceReport() {
             <Button className="gradient-spice text-white" onClick={runReport} disabled={loading}>
               {loading ? 'Loading...' : 'Run Report'}
             </Button>
+            <Button variant="outline" onClick={exportCSV} disabled={!report}><Download className="w-4 h-4 mr-1" />CSV</Button>
           </div>
         </CardContent>
       </Card>
