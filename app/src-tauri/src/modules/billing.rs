@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use sqlx::SqlitePool;
+use sqlx::{SqlitePool, Row};
 use tauri::State;
 use chrono::Local;
 
@@ -136,12 +136,25 @@ pub async fn record_payment(pool: State<'_, SqlitePool>, bill_id: i64, amount: f
     let paid: f64 = sqlx::query!("SELECT COALESCE(SUM(amount), 0.0) as total FROM payments WHERE bill_id = ? AND status = 'completed'", bill_id)
         .fetch_one(pool.inner()).await.map_err(|e| e.to_string())?.total;
 
-    if paid >= bill.total_amount {
+    let bill_paid = paid >= bill.total_amount;
+    if bill_paid {
         sqlx::query!("UPDATE bills SET status = 'paid', updated_at = datetime('now') WHERE id = ?", bill_id)
             .execute(pool.inner()).await.map_err(|e| e.to_string())?;
+        let full_bill = sqlx::query("SELECT customer_id, total_amount FROM bills WHERE id = ?")
+            .bind(bill_id).fetch_one(pool.inner()).await.map_err(|e| e.to_string())?;
+        let cid: Option<i64> = full_bill.try_get("customer_id").ok();
+        let total: f64 = full_bill.try_get("total_amount").unwrap_or(0.0);
+        if let Some(cid) = cid {
+            let points = (total / 10.0) as i64;
+            if points > 0 {
+                sqlx::query("UPDATE customers SET loyalty_points = loyalty_points + ?, total_spent = total_spent + ?, visit_count = visit_count + 1, updated_at = datetime('now') WHERE id = ?")
+                    .bind(points).bind(total).bind(cid)
+                    .execute(pool.inner()).await.map_err(|e| e.to_string())?;
+            }
+        }
     }
 
-    Ok(serde_json::json!({ "success": true, "payment_id": payment_id, "bill_paid": paid >= bill.total_amount }))
+    Ok(serde_json::json!({ "success": true, "payment_id": payment_id, "bill_paid": bill_paid }))
 }
 
 #[tauri::command]
