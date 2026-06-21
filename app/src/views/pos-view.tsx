@@ -35,6 +35,15 @@ interface CouponResult {
   error?: string
 }
 
+interface PromoResult {
+  valid: boolean
+  promo_id?: number
+  discount_type?: string
+  discount_value?: number
+  discount_amount?: number
+  message?: string
+}
+
 const STATUS_COLOR: Record<string, string> = {
   pending: 'bg-yellow-100 text-yellow-700',
   preparing: 'bg-blue-100 text-blue-700',
@@ -48,16 +57,13 @@ export function PosView() {
   const [tableNumber, setTableNumber] = useState('')
   const [couponCode, setCouponCode] = useState('')
   const [coupon, setCoupon] = useState<CouponResult | null>(null)
+  const [promoCode, setPromoCode] = useState('')
+  const [promo, setPromo] = useState<PromoResult | null>(null)
   const [orders, setOrders] = useState<Order[]>([])
   const [showReceipt, setShowReceipt] = useState<{ id: number; content: string; number: string } | null>(null)
   const [orderDetail, setOrderDetail] = useState<{ order_number: string; table_number?: string; status: string; notes?: string; items: { item_name: string; quantity: number; unit_price: number }[] } | null>(null)
 
-  const viewOrderDetails = async (orderId: number) => {
-    try {
-      const res = await invoke<{ success: boolean; data: typeof orderDetail }>('get_order_details', { orderId })
-      if (res.success && res.data) setOrderDetail(res.data)
-    } catch (e) { console.error(e) }
-  }
+  const viewOrderDetails = async (orderId: number) => { try { const res = await invoke<{ success: boolean; data: typeof orderDetail }>('get_order_details', { orderId }); if (res.success && res.data) setOrderDetail(res.data) } catch (e) { console.error(e) } }
   const [showConvert, setShowConvert] = useState<Order | null>(null)
   const [taxPercent, setTaxPercent] = useState(() => getSettings().default_tax_percent)
   const [discountPercent, setDiscountPercent] = useState(0)
@@ -72,32 +78,20 @@ export function PosView() {
   useEffect(() => { loadOrders() }, [loadOrders])
 
   const addItem = () => setCart([...cart, { item_name: '', quantity: 1, unit_price: 0 }])
-
-  const updateCartItem = (i: number, field: keyof CartItem, value: string | number) => {
-    setCart(cart.map((item, idx) => idx === i ? { ...item, [field]: value } : item))
-  }
-
+  const updateCartItem = (i: number, field: keyof CartItem, value: string | number) => setCart(cart.map((item, idx) => idx === i ? { ...item, [field]: value } : item))
   const removeCartItem = (i: number) => setCart(cart.filter((_, idx) => idx !== i))
-
-  const changeQty = (i: number, delta: number) => {
-    const qty = cart[i].quantity + delta
-    if (qty <= 0) removeCartItem(i)
-    else updateCartItem(i, 'quantity', qty)
-  }
+  const changeQty = (i: number, delta: number) => { const qty = cart[i].quantity + delta; if (qty <= 0) removeCartItem(i); else updateCartItem(i, 'quantity', qty) }
 
   const subtotal = cart.reduce((s, i) => s + i.unit_price * i.quantity, 0)
   const couponDiscount = coupon?.valid ? (coupon.discount_amount ?? 0) : 0
-  const taxable = subtotal - couponDiscount
+  const promoDiscount = promo?.valid ? (promo.discount_amount ?? 0) : 0
+  const taxable = subtotal - couponDiscount - promoDiscount
+
+  const validatePromo = async () => { if (!promoCode.trim()) return; try { setPromo(await invoke<PromoResult>('validate_promo_code', { code: promoCode, orderAmount: subtotal })) } catch (e) { console.error(e) } }
   const taxAmt = taxable * taxPercent / 100
   const total = taxable + taxAmt
 
-  const validateCoupon = async () => {
-    if (!couponCode.trim()) return
-    try {
-      const res = await invoke<CouponResult>('validate_coupon', { code: couponCode, orderAmount: subtotal })
-      setCoupon(res)
-    } catch (e) { console.error(e) }
-  }
+  const validateCoupon = async () => { if (!couponCode.trim()) return; try { setCoupon(await invoke<CouponResult>('validate_coupon', { code: couponCode, orderAmount: subtotal })) } catch (e) { console.error(e) } }
 
   const placeOrder = async () => {
     if (cart.length === 0 || cart.some(i => !i.item_name)) return
@@ -111,17 +105,13 @@ export function PosView() {
         }
       }
       if (coupon?.valid && coupon.coupon_id) await invoke('apply_coupon', { couponId: coupon.coupon_id })
+      if (promo?.valid && promo.promo_id) await invoke('apply_promo', { promoId: promo.promo_id })
       await invoke('create_order', { request: { customer_id: null, table_number: tableNumber || null, items: cart, notes: null } })
-      setCart([]); setTableNumber(''); setCouponCode(''); setCoupon(null); loadOrders()
+      setCart([]); setTableNumber(''); setCouponCode(''); setCoupon(null); setPromoCode(''); setPromo(null); loadOrders()
     } catch (e) { console.error(e) }
   }
 
-  const updateStatus = async (orderId: number, status: string) => {
-    try {
-      await invoke('update_order_status', { orderId, status })
-      loadOrders()
-    } catch (e) { console.error(e) }
-  }
+  const updateStatus = async (orderId: number, status: string) => { try { await invoke('update_order_status', { orderId, status }); loadOrders() } catch (e) { console.error(e) } }
 
   const convertToBill = async () => {
     if (!showConvert) return
@@ -195,12 +185,22 @@ export function PosView() {
             </p>
           )}
           <div className="flex gap-2">
+            <Input placeholder="Promo code" value={promoCode} onChange={e => setPromoCode(e.target.value)} />
+            <Button variant="outline" onClick={validatePromo}><Tag className="w-4 h-4" /></Button>
+          </div>
+          {promo && (
+            <p className={`text-sm ${promo.valid ? 'text-green-600' : 'text-red-500'}`}>
+              {promo.valid ? `Promo applied — saves ₹${promo.discount_amount?.toFixed(2)}` : promo.message}
+            </p>
+          )}
+          <div className="flex gap-2">
             <div className="flex-1"><Label className="text-xs">Tax %</Label><Input type="number" value={taxPercent} onChange={e => setTaxPercent(parseFloat(e.target.value) || 0)} /></div>
             <div className="flex-1"><Label className="text-xs">Disc %</Label><Input type="number" value={discountPercent} onChange={e => setDiscountPercent(parseFloat(e.target.value) || 0)} /></div>
           </div>
           <div className="bg-muted rounded-lg p-3 text-sm space-y-1">
             <div className="flex justify-between"><span>Subtotal</span><span>₹{subtotal.toFixed(2)}</span></div>
             {couponDiscount > 0 && <div className="flex justify-between text-green-600"><span>Coupon</span><span>-₹{couponDiscount.toFixed(2)}</span></div>}
+            {promoDiscount > 0 && <div className="flex justify-between text-green-600"><span>Promo</span><span>-₹{promoDiscount.toFixed(2)}</span></div>}
             <div className="flex justify-between"><span>Tax ({taxPercent}%)</span><span>₹{taxAmt.toFixed(2)}</span></div>
             <div className="flex justify-between font-bold border-t pt-1"><span>Total</span><span>₹{total.toFixed(2)}</span></div>
           </div>
