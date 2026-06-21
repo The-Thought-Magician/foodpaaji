@@ -66,8 +66,8 @@ export function BillingManagement() {
   const [taxPercent, setTaxPercent] = useState(() => getSettings().default_tax_percent)
   const [payAmount, setPayAmount] = useState(''); const [payMethod, setPayMethod] = useState('cash')
   const [billCustomer, setBillCustomer] = useState<{ id: number; name: string } | null>(null)
-  const [billCustSearch, setBillCustSearch] = useState(''); const [billCustResults, setBillCustResults] = useState<{ id: number; name: string; phone?: string }[]>([])
-  const [upiRef, setUpiRef] = useState(''); const [billNotes, setBillNotes] = useState('')
+  const [billCustSearch, setBillCustSearch] = useState(''); const [billCustResults, setBillCustResults] = useState<{ id: number; name: string; phone?: string; loyalty_points?: number }[]>([])
+  const [upiRef, setUpiRef] = useState(''); const [billNotes, setBillNotes] = useState(''); const [redeemPts, setRedeemPts] = useState(0); const [custPoints, setCustPoints] = useState(0)
   const [showDetails, setShowDetails] = useState<null | { bill: Bill; items: BillDetailItem[]; payments: BillPayment[] }>(null)
   const [paymentHistory, setPaymentHistory] = useState<BillPayment[]>([])
   const viewDetails = async (bill: Bill) => {
@@ -102,14 +102,15 @@ export function BillingManagement() {
   const removeItem = (i: number) => setItems(items.filter((_, idx) => idx !== i))
   const subtotal = items.reduce((s, i) => s + (i.unit_price * i.quantity) - i.discount_amount, 0)
   const scPct = getSettings().service_charge_percent
-  const discountAmt = subtotal * discountPercent / 100; const taxable = subtotal - discountAmt; const taxAmt = taxable * taxPercent / 100; const scAmt = taxable * scPct / 100; const total = taxable + taxAmt + scAmt
+  const discountAmt = subtotal * discountPercent / 100; const taxable = subtotal - discountAmt; const taxAmt = taxable * taxPercent / 100; const scAmt = taxable * scPct / 100; const redeemAmt = Math.min(redeemPts, custPoints); const total = Math.max(0, taxable + taxAmt + scAmt - redeemAmt)
 
   const createBill = async () => {
     try {
       await invoke('create_bill', {
         request: { customer_id: billCustomer?.id ?? null, table_number: tableNumber || null, items, discount_percent: discountPercent, tax_percent: taxPercent + scPct, notes: billNotes || null }
       })
-      setShowNewBill(false); setBillCustomer(null); setBillCustSearch(''); setBillCustResults([])
+      if (billCustomer && redeemAmt > 0) await invoke('redeem_loyalty_points', { customerId: billCustomer.id, points: redeemAmt }).catch(console.error)
+      setShowNewBill(false); setBillCustomer(null); setBillCustSearch(''); setBillCustResults([]); setCustPoints(0); setRedeemPts(0)
       setItems([{ item_name: '', quantity: 1, unit_price: 0, discount_amount: 0 }]); setTableNumber(''); setBillNotes('')
       loadBills(); loadSummary()
     } catch (e) { console.error(e) }
@@ -226,9 +227,9 @@ export function BillingManagement() {
           <DialogHeader><DialogTitle>New Bill</DialogTitle></DialogHeader>
           <div className="space-y-4">
             <div className="relative"><Label>Customer (optional)</Label>
-              {billCustomer ? <div className="flex items-center gap-2 mt-1 p-2 bg-muted rounded-lg text-sm"><span className="flex-1 font-medium">{billCustomer.name}</span><button onClick={() => { setBillCustomer(null); setBillCustSearch('') }} className="text-muted-foreground hover:text-foreground">✕</button></div>
+              {billCustomer ? <div className="flex items-center gap-2 mt-1 p-2 bg-muted rounded-lg text-sm"><span className="flex-1 font-medium">{billCustomer.name}</span>{custPoints > 0 && <span className="text-xs text-amber-600">{custPoints} pts</span>}<button onClick={() => { setBillCustomer(null); setBillCustSearch(''); setCustPoints(0); setRedeemPts(0) }} className="text-muted-foreground hover:text-foreground">✕</button></div>
               : <><Input value={billCustSearch} onChange={async e => { setBillCustSearch(e.target.value); if (e.target.value.length > 1) { const r = await invoke<{ success: boolean; data: typeof billCustResults }>('get_customers', { search: e.target.value, limit: 5 }).catch(() => null); if (r?.success) setBillCustResults(r.data) } else setBillCustResults([]) }} placeholder="Search customer name or phone" className="mt-1" />
-              {billCustResults.length > 0 && <div className="absolute z-10 w-full bg-popover border border-border rounded-lg shadow-lg mt-1">{billCustResults.map(c => <button key={c.id} onClick={() => { setBillCustomer(c); setBillCustSearch(''); setBillCustResults([]) }} className="w-full text-left px-3 py-2 text-sm hover:bg-muted">{c.name}{c.phone ? ` · ${c.phone}` : ''}</button>)}</div>}</>}
+              {billCustResults.length > 0 && <div className="absolute z-10 w-full bg-popover border border-border rounded-lg shadow-lg mt-1">{billCustResults.map(c => <button key={c.id} onClick={() => { setBillCustomer(c); setBillCustSearch(''); setBillCustResults([]); setCustPoints(c.loyalty_points ?? 0); setRedeemPts(0) }} className="w-full text-left px-3 py-2 text-sm hover:bg-muted">{c.name}{c.phone ? ` · ${c.phone}` : ''}{(c.loyalty_points ?? 0) > 0 ? <span className="ml-1 text-xs text-amber-600">{c.loyalty_points}pts</span> : null}</button>)}</div>}</>}
             </div>
             <div><Label>Table Number</Label><Input value={tableNumber} onChange={e => setTableNumber(e.target.value)} placeholder="e.g. T1" /></div>
             <div className="space-y-2">
@@ -238,15 +239,13 @@ export function BillingManagement() {
               ))}
               <Button variant="outline" size="sm" onClick={addItem}><Plus className="w-4 h-4 mr-1" />Add Item</Button>
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div><Label>Discount %</Label><Input type="number" value={discountPercent} onChange={e => setDiscountPercent(parseFloat(e.target.value) || 0)} /></div>
-              <div><Label>Tax %</Label><Input type="number" value={taxPercent} onChange={e => setTaxPercent(parseFloat(e.target.value) || 0)} /></div>
-            </div>
+            <div className="grid grid-cols-3 gap-3"><div><Label>Discount %</Label><Input type="number" value={discountPercent} onChange={e => setDiscountPercent(parseFloat(e.target.value) || 0)} /></div><div><Label>Tax %</Label><Input type="number" value={taxPercent} onChange={e => setTaxPercent(parseFloat(e.target.value) || 0)} /></div>{custPoints > 0 && <div><Label>Redeem Pts (max {custPoints})</Label><Input type="number" min={0} max={custPoints} value={redeemPts} onChange={e => setRedeemPts(Math.min(custPoints, Math.max(0, parseInt(e.target.value) || 0)))} /></div>}</div>
             <div className="bg-muted p-3 rounded-lg text-sm space-y-1">
               <div className="flex justify-between"><span>Subtotal</span><span>₹{subtotal.toFixed(2)}</span></div>
               <div className="flex justify-between"><span>Discount</span><span>-₹{discountAmt.toFixed(2)}</span></div>
               <div className="flex justify-between"><span>Tax ({taxPercent}%)</span><span>₹{taxAmt.toFixed(2)}</span></div>
               {scAmt > 0 && <div className="flex justify-between"><span>Service Charge ({scPct}%)</span><span>₹{scAmt.toFixed(2)}</span></div>}
+              {redeemAmt > 0 && <div className="flex justify-between text-amber-600"><span>Loyalty ({redeemAmt} pts)</span><span>-₹{redeemAmt.toFixed(2)}</span></div>}
               <div className="flex justify-between font-bold border-t pt-1"><span>Total</span><span>₹{total.toFixed(2)}</span></div>
             </div>
             <div><Label>Notes (optional)</Label><textarea value={billNotes} onChange={e => setBillNotes(e.target.value)} placeholder="Special instructions, dietary notes…" className="w-full mt-1 px-3 py-2 text-sm border border-border rounded-lg bg-background resize-none h-16 focus:outline-none focus:ring-2 focus:ring-primary/20" /></div><Button className="w-full gradient-spice text-white" onClick={createBill}>Create Bill</Button>
