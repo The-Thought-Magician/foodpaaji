@@ -89,13 +89,13 @@ export function Dashboard() {
   }
 
   const stats = data ? [
-    { title: "Today's Bills", value: String(data.today_bills), icon: Receipt, gradient: 'gradient-spice' },
-    { title: "Today's Billed", value: `₹${data.today_revenue.toFixed(0)}`, icon: IndianRupee, gradient: 'bg-gradient-to-br from-green-500 to-green-600' },
-    { title: "Today's Collected", value: `₹${data.today_collected.toFixed(0)}`, icon: IndianRupee, gradient: 'bg-gradient-to-br from-emerald-600 to-emerald-700' },
-    { title: 'Active Orders', value: String(activeOrders), icon: Clock, gradient: 'gradient-accent' },
-    { title: 'Total Customers', value: String(data.total_customers), icon: Users, gradient: 'bg-gradient-to-br from-purple-500 to-purple-600' },
-    { title: 'Low Stock Items', value: String(data.low_stock_count), icon: Package, gradient: 'bg-gradient-to-br from-rose-500 to-rose-600' },
-    { title: "Today's Reservations", value: String(data.today_reservations), icon: CalendarCheck, gradient: 'bg-gradient-to-br from-teal-500 to-teal-600' },
+    { title: "Today's Bills", value: String(data.today_bills), icon: Receipt, gradient: 'gradient-spice', href: '/billing' },
+    { title: "Today's Billed", value: `₹${data.today_revenue.toFixed(0)}`, icon: IndianRupee, gradient: 'bg-gradient-to-br from-green-500 to-green-600', href: '/billing' },
+    { title: "Today's Collected", value: `₹${data.today_collected.toFixed(0)}`, icon: IndianRupee, gradient: 'bg-gradient-to-br from-emerald-600 to-emerald-700', href: '/billing' },
+    { title: 'Active Orders', value: String(activeOrders), icon: Clock, gradient: 'gradient-accent', href: '/pos' },
+    { title: 'Total Customers', value: String(data.total_customers), icon: Users, gradient: 'bg-gradient-to-br from-purple-500 to-purple-600', href: '/customers' },
+    { title: 'Low Stock Items', value: String(data.low_stock_count), icon: Package, gradient: 'bg-gradient-to-br from-rose-500 to-rose-600', href: '/inventory' },
+    { title: "Today's Reservations", value: String(data.today_reservations), icon: CalendarCheck, gradient: 'bg-gradient-to-br from-teal-500 to-teal-600', href: '/reservations' },
   ] : []
 
   return (
@@ -127,13 +127,15 @@ export function Dashboard() {
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {stats.map(s => (
-          <div key={s.title} className="stat-card card-hover bg-card rounded-2xl p-6 border border-border">
-            <div className={`p-3 rounded-xl ${s.gradient} w-fit mb-4`}>
-              <s.icon className="w-5 h-5 text-white" />
+          <Link key={s.title} href={s.href}>
+            <div className="stat-card card-hover bg-card rounded-2xl p-6 border border-border cursor-pointer">
+              <div className={`p-3 rounded-xl ${s.gradient} w-fit mb-4`}>
+                <s.icon className="w-5 h-5 text-white" />
+              </div>
+              <p className="text-2xl font-bold">{s.value}</p>
+              <p className="text-sm text-muted-foreground mt-1">{s.title}</p>
             </div>
-            <p className="text-2xl font-bold">{s.value}</p>
-            <p className="text-sm text-muted-foreground mt-1">{s.title}</p>
-          </div>
+          </Link>
         ))}
         {!data && [1,2,3,4].map(i => (
           <div key={i} className="bg-card rounded-2xl p-6 border border-border animate-pulse h-32" />
