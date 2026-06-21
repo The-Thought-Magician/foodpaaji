@@ -27,7 +27,7 @@ use modules::auto_stock_deduction::process_order_completion;
 use modules::menu_recipes::{validate_stock_availability, create_menu_recipe, get_menu_recipe};
 use modules::inventory_transfers::{create_inventory_transfer, approve_transfer, complete_transfer};
 use modules::inventory_transfer_search::get_inventory_transfers;
-use modules::menu::{create_menu_category, get_menu_categories, get_menu_category_by_id, update_menu_category, delete_menu_category};
+use modules::menu::{create_menu_category, get_menu_categories, get_menu_category_by_id, update_menu_category, delete_menu_category, get_popular_menu_items};
 use modules::menu_items::{create_menu_item, get_menu_items_by_category, get_menu_item_by_id, delete_menu_item, update_menu_item};
 use modules::menu_images::{upload_menu_item_image, upload_menu_category_image};
 use modules::menu_image_management::{get_menu_image, delete_menu_item_image, delete_menu_category_image};
@@ -111,6 +111,7 @@ pub fn run() {
       get_menu_category_by_id,
       update_menu_category,
       delete_menu_category,
+      get_popular_menu_items,
       create_menu_item,
       get_menu_items_by_category,
       get_menu_item_by_id,

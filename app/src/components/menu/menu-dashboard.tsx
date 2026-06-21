@@ -7,6 +7,8 @@ import { Button } from '@/components/ui/button'
 import type { MenuCategory, MenuItem } from '@/types/menu'
 import { StatCard, DashboardCategoryCard, FeaturedItemRow } from './menu-dashboard-cards'
 
+interface PopularItem { item_name: string; menu_item_id: number; order_count: number; total_qty: number; total_revenue: number }
+
 interface MenuAnalytics {
   total_items: number
   average_price: number
@@ -25,16 +27,19 @@ export function MenuDashboard({ onNavigate }: Props) {
   const [analytics, setAnalytics] = useState<MenuAnalytics | null>(null)
   const [categories, setCategories] = useState<MenuCategory[]>([])
   const [featuredItems, setFeaturedItems] = useState<MenuItem[]>([])
+  const [popular, setPopular] = useState<PopularItem[]>([])
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
 
   const load = async () => {
     setRefreshing(true)
     try {
-      const [analyticsRes, categoriesRes] = await Promise.all([
+      const [analyticsRes, categoriesRes, popRes] = await Promise.all([
         invoke<{ success: boolean; data?: MenuAnalytics }>('get_pricing_analytics', { restaurantId: RESTAURANT_ID }),
         invoke<{ success: boolean; data?: MenuCategory[] }>('get_menu_categories', { restaurantId: RESTAURANT_ID }),
+        invoke<{ success: boolean; data?: PopularItem[] }>('get_popular_menu_items', { limit: 5 }),
       ])
+      if (popRes.success && popRes.data) setPopular(popRes.data)
 
       if (analyticsRes.success && analyticsRes.data) setAnalytics(analyticsRes.data)
 
@@ -127,6 +132,22 @@ export function MenuDashboard({ onNavigate }: Props) {
           )}
         </div>
       </div>
+
+      {popular.length > 0 && (
+        <div className="bg-card rounded-2xl border border-border overflow-hidden">
+          <div className="p-6 border-b border-border"><h3 className="font-semibold text-lg" style={{ fontFamily: 'Outfit, sans-serif' }}>Top Selling Items</h3><p className="text-sm text-muted-foreground">Ranked by units sold from bills</p></div>
+          <div className="divide-y divide-border">
+            {popular.map((item, i) => (
+              <div key={item.menu_item_id} className="px-6 py-3 flex items-center gap-4">
+                <span className="w-6 text-center text-sm font-bold text-muted-foreground">#{i + 1}</span>
+                <span className="flex-1 font-medium">{item.item_name}</span>
+                <span className="text-sm text-muted-foreground">{item.total_qty} sold</span>
+                <span className="text-sm font-semibold">₹{item.total_revenue.toFixed(0)}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   )
 }

@@ -1,5 +1,6 @@
 use crate::database::DbPool;
 use crate::types::ApiResponse;
+use sqlx::Row;
 use crate::modules::menu_types::{MenuCategory, CreateMenuCategoryRequest, UpdateMenuCategoryRequest, generate_slug};
 use tauri::State;
 
@@ -118,4 +119,20 @@ pub async fn delete_menu_category(
         .bind(id).execute(&*db).await
         .map_err(|e| format!("Failed to delete category: {}", e))?;
     Ok(ApiResponse { success: true, data: Some("Category deleted successfully".to_string()), message: None, error: None })
+}
+
+#[tauri::command]
+pub async fn get_popular_menu_items(db: State<'_, DbPool>, limit: Option<i64>) -> Result<serde_json::Value, String> {
+    let limit = limit.unwrap_or(10);
+    let rows = sqlx::query(
+        "SELECT bi.item_name, bi.menu_item_id, COUNT(*) as order_count, COALESCE(SUM(bi.quantity), 0) as total_qty, COALESCE(SUM(bi.total_price), 0.0) as total_revenue FROM bill_items bi WHERE bi.menu_item_id IS NOT NULL GROUP BY bi.menu_item_id, bi.item_name ORDER BY total_qty DESC LIMIT ?"
+    ).bind(limit).fetch_all(&*db).await.map_err(|e| e.to_string())?;
+    let data: Vec<serde_json::Value> = rows.into_iter().map(|r| serde_json::json!({
+        "item_name": r.try_get::<String,_>("item_name").unwrap_or_default(),
+        "menu_item_id": r.try_get::<i64,_>("menu_item_id").unwrap_or(0),
+        "order_count": r.try_get::<i64,_>("order_count").unwrap_or(0),
+        "total_qty": r.try_get::<i64,_>("total_qty").unwrap_or(0),
+        "total_revenue": r.try_get::<f64,_>("total_revenue").unwrap_or(0.0),
+    })).collect();
+    Ok(serde_json::json!({ "success": true, "data": data }))
 }
