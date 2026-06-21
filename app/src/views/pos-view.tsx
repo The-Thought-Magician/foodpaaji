@@ -21,7 +21,6 @@ interface CartItem {
   menu_item_id?: number
   notes?: string
 }
-
 interface Order {
   id: number
   order_number: string
@@ -29,6 +28,7 @@ interface Order {
   status: string
   notes?: string
   created_at: string
+  customer_id?: number
 }
 interface CouponResult { valid: boolean; coupon_id?: number; discount_amount?: number; final_amount?: number; error?: string }
 interface PromoResult { valid: boolean; promo_id?: number; discount_type?: string; discount_value?: number; discount_amount?: number; message?: string }
@@ -133,11 +133,11 @@ export function PosView() {
         if (receipt.success) setShowReceipt({ id: receipt.data.receipt_id, content: receipt.data.content, number: receipt.data.receipt_number })
         const orderItems = (details.success && details.data?.items || []).filter(i => i.menu_item_id).map(i => ({ menu_item_id: i.menu_item_id!, quantity: i.quantity, notes: i.notes ?? null }))
         if (orderItems.length > 0) await invoke('process_order_completion', { request: { restaurant_id: 1, order_id: showConvert.id, order_items: orderItems, user_id: 1 } }).catch(console.error)
+        if (showConvert.customer_id) { const pts = Math.floor(res.total_amount / 10); if (pts > 0) invoke('add_loyalty_points', { customerId: showConvert.customer_id, points: pts, billAmount: res.total_amount }).catch(console.error) }
         setShowConvert(null); loadOrders()
       }
     } catch (e) { console.error(e) }
   }
-
   const addFromMenu = (item: { menu_item_id: number; item_name: string; unit_price: number }) => {
     const existing = cart.findIndex(c => c.menu_item_id === item.menu_item_id)
     if (existing >= 0) {
