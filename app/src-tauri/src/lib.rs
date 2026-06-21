@@ -48,6 +48,7 @@ use modules::menu_variants::{get_menu_item_variants, create_menu_item_variant, d
 use modules::menu_availability::{get_item_availability, add_availability_slot, remove_availability_slot};
 use modules::walkin_queue::{get_walkin_queue, add_to_walkin_queue, seat_walkin_guest, update_walkin_status};
 use modules::table_analytics::get_table_utilization;
+use modules::daily_settlement::get_daily_settlement;
 use tauri::Manager;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -221,6 +222,7 @@ pub fn run() {
       seat_walkin_guest,
       update_walkin_status,
       get_table_utilization,
+      get_daily_settlement,
     ])
     .setup(|app| {
       let level = if cfg!(debug_assertions) { log::LevelFilter::Debug } else { log::LevelFilter::Info };

@@ -45,3 +45,4 @@ pub mod menu_variants;
 pub mod menu_availability;
 pub mod walkin_queue;
 pub mod table_analytics;
+pub mod daily_settlement;

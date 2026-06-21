@@ -13,6 +13,7 @@ import { FileText, Plus, IndianRupee, Receipt, TrendingUp, Eye, Download, Search
 import { UpiQr } from '@/components/ui/upi-qr'
 import { getSettings } from '@/lib/settings'
 import { BillItemRow } from '@/components/billing/bill-item-row'
+import { DailySettlement } from '@/components/billing/daily-settlement'
 
 interface Bill {
   id: number
@@ -76,6 +77,7 @@ export function BillingManagement() {
   const [feedbackRating, setFeedbackRating] = useState(0)
   const [feedbackComment, setFeedbackComment] = useState('')
   const [splitBill, setSplitBill] = useState<Bill | null>(null)
+  const [showSettlement, setShowSettlement] = useState(false)
   const [splitPeople, setSplitPeople] = useState(2)
   const viewDetails = async (bill: Bill) => {
     try {
@@ -196,9 +198,12 @@ export function BillingManagement() {
         </div>
         <div className="flex gap-2">
           <Button variant="outline" size="sm" onClick={exportCSV} disabled={filteredBills.length === 0}><Download className="w-4 h-4 mr-1" />CSV</Button>
+          <Button variant="outline" size="sm" onClick={() => setShowSettlement(s => !s)}><TrendingUp className="w-4 h-4 mr-1" />Settlement</Button>
           <Button onClick={() => setShowNewBill(true)} className="gradient-spice text-white"><Plus className="w-4 h-4 mr-2" />New Bill</Button>
         </div>
       </div>
+
+      {showSettlement && <DailySettlement onClose={() => setShowSettlement(false)} />}
 
       <div className="space-y-2">
         {filteredBills.map(bill => (
