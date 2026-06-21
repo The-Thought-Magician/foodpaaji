@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import { invoke } from '@tauri-apps/api/core'
+import { getSettings } from '@/lib/settings'
 import {
   LayoutDashboard,
   Users,
@@ -36,9 +37,11 @@ const navItems = [
 export function Sidebar() {
   const [collapsed, setCollapsed] = useState(false)
   const [lowStockCount, setLowStockCount] = useState(0)
+  const [restaurantName, setRestaurantName] = useState('FoodPaaji')
   const pathname = usePathname()
   const router = useRouter()
 
+  useEffect(() => { setRestaurantName(getSettings().restaurant_name || 'FoodPaaji') }, [])
   const [pendingOrders, setPendingOrders] = useState(0)
 
   useEffect(() => {
@@ -126,12 +129,12 @@ export function Sidebar() {
       <div className="p-4 border-t border-border">
         <div className={cn('flex items-center gap-3 p-3 rounded-xl bg-muted/50', collapsed ? 'justify-center' : '')}>
           <div className="w-9 h-9 gradient-accent rounded-full flex items-center justify-center text-white font-semibold text-sm shadow-md">
-            R
+            {restaurantName.charAt(0).toUpperCase()}
           </div>
           {!collapsed && (
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium truncate">Raj Restaurant</p>
-              <p className="text-xs text-muted-foreground">Premium Plan</p>
+              <p className="text-sm font-medium truncate">{restaurantName}</p>
+              <p className="text-xs text-muted-foreground">Restaurant Manager</p>
             </div>
           )}
         </div>
