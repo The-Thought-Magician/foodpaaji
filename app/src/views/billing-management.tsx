@@ -17,6 +17,7 @@ interface Bill {
   id: number
   bill_number: string
   customer_id?: number | null
+  customer_name?: string | null
   table_number?: string
   subtotal: number
   discount_amount: number
@@ -58,15 +59,11 @@ export function BillingManagement() {
   const [showNewBill, setShowNewBill] = useState(false)
   const [showPayment, setShowPayment] = useState<Bill | null>(null)
   const [filterStatus, setFilterStatus] = useState<string | null>(null)
-  const [search, setSearch] = useState('')
-  const [dateFrom, setDateFrom] = useState('')
-  const [dateTo, setDateTo] = useState('')
+  const [search, setSearch] = useState(''); const [dateFrom, setDateFrom] = useState(''); const [dateTo, setDateTo] = useState('')
   const [items, setItems] = useState<BillItem[]>([{ item_name: '', quantity: 1, unit_price: 0, discount_amount: 0 }])
-  const [tableNumber, setTableNumber] = useState('')
-  const [discountPercent, setDiscountPercent] = useState(0)
+  const [tableNumber, setTableNumber] = useState(''); const [discountPercent, setDiscountPercent] = useState(0)
   const [taxPercent, setTaxPercent] = useState(() => getSettings().default_tax_percent)
-  const [payAmount, setPayAmount] = useState('')
-  const [payMethod, setPayMethod] = useState('cash')
+  const [payAmount, setPayAmount] = useState(''); const [payMethod, setPayMethod] = useState('cash')
   const [upiRef, setUpiRef] = useState('')
   const [showDetails, setShowDetails] = useState<null | { bill: Bill; items: BillDetailItem[]; payments: BillPayment[] }>(null)
   const [paymentHistory, setPaymentHistory] = useState<BillPayment[]>([])
@@ -198,7 +195,7 @@ export function BillingManagement() {
               <div className="flex items-center gap-4">
                 <Receipt className="w-5 h-5 text-muted-foreground" />
                 <div>
-                  <p className="font-medium">{bill.bill_number}</p>
+                  <p className="font-medium">{bill.bill_number}{bill.customer_name && <span className="ml-2 text-sm font-normal text-muted-foreground">· {bill.customer_name}</span>}</p>
                   <p className="text-sm text-muted-foreground">{bill.table_number ? `Table ${bill.table_number}` : 'Takeaway'} · {new Date(bill.created_at).toLocaleString()}</p>
                 </div>
               </div>

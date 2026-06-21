@@ -82,16 +82,19 @@ pub async fn create_bill(pool: State<'_, SqlitePool>, request: CreateBillRequest
 #[tauri::command]
 pub async fn get_bills(pool: State<'_, SqlitePool>, status: Option<String>, limit: Option<i64>) -> Result<serde_json::Value, String> {
     let limit = limit.unwrap_or(50);
-    let rows = if let Some(s) = status {
-        sqlx::query!("SELECT id, bill_number, customer_id, table_number, subtotal, discount_amount, discount_percent, tax_amount, tax_percent, total_amount, status, notes, created_at FROM bills WHERE status = ? ORDER BY created_at DESC LIMIT ?", s, limit)
-            .fetch_all(pool.inner()).await.map_err(|e| e.to_string())?
-            .into_iter().map(|r| serde_json::json!({ "id": r.id, "bill_number": r.bill_number, "customer_id": r.customer_id, "table_number": r.table_number, "subtotal": r.subtotal, "discount_amount": r.discount_amount, "tax_amount": r.tax_amount, "total_amount": r.total_amount, "status": r.status, "created_at": r.created_at })).collect::<Vec<_>>()
+    let sql_base = "SELECT b.id, b.bill_number, b.customer_id, c.name as customer_name, b.table_number, b.subtotal, b.discount_amount, b.tax_amount, b.total_amount, b.status, b.created_at FROM bills b LEFT JOIN customers c ON b.customer_id = c.id";
+    let rows = if let Some(ref s) = status {
+        sqlx::query(&format!("{} WHERE b.status = ? ORDER BY b.created_at DESC LIMIT ?", sql_base))
+            .bind(s).bind(limit).fetch_all(pool.inner()).await.map_err(|e| e.to_string())?
     } else {
-        sqlx::query!("SELECT id, bill_number, customer_id, table_number, subtotal, discount_amount, discount_percent, tax_amount, tax_percent, total_amount, status, notes, created_at FROM bills ORDER BY created_at DESC LIMIT ?", limit)
-            .fetch_all(pool.inner()).await.map_err(|e| e.to_string())?
-            .into_iter().map(|r| serde_json::json!({ "id": r.id, "bill_number": r.bill_number, "customer_id": r.customer_id, "table_number": r.table_number, "subtotal": r.subtotal, "discount_amount": r.discount_amount, "tax_amount": r.tax_amount, "total_amount": r.total_amount, "status": r.status, "created_at": r.created_at })).collect::<Vec<_>>()
+        sqlx::query(&format!("{} ORDER BY b.created_at DESC LIMIT ?", sql_base))
+            .bind(limit).fetch_all(pool.inner()).await.map_err(|e| e.to_string())?
     };
-    Ok(serde_json::json!({ "success": true, "data": rows }))
+    let data: Vec<serde_json::Value> = rows.into_iter().map(|r| {
+        let customer_name: Option<String> = r.try_get("customer_name").ok();
+        serde_json::json!({ "id": r.try_get::<i64,_>("id").unwrap_or(0), "bill_number": r.try_get::<String,_>("bill_number").unwrap_or_default(), "customer_id": r.try_get::<Option<i64>,_>("customer_id").unwrap_or(None), "customer_name": customer_name, "table_number": r.try_get::<Option<String>,_>("table_number").unwrap_or(None), "subtotal": r.try_get::<f64,_>("subtotal").unwrap_or(0.0), "discount_amount": r.try_get::<f64,_>("discount_amount").unwrap_or(0.0), "tax_amount": r.try_get::<f64,_>("tax_amount").unwrap_or(0.0), "total_amount": r.try_get::<f64,_>("total_amount").unwrap_or(0.0), "status": r.try_get::<String,_>("status").unwrap_or_default(), "created_at": r.try_get::<String,_>("created_at").unwrap_or_default() })
+    }).collect();
+    Ok(serde_json::json!({ "success": true, "data": data }))
 }
 
 #[tauri::command]
