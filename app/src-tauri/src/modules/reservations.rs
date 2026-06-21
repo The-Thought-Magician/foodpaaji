@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use sqlx::SqlitePool;
+use sqlx::{SqlitePool, Row};
 use tauri::State;
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -16,10 +16,24 @@ pub struct CreateReservationRequest {
 
 #[tauri::command]
 pub async fn get_tables(pool: State<'_, SqlitePool>) -> Result<serde_json::Value, String> {
-    let rows = sqlx::query!("SELECT id, table_number, capacity, location, is_active FROM tables WHERE is_active = 1 ORDER BY table_number")
-        .fetch_all(pool.inner()).await.map_err(|e| e.to_string())?
-        .into_iter().map(|r| serde_json::json!({ "id": r.id, "table_number": r.table_number, "capacity": r.capacity, "location": r.location })).collect::<Vec<_>>();
-    Ok(serde_json::json!({ "success": true, "data": rows }))
+    let rows = sqlx::query("SELECT id, table_number, capacity, location, is_active, needs_cleaning FROM tables WHERE is_active = 1 ORDER BY table_number")
+        .fetch_all(pool.inner()).await.map_err(|e| e.to_string())?;
+    let data: Vec<serde_json::Value> = rows.iter().map(|r| serde_json::json!({
+        "id": r.try_get::<i64,_>("id").unwrap_or(0),
+        "table_number": r.try_get::<String,_>("table_number").unwrap_or_default(),
+        "capacity": r.try_get::<i64,_>("capacity").unwrap_or(4),
+        "location": r.try_get::<Option<String>,_>("location").unwrap_or(None),
+        "needs_cleaning": r.try_get::<i64,_>("needs_cleaning").unwrap_or(0) == 1,
+    })).collect();
+    Ok(serde_json::json!({ "success": true, "data": data }))
+}
+
+#[tauri::command]
+pub async fn mark_table_clean(pool: State<'_, SqlitePool>, table_number: String) -> Result<serde_json::Value, String> {
+    sqlx::query("UPDATE tables SET needs_cleaning = 0 WHERE table_number = ?")
+        .bind(&table_number)
+        .execute(pool.inner()).await.map_err(|e| e.to_string())?;
+    Ok(serde_json::json!({ "success": true }))
 }
 
 #[tauri::command]

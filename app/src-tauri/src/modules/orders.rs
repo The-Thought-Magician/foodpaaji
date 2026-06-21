@@ -200,6 +200,13 @@ pub async fn convert_order_to_bill(
     )
     .execute(pool.inner()).await.map_err(|e| e.to_string())?;
 
+    if order_type == "dine_in" {
+        if let Some(ref tbl) = order_table {
+            sqlx::query("UPDATE tables SET needs_cleaning = 1 WHERE table_number = ?")
+                .bind(tbl).execute(pool.inner()).await.ok();
+        }
+    }
+
     Ok(serde_json::json!({
         "success": true, "bill_id": bill_id, "bill_number": bill_number, "total_amount": total_amount
     }))

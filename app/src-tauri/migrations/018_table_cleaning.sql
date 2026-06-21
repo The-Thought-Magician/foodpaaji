@@ -1,0 +1,1 @@
+ALTER TABLE tables ADD COLUMN needs_cleaning INTEGER NOT NULL DEFAULT 0;

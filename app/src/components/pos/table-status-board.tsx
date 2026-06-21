@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from 'react'
 import { invoke } from '@tauri-apps/api/core'
+import { CheckCircle } from 'lucide-react'
 
-interface TableRow { id: number; table_number: string; capacity: number; location?: string }
+interface TableRow { id: number; table_number: string; capacity: number; location?: string; needs_cleaning?: boolean }
 interface Order { id: number; table_number?: string; status: string; order_number: string; created_at: string }
 
 const elapsed = (iso: string) => {
@@ -28,8 +29,12 @@ export function TableStatusBoard() {
     return () => clearInterval(t)
   }, [])
 
-  const activeStatuses = new Set(['pending', 'preparing', 'ready'])
+  const markClean = async (tableNumber: string) => {
+    await invoke('mark_table_clean', { tableNumber }).catch(console.error)
+    load()
+  }
 
+  const activeStatuses = new Set(['pending', 'preparing', 'ready'])
   const activeByTable = orders.reduce<Record<string, Order[]>>((acc, o) => {
     if (o.table_number && activeStatuses.has(o.status)) {
       acc[o.table_number] = [...(acc[o.table_number] ?? []), o]
@@ -38,13 +43,15 @@ export function TableStatusBoard() {
   }, {})
 
   const occupied = tables.filter(t => activeByTable[t.table_number])
-  const free = tables.filter(t => !activeByTable[t.table_number])
+  const needsCleaning = tables.filter(t => !activeByTable[t.table_number] && t.needs_cleaning)
+  const free = tables.filter(t => !activeByTable[t.table_number] && !t.needs_cleaning)
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-4 text-sm">
+      <div className="flex items-center gap-4 text-sm flex-wrap">
         <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full bg-green-500 inline-block" />Free ({free.length})</span>
         <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full bg-amber-500 inline-block" />Occupied ({occupied.length})</span>
+        <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full bg-orange-400 inline-block" />Needs Cleaning ({needsCleaning.length})</span>
       </div>
 
       {tables.length === 0 && (
@@ -55,16 +62,25 @@ export function TableStatusBoard() {
         {tables.map(table => {
           const tableOrders = activeByTable[table.table_number] ?? []
           const isOccupied = tableOrders.length > 0
+          const cleaning = !isOccupied && table.needs_cleaning
           const earliest = tableOrders.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())[0]
+
+          const borderCls = isOccupied
+            ? 'border-amber-400 bg-amber-50/60 dark:bg-amber-950/20'
+            : cleaning
+              ? 'border-orange-400 bg-orange-50/60 dark:bg-orange-950/20'
+              : 'border-green-300 bg-green-50/40 dark:bg-green-950/20'
+
           return (
-            <div key={table.id} className={`rounded-xl border-2 p-4 transition-colors ${isOccupied ? 'border-amber-400 bg-amber-50/60' : 'border-green-300 bg-green-50/40'}`}>
+            <div key={table.id} className={`rounded-xl border-2 p-4 transition-colors ${borderCls}`}>
               <div className="flex items-start justify-between">
                 <div>
                   <p className="font-bold text-lg">{table.table_number}</p>
                   <p className="text-xs text-muted-foreground">Cap {table.capacity}{table.location ? ` · ${table.location}` : ''}</p>
                 </div>
-                <span className={`w-3 h-3 rounded-full mt-1 ${isOccupied ? 'bg-amber-500' : 'bg-green-500'}`} />
+                <span className={`w-3 h-3 rounded-full mt-1 ${isOccupied ? 'bg-amber-500' : cleaning ? 'bg-orange-400' : 'bg-green-500'}`} />
               </div>
+
               {isOccupied ? (
                 <div className="mt-2 space-y-1">
                   {tableOrders.map(o => (
@@ -74,6 +90,17 @@ export function TableStatusBoard() {
                     </div>
                   ))}
                   <p className="text-xs text-muted-foreground mt-1">Since {elapsed(earliest.created_at)}</p>
+                </div>
+              ) : cleaning ? (
+                <div className="mt-2">
+                  <p className="text-xs text-orange-600 font-medium">Needs cleaning</p>
+                  <button
+                    onClick={() => markClean(table.table_number)}
+                    className="mt-1.5 flex items-center gap-1 text-xs text-green-700 hover:text-green-800 font-medium"
+                  >
+                    <CheckCircle className="w-3.5 h-3.5" />
+                    Mark Clean
+                  </button>
                 </div>
               ) : (
                 <p className="text-xs text-green-600 font-medium mt-2">Available</p>
