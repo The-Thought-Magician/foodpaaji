@@ -61,6 +61,17 @@ export function PosView() {
   const [orderDetail, setOrderDetail] = useState<{ order_number: string; table_number?: string; status: string; notes?: string; items: { item_name: string; quantity: number; unit_price: number; menu_item_id?: number; notes?: string }[] } | null>(null)
   const viewOrderDetails = async (orderId: number) => { try { const res = await invoke<{ success: boolean; data: typeof orderDetail }>('get_order_details', { orderId }); if (res.success && res.data) setOrderDetail(res.data) } catch (e) { console.error(e) } }
   const [showConvert, setShowConvert] = useState<Order | null>(null)
+  const [convertSubtotal, setConvertSubtotal] = useState(0)
+  const openConvert = async (order: Order) => {
+    setShowConvert(order)
+    setConvertSubtotal(0)
+    try {
+      const res = await invoke<{ success: boolean; data: { items: { quantity: number; unit_price: number }[] } | null }>('get_order_details', { orderId: order.id })
+      if (res.success && res.data) {
+        setConvertSubtotal(res.data.items.reduce((s, i) => s + i.unit_price * i.quantity, 0))
+      }
+    } catch (e) { console.error(e) }
+  }
   const [taxPercent, setTaxPercent] = useState(() => getSettings().default_tax_percent)
   const [discountPercent, setDiscountPercent] = useState(0)
   const [paymentMethod, setPaymentMethod] = useState<'cash' | 'upi' | 'card'>('cash')
@@ -130,7 +141,7 @@ export function PosView() {
       ])
       if (res.success) {
         await invoke('record_payment', { billId: res.bill_id, amount: res.total_amount, method: paymentMethod, upiReference: null, upiApp: null }).catch(console.error)
-        const s = getSettings(); const receipt = await invoke<{ success: boolean; data: { receipt_id: number; content: string; receipt_number: string } }>('generate_receipt', { billId: res.bill_id, restaurantName: s.restaurant_name, address: s.address, phone: s.phone, gstin: s.gstin, footer: s.receipt_footer })
+        const s = getSettings(); const receipt = await invoke<{ success: boolean; data: { receipt_id: number; content: string; receipt_number: string } }>('generate_receipt', { billId: res.bill_id, restaurantName: s.restaurant_name, address: s.address, phone: s.phone, gstin: s.gstin, fssaiNumber: s.fssai_number || null, footer: s.receipt_footer })
         if (receipt.success) setShowReceipt({ id: receipt.data.receipt_id, content: receipt.data.content, number: receipt.data.receipt_number })
         const orderItems = (details.success && details.data?.items || []).filter(i => i.menu_item_id).map(i => ({ menu_item_id: i.menu_item_id!, quantity: i.quantity, notes: i.notes ?? null }))
         if (orderItems.length > 0) await invoke('process_order_completion', { request: { restaurant_id: 1, order_id: showConvert.id, order_items: orderItems, user_id: 1 } }).catch(console.error)
@@ -255,7 +266,7 @@ export function PosView() {
                 <div className="flex gap-2 flex-wrap">
                   {order.status === 'pending' && <Button size="sm" variant="outline" onClick={() => updateStatus(order.id, 'preparing')}>Preparing</Button>}
                   {order.status === 'preparing' && <Button size="sm" variant="outline" onClick={() => updateStatus(order.id, 'ready')}>Ready</Button>}
-                  {order.status === 'ready' && <Button size="sm" className="gradient-spice text-white" onClick={() => setShowConvert(order)}><Receipt className="w-4 h-4 mr-1" />Bill</Button>}
+                  {order.status === 'ready' && <Button size="sm" className="gradient-spice text-white" onClick={() => openConvert(order)}><Receipt className="w-4 h-4 mr-1" />Bill</Button>}
                   <Button size="sm" variant="ghost" onClick={() => viewOrderDetails(order.id)}>Details</Button>
                   <Button size="sm" variant="ghost" className="text-red-500" onClick={() => updateStatus(order.id, 'cancelled')}>Cancel</Button>
                 </div>
@@ -294,7 +305,7 @@ export function PosView() {
               <div className="flex gap-2">
                 {(['cash', 'upi', 'card'] as const).map(m => <button key={m} onClick={() => setPaymentMethod(m)} className={`flex-1 py-2 rounded-lg text-sm font-medium border capitalize ${paymentMethod === m ? 'gradient-spice text-white border-transparent' : 'border-border hover:bg-muted'}`}>{m}</button>)}
               </div>
-              {paymentMethod === 'upi' && (() => { const s = getSettings(); return s.upi_id ? <div className="flex justify-center pt-2"><UpiQr amount={0} upiId={s.upi_id} name={s.restaurant_name} note={showConvert?.order_number} size={160} /></div> : null })()}
+              {paymentMethod === 'upi' && (() => { const s = getSettings(); const taxable = convertSubtotal * (1 - discountPercent / 100); const amt = taxable * (1 + (taxPercent + s.service_charge_percent) / 100) + pkgFee; return s.upi_id ? <div className="flex justify-center pt-2"><UpiQr amount={amt} upiId={s.upi_id} name={s.restaurant_name} note={showConvert?.order_number} size={160} /></div> : null })()}
             </div>
             {selectedCustomer?.loyalty_points ? <label className="flex items-center gap-2 text-sm cursor-pointer"><input type="checkbox" checked={redeemPoints} onChange={e => setRedeemPoints(e.target.checked)} /><span>Redeem {selectedCustomer.loyalty_points} points (₹{selectedCustomer.loyalty_points} off)</span></label> : null}
             <Button className="w-full gradient-spice text-white" onClick={convertToBill}>Generate Bill & Receipt</Button>

@@ -11,7 +11,7 @@ pub struct ReceiptLine {
     pub total: f64,
 }
 
-fn format_receipt(bill_number: &str, table: Option<&str>, lines: &[ReceiptLine], subtotal: f64, discount: f64, tax: f64, total: f64, restaurant_name: &str, address: &str, phone: &str, gstin: &str, notes: Option<&str>, footer: &str) -> String {
+fn format_receipt(bill_number: &str, table: Option<&str>, lines: &[ReceiptLine], subtotal: f64, discount: f64, tax: f64, total: f64, restaurant_name: &str, address: &str, phone: &str, gstin: &str, fssai: &str, notes: Option<&str>, footer: &str) -> String {
     let mut out = String::new();
     out.push_str("================================\n");
     let name = if restaurant_name.is_empty() { "FOODPAAJI" } else { restaurant_name };
@@ -19,6 +19,7 @@ fn format_receipt(bill_number: &str, table: Option<&str>, lines: &[ReceiptLine],
     if !address.is_empty() { out.push_str(&format!("{:^32}\n", address)); }
     if !phone.is_empty() { out.push_str(&format!("Ph: {}\n", phone)); }
     if !gstin.is_empty() { out.push_str(&format!("GSTIN: {}\n", gstin)); }
+    if !fssai.is_empty() { out.push_str(&format!("FSSAI: {}\n", fssai)); }
     out.push_str("================================\n");
     out.push_str(&format!("Bill: {}\n", bill_number));
     if let Some(t) = table {
@@ -44,7 +45,7 @@ fn format_receipt(bill_number: &str, table: Option<&str>, lines: &[ReceiptLine],
 }
 
 #[tauri::command]
-pub async fn generate_receipt(pool: State<'_, SqlitePool>, bill_id: i64, restaurant_name: Option<String>, address: Option<String>, phone: Option<String>, gstin: Option<String>, footer: Option<String>) -> Result<serde_json::Value, String> {
+pub async fn generate_receipt(pool: State<'_, SqlitePool>, bill_id: i64, restaurant_name: Option<String>, address: Option<String>, phone: Option<String>, gstin: Option<String>, fssai_number: Option<String>, footer: Option<String>) -> Result<serde_json::Value, String> {
     let bill = sqlx::query("SELECT bill_number, table_number, subtotal, discount_amount, tax_amount, total_amount, notes FROM bills WHERE id = ?")
         .bind(bill_id).fetch_optional(pool.inner()).await.map_err(|e| e.to_string())?;
     let Some(bill) = bill else { return Err("Bill not found".to_string()); };
@@ -69,8 +70,9 @@ pub async fn generate_receipt(pool: State<'_, SqlitePool>, bill_id: i64, restaur
     let raddr = address.unwrap_or_default();
     let rphone = phone.unwrap_or_default();
     let rgstin = gstin.unwrap_or_default();
+    let rfssai = fssai_number.unwrap_or_default();
     let rfooter = footer.unwrap_or_default();
-    let content = format_receipt(&bill_number, table_number.as_deref(), &lines, subtotal, discount_amount, tax_amount, total_amount, &rname, &raddr, &rphone, &rgstin, bill_notes.as_deref(), &rfooter);
+    let content = format_receipt(&bill_number, table_number.as_deref(), &lines, subtotal, discount_amount, tax_amount, total_amount, &rname, &raddr, &rphone, &rgstin, &rfssai, bill_notes.as_deref(), &rfooter);
 
     let receipt_number = format!("REC-{}", Local::now().format("%Y%m%d%H%M%S"));
     let receipt_id = sqlx::query!(
