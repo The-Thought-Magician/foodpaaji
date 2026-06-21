@@ -5,7 +5,7 @@ import { invoke } from '@tauri-apps/api/core'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { DollarSign, BarChart3 } from 'lucide-react'
+import { DollarSign, BarChart3, Download } from 'lucide-react'
 
 const RESTAURANT_ID = 1
 const METHODS = ['FIFO', 'LIFO', 'WEIGHTED_AVERAGE', 'STANDARD_COST']
@@ -56,6 +56,14 @@ export default function InventoryValuation() {
     setLoading(false)
   }
 
+  const exportCSV = () => {
+    if (mode === 'single' && summary) {
+      const rows = ['Item,Stock,Avg Unit Cost,Total Value,Method', ...summary.items.map(i => `"${i.item_name}",${i.current_stock},${i.average_unit_cost.toFixed(2)},${i.total_value.toFixed(2)},"${i.valuation_method}"`)]
+      const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(new Blob([rows.join('\n')], { type: 'text/csv' })), download: `valuation-${method}-${new Date().toISOString().split('T')[0]}.csv` })
+      a.click()
+    }
+  }
+
   const runCompare = async () => {
     setLoading(true)
     try {
@@ -91,6 +99,9 @@ export default function InventoryValuation() {
         <Button size="sm" onClick={mode === 'single' ? runSingle : runCompare} disabled={loading} className="gradient-spice text-white">
           {loading ? 'Calculating...' : 'Calculate'}
         </Button>
+        {mode === 'single' && summary && (
+          <Button size="sm" variant="outline" onClick={exportCSV}><Download className="w-4 h-4 mr-1" />Export</Button>
+        )}
       </div>
 
       {mode === 'single' && summary && (
