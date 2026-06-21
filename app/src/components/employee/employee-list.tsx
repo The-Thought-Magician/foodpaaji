@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { invoke } from '@tauri-apps/api/core'
 import { Button } from '@/components/ui/button'
 import { Users, Plus, Search, Filter } from 'lucide-react'
@@ -34,28 +34,30 @@ export function EmployeeList({
   const [searchTerm, setSearchTerm] = useState('')
   const [filterRole, setFilterRole] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
-
+  const [totalPages, setTotalPages] = useState(1)
   const itemsPerPage = 10
 
-  useEffect(() => {
-    loadEmployees()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [restaurantId, currentPage, searchTerm, filterRole])
-
-  const loadEmployees = async () => {
+  const loadEmployees = useCallback(async () => {
     try {
       setLoading(true)
-      const response = await invoke('get_employees', {
-        restaurant_id: restaurantId,
-      }) as ApiResponse<UserDto[]>
+      const response = await invoke('search_employees', {
+        request: {
+          restaurant_id: restaurantId,
+          search: searchTerm || null,
+          role_filter: filterRole || null,
+          status_filter: null,
+          page: currentPage,
+          limit: itemsPerPage,
+        },
+      }) as ApiResponse<{ employees: UserDto[]; total: number; page: number; limit: number }>
 
-      if (response.success && Array.isArray(response.data)) {
-        const mapped = response.data.map((u) => ({
-          id: (u.id ?? 0),
+      if (response.success && response.data) {
+        const mapped = response.data.employees.map((u) => ({
+          id: u.id ?? 0,
           name: `${u.first_name} ${u.last_name}`.trim(),
           email: u.email,
           phone: u.phone ?? '',
-          role: normalizeRoleForUi(u.role),
+          role: u.role.toLowerCase(),
           department: '',
           salary: Number(u.salary ?? 0),
           joiningDate: u.hire_date ?? '',
@@ -64,33 +66,15 @@ export function EmployeeList({
           status: u.is_active ? 'active' : 'inactive',
         })) as Employee[]
         setEmployees(mapped)
+        setTotalPages(Math.max(1, Math.ceil(response.data.total / itemsPerPage)))
       }
-    } catch (error) {
-      console.error('Failed to load employees:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
+    } catch (error) { console.error('Failed to load employees:', error) }
+    finally { setLoading(false) }
+  }, [restaurantId, currentPage, searchTerm, filterRole])
 
-  const normalizeRoleForUi = (role: string) => role.toLowerCase()
+  const filteredEmployees = employees
 
-  // Deletion and edit/view actions will be enabled once backend supports them
-
-  const filteredEmployees = useMemo(() => {
-    const bySearch = employees.filter(emp =>
-      emp.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      emp.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      emp.phone.includes(searchTerm)
-    )
-    const byRole = filterRole ? bySearch.filter(emp => emp.role === filterRole) : bySearch
-    return byRole
-  }, [employees, searchTerm, filterRole])
-
-  const totalPages = Math.max(1, Math.ceil(filteredEmployees.length / itemsPerPage))
-  const paginatedEmployees = useMemo(() => {
-    const start = (currentPage - 1) * itemsPerPage
-    return filteredEmployees.slice(start, start + itemsPerPage)
-  }, [filteredEmployees, currentPage])
+  useEffect(() => { loadEmployees() }, [loadEmployees])
 
   if (loading) {
     return (
@@ -175,7 +159,7 @@ export function EmployeeList({
                   </td>
                 </tr>
               ) : (
-                paginatedEmployees.map((employee) => (
+                filteredEmployees.map((employee) => (
                   <tr key={employee.id} className="border-b hover:bg-muted/50">
                     <td className="p-4">
                       <div>
