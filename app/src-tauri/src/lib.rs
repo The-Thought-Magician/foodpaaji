@@ -59,6 +59,7 @@ use modules::menu_history::{record_menu_change, get_menu_item_history};
 use modules::seasonal_adjustments::{get_seasonal_adjustments, create_seasonal_adjustment, delete_seasonal_adjustment, toggle_seasonal_adjustment};
 use modules::customer_orders::{get_customer_order_history, get_customer_profitability};
 use modules::inventory_export::export_inventory_csv;
+use modules::staff_performance::get_staff_performance;
 use tauri::Manager;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -260,6 +261,7 @@ pub fn run() {
       get_customer_order_history,
       get_customer_profitability,
       export_inventory_csv,
+      get_staff_performance,
     ])
     .setup(|app| {
       let level = if cfg!(debug_assertions) { log::LevelFilter::Debug } else { log::LevelFilter::Info };

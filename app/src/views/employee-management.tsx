@@ -15,6 +15,7 @@ import { EmployeeLogin } from '@/components/employee/employee-login'
 import AttendanceReport from '@/components/employee/attendance-report'
 import { ShiftSchedule } from '@/components/employee/shift-schedule'
 import { AuditLog } from '@/components/employees/audit-log'
+import { StaffPerformance } from '@/components/employees/staff-performance'
 
 interface UserDto {
   id: number | null
@@ -45,7 +46,7 @@ export function EmployeeManagement() {
   const [dashboardEmployee, setDashboardEmployee] = useState<Employee | null>(null)
   const [changePwdEmployee, setChangePwdEmployee] = useState<Employee | null>(null)
   const [showLogin, setShowLogin] = useState(false)
-  const [activeTab, setActiveTab] = useState<'list' | 'attendance' | 'duty' | 'schedule' | 'audit'>('list')
+  const [activeTab, setActiveTab] = useState<'list' | 'attendance' | 'duty' | 'schedule' | 'audit' | 'performance'>('list')
   const [onDuty, setOnDuty] = useState<{ employee_id: number; name: string; role: string; clock_in: string; minutes_on_duty: number }[]>([])
 
   const loadEmployees = useCallback(() => {
@@ -136,11 +137,13 @@ export function EmployeeManagement() {
         <button onClick={() => { setActiveTab('duty'); invoke<{ success: boolean; data: typeof onDuty }>('get_on_duty_staff', { restaurantId: RESTAURANT_ID }).then(r => { if (r.success) setOnDuty(r.data) }).catch(() => {}) }} className={`flex items-center gap-1.5 px-4 py-2 text-sm font-medium border-b-2 transition-colors ${activeTab === 'duty' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'}`}><ShieldCheck className="w-3.5 h-3.5" />On Duty</button>
         <button onClick={() => setActiveTab('schedule')} className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${activeTab === 'schedule' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'}`}>Schedule</button>
         <button onClick={() => setActiveTab('audit')} className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${activeTab === 'audit' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'}`}>Audit Log</button>
+        <button onClick={() => setActiveTab('performance')} className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${activeTab === 'performance' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'}`}>Performance</button>
       </div>
 
       {activeTab === 'attendance' && <AttendanceReport />}
       {activeTab === 'schedule' && <ShiftSchedule />}
       {activeTab === 'audit' && <AuditLog />}
+      {activeTab === 'performance' && <StaffPerformance />}
       {activeTab === 'duty' && (
         <div className="space-y-3">
           <p className="text-sm text-muted-foreground">{onDuty.length} staff currently on duty</p>
