@@ -26,6 +26,7 @@ interface Order {
   order_number: string
   table_number?: string
   status: string
+  notes?: string
   created_at: string
 }
 
@@ -228,6 +229,7 @@ export function PosView() {
                   <div>
                     <p className="font-medium">{order.order_number}</p>
                     <p className="text-sm text-muted-foreground">{order.table_number ? `Table ${order.table_number}` : 'Takeaway'} · <Clock className="inline w-3 h-3 mb-0.5" /> {elapsed(order.created_at)}</p>
+                    {order.notes && <p className="text-xs text-amber-600 mt-0.5">{order.notes}</p>}
                   </div>
                   <Badge className={STATUS_COLOR[order.status] || ''}>{order.status}</Badge>
                 </div>

@@ -61,7 +61,7 @@ pub async fn get_orders(pool: State<'_, SqlitePool>, status: Option<String>, lim
         .fetch_all(pool.inner()).await.map_err(|e| e.to_string())?
         .into_iter().map(|r| serde_json::json!({
             "id": r.id, "order_number": r.order_number, "customer_id": r.customer_id,
-            "table_number": r.table_number, "status": r.status, "created_at": r.created_at
+            "table_number": r.table_number, "status": r.status, "notes": r.notes, "created_at": r.created_at
         })).collect::<Vec<_>>()
     } else {
         sqlx::query!(
@@ -71,7 +71,7 @@ pub async fn get_orders(pool: State<'_, SqlitePool>, status: Option<String>, lim
         .fetch_all(pool.inner()).await.map_err(|e| e.to_string())?
         .into_iter().map(|r| serde_json::json!({
             "id": r.id, "order_number": r.order_number, "customer_id": r.customer_id,
-            "table_number": r.table_number, "status": r.status, "created_at": r.created_at
+            "table_number": r.table_number, "status": r.status, "notes": r.notes, "created_at": r.created_at
         })).collect::<Vec<_>>()
     };
     Ok(serde_json::json!({ "success": true, "data": rows }))
