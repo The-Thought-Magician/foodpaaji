@@ -1,10 +1,10 @@
 'use client'
 
-import { Bell, Search, Moon, Sun, LogOut, User, ChevronDown } from 'lucide-react'
+import { Bell, Search, Moon, Sun, LogOut, User, ChevronDown, AlertTriangle, Megaphone } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { usePathname } from 'next/navigation'
-import { cn } from '@/lib/utils'
+import { invoke } from '@tauri-apps/api/core'
 
 const pageTitles: Record<string, string> = {
   '/': 'Dashboard',
@@ -16,8 +16,13 @@ const pageTitles: Record<string, string> = {
   '/menu': 'Menu Management',
   '/reservations': 'Table Reservations',
   '/promotions': 'Promotions & Offers',
+  '/reports': 'Reports',
+  '/kitchen': 'Kitchen Display',
   '/settings': 'Settings',
 }
+
+interface Alert { id: number; item_name: string; current_stock: number; unit: string }
+interface Announcement { id: number; title: string; message: string; created_at: string }
 
 export function Header() {
   const pathname = usePathname()
@@ -25,21 +30,35 @@ export function Header() {
   const [dark, setDark] = useState(false)
   const [showNotifications, setShowNotifications] = useState(false)
   const [showUserMenu, setShowUserMenu] = useState(false)
+  const [alerts, setAlerts] = useState<Alert[]>([])
+  const [announcements, setAnnouncements] = useState<Announcement[]>([])
 
   useEffect(() => {
-    const root = document.documentElement
-    if (dark) {
-      root.classList.add('dark')
-    } else {
-      root.classList.remove('dark')
-    }
-  }, [dark])
+    const saved = localStorage.getItem('theme')
+    if (saved === 'dark') { setDark(true); document.documentElement.classList.add('dark') }
+  }, [])
 
-  const notifications = [
-    { id: 1, title: 'Low Stock Alert', message: 'Tomato sauce is running low', time: '5m ago', unread: true },
-    { id: 2, title: 'New Reservation', message: 'Table 5 reserved for 7 PM', time: '1h ago', unread: true },
-    { id: 3, title: 'Order Completed', message: 'Order #1234 delivered', time: '2h ago', unread: false },
-  ]
+  const toggleDark = () => {
+    const next = !dark
+    setDark(next)
+    document.documentElement.classList.toggle('dark', next)
+    localStorage.setItem('theme', next ? 'dark' : 'light')
+  }
+
+  const loadNotifications = useCallback(async () => {
+    try {
+      const [ar, anr] = await Promise.all([
+        invoke<{ success: boolean; data?: { alerts: Alert[] } }>('get_low_stock_alerts', { request: { restaurant_id: 1, is_acknowledged: false, page: 1, limit: 10 } }).catch(() => null),
+        invoke<{ success: boolean; data?: Announcement[] }>('get_announcements', { activeOnly: true }).catch(() => null),
+      ])
+      if (ar?.success && ar.data?.alerts) setAlerts(ar.data.alerts.slice(0, 5))
+      if (anr?.success && anr.data) setAnnouncements(anr.data.slice(0, 3))
+    } catch (e) { console.error(e) }
+  }, [])
+
+  useEffect(() => { void loadNotifications() }, [loadNotifications])
+
+  const unreadCount = alerts.length + announcements.length
 
   return (
     <header className="h-16 border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-40">
@@ -61,62 +80,60 @@ export function Header() {
           </div>
 
           <div className="flex items-center gap-2">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setDark(!dark)}
-              className="relative"
-            >
-              {dark ? (
-                <Sun className="w-5 h-5 text-amber-500" />
-              ) : (
-                <Moon className="w-5 h-5 text-slate-600" />
-              )}
+            <Button variant="ghost" size="icon" onClick={toggleDark} className="relative">
+              {dark ? <Sun className="w-5 h-5 text-amber-500" /> : <Moon className="w-5 h-5 text-slate-600" />}
             </Button>
 
             <div className="relative">
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={() => setShowNotifications(!showNotifications)}
+                onClick={() => { setShowNotifications(!showNotifications); if (!showNotifications) void loadNotifications() }}
                 className="relative"
               >
                 <Bell className="w-5 h-5" />
-                {notifications.some(n => n.unread) && (
-                  <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-destructive rounded-full border-2 border-card" />
+                {unreadCount > 0 && (
+                  <span className="absolute top-1 right-1 min-w-[18px] h-[18px] bg-destructive text-destructive-foreground rounded-full border-2 border-card text-[10px] font-bold flex items-center justify-center px-0.5">
+                    {unreadCount > 9 ? '9+' : unreadCount}
+                  </span>
                 )}
               </Button>
 
               {showNotifications && (
-                <div className="absolute right-0 top-12 w-80 bg-card border border-border rounded-xl shadow-xl animate-scale-in">
-                  <div className="p-4 border-b border-border">
+                <div className="absolute right-0 top-12 w-80 bg-card border border-border rounded-xl shadow-xl z-50">
+                  <div className="p-4 border-b border-border flex items-center justify-between">
                     <h3 className="font-semibold">Notifications</h3>
-                    <p className="text-sm text-muted-foreground">
-                      {notifications.filter(n => n.unread).length} unread
-                    </p>
+                    <span className="text-xs text-muted-foreground">{unreadCount} active</span>
                   </div>
                   <div className="max-h-80 overflow-y-auto">
-                    {notifications.map((notif) => (
-                      <div
-                        key={notif.id}
-                        className={cn(
-                          'p-4 border-b border-border last:border-b-0 cursor-pointer hover:bg-muted/50 transition-colors',
-                          notif.unread && 'bg-primary/5'
-                        )}
-                      >
-                        <div className="flex items-start gap-3">
-                          <div className={cn(
-                            'w-2 h-2 rounded-full mt-2 flex-shrink-0',
-                            notif.unread ? 'bg-primary' : 'bg-transparent'
-                          )} />
-                          <div className="flex-1 min-w-0">
-                            <p className="font-medium text-sm">{notif.title}</p>
-                            <p className="text-sm text-muted-foreground truncate">{notif.message}</p>
-                            <p className="text-xs text-muted-foreground mt-1">{notif.time}</p>
+                    {alerts.length === 0 && announcements.length === 0 ? (
+                      <p className="text-sm text-muted-foreground text-center py-8">No notifications</p>
+                    ) : (
+                      <>
+                        {alerts.map(a => (
+                          <div key={`alert-${a.id}`} className="p-4 border-b border-border last:border-b-0 hover:bg-muted/50 transition-colors">
+                            <div className="flex items-start gap-3">
+                              <AlertTriangle className="w-4 h-4 text-amber-500 mt-0.5 flex-shrink-0" />
+                              <div>
+                                <p className="font-medium text-sm">Low Stock: {a.item_name}</p>
+                                <p className="text-xs text-muted-foreground">{a.current_stock} {a.unit} remaining</p>
+                              </div>
+                            </div>
                           </div>
-                        </div>
-                      </div>
-                    ))}
+                        ))}
+                        {announcements.map(a => (
+                          <div key={`ann-${a.id}`} className="p-4 border-b border-border last:border-b-0 hover:bg-muted/50 transition-colors">
+                            <div className="flex items-start gap-3">
+                              <Megaphone className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
+                              <div>
+                                <p className="font-medium text-sm">{a.title}</p>
+                                <p className="text-xs text-muted-foreground line-clamp-2">{a.message}</p>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </>
+                    )}
                   </div>
                 </div>
               )}
@@ -139,7 +156,7 @@ export function Header() {
               </Button>
 
               {showUserMenu && (
-                <div className="absolute right-0 top-12 w-48 bg-card border border-border rounded-xl shadow-xl animate-scale-in">
+                <div className="absolute right-0 top-12 w-48 bg-card border border-border rounded-xl shadow-xl z-50">
                   <div className="p-2">
                     <button className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-muted transition-colors text-left">
                       <User className="w-4 h-4" />
