@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Label } from '@/components/ui/label'
 import { Plus, Minus, Trash2, ShoppingCart, Receipt, Tag } from 'lucide-react'
 import { MenuPicker } from '@/components/pos/menu-picker'
+import { CustomerPicker, type Customer } from '@/components/pos/customer-picker'
 import { getSettings } from '@/lib/settings'
 
 interface CartItem {
@@ -60,6 +61,9 @@ export function PosView() {
   const [promoCode, setPromoCode] = useState('')
   const [promo, setPromo] = useState<PromoResult | null>(null)
   const [orders, setOrders] = useState<Order[]>([])
+  const [customerSearch, setCustomerSearch] = useState('')
+  const [customerResults, setCustomerResults] = useState<Customer[]>([])
+  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null)
   const [showReceipt, setShowReceipt] = useState<{ id: number; content: string; number: string } | null>(null)
   const [orderDetail, setOrderDetail] = useState<{ order_number: string; table_number?: string; status: string; notes?: string; items: { item_name: string; quantity: number; unit_price: number }[] } | null>(null)
 
@@ -76,6 +80,15 @@ export function PosView() {
   }, [])
 
   useEffect(() => { loadOrders() }, [loadOrders])
+
+  const searchCustomers = async (q: string) => {
+    setCustomerSearch(q)
+    if (!q.trim()) { setCustomerResults([]); return }
+    try {
+      const res = await invoke<{ success: boolean; data?: Customer[] }>('get_customers', { search: q, limit: 5 })
+      if (res.success && res.data) setCustomerResults(res.data)
+    } catch (e) { console.error(e) }
+  }
 
   const addItem = () => setCart([...cart, { item_name: '', quantity: 1, unit_price: 0 }])
   const updateCartItem = (i: number, field: keyof CartItem, value: string | number) => setCart(cart.map((item, idx) => idx === i ? { ...item, [field]: value } : item))
@@ -106,8 +119,8 @@ export function PosView() {
       }
       if (coupon?.valid && coupon.coupon_id) await invoke('apply_coupon', { couponId: coupon.coupon_id })
       if (promo?.valid && promo.promo_id) await invoke('apply_promo', { promoId: promo.promo_id })
-      await invoke('create_order', { request: { customer_id: null, table_number: tableNumber || null, items: cart, notes: null } })
-      setCart([]); setTableNumber(''); setCouponCode(''); setCoupon(null); setPromoCode(''); setPromo(null); loadOrders()
+      await invoke('create_order', { request: { customer_id: selectedCustomer?.id ?? null, table_number: tableNumber || null, items: cart, notes: null } })
+      setCart([]); setTableNumber(''); setCouponCode(''); setCoupon(null); setPromoCode(''); setPromo(null); setSelectedCustomer(null); setCustomerSearch(''); setCustomerResults([]); loadOrders()
     } catch (e) { console.error(e) }
   }
 
@@ -153,6 +166,12 @@ export function PosView() {
           <Button size="sm" variant="outline" onClick={addItem}><Plus className="w-4 h-4 mr-1" />Custom</Button>
         </div>
 
+        <CustomerPicker
+          selected={selectedCustomer} results={customerResults} search={customerSearch}
+          onSearch={searchCustomers}
+          onSelect={c => { setSelectedCustomer(c); setCustomerSearch(''); setCustomerResults([]) }}
+          onClear={() => { setSelectedCustomer(null); setCustomerSearch('') }}
+        />
         <Input placeholder="Table number (e.g. T1)" value={tableNumber} onChange={e => setTableNumber(e.target.value)} />
 
         <div className="flex-1 overflow-y-auto space-y-2">
@@ -222,17 +241,9 @@ export function PosView() {
                   <Badge className={STATUS_COLOR[order.status] || ''}>{order.status}</Badge>
                 </div>
                 <div className="flex gap-2 flex-wrap">
-                  {order.status === 'pending' && (
-                    <Button size="sm" variant="outline" onClick={() => updateStatus(order.id, 'preparing')}>Preparing</Button>
-                  )}
-                  {order.status === 'preparing' && (
-                    <Button size="sm" variant="outline" onClick={() => updateStatus(order.id, 'ready')}>Ready</Button>
-                  )}
-                  {order.status === 'ready' && (
-                    <Button size="sm" className="gradient-spice text-white" onClick={() => setShowConvert(order)}>
-                      <Receipt className="w-4 h-4 mr-1" />Bill
-                    </Button>
-                  )}
+                  {order.status === 'pending' && <Button size="sm" variant="outline" onClick={() => updateStatus(order.id, 'preparing')}>Preparing</Button>}
+                  {order.status === 'preparing' && <Button size="sm" variant="outline" onClick={() => updateStatus(order.id, 'ready')}>Ready</Button>}
+                  {order.status === 'ready' && <Button size="sm" className="gradient-spice text-white" onClick={() => setShowConvert(order)}><Receipt className="w-4 h-4 mr-1" />Bill</Button>}
                   <Button size="sm" variant="ghost" onClick={() => viewOrderDetails(order.id)}>Details</Button>
                   <Button size="sm" variant="ghost" className="text-red-500" onClick={() => updateStatus(order.id, 'cancelled')}>Cancel</Button>
                 </div>
@@ -252,21 +263,14 @@ export function PosView() {
           <div className="space-y-1 max-h-64 overflow-y-auto">
             {orderDetail?.items.map((item, i) => (
               <div key={i} className="flex justify-between text-sm py-1 border-b last:border-0">
-                <span>{item.item_name} × {item.quantity}</span>
-                <span>₹{(item.unit_price * item.quantity).toFixed(0)}</span>
+                <span>{item.item_name} × {item.quantity}</span><span>₹{(item.unit_price * item.quantity).toFixed(0)}</span>
               </div>
             ))}
           </div>
-          {orderDetail?.items && (
-            <div className="flex justify-between font-semibold text-sm border-t pt-2">
-              <span>Total</span>
-              <span>₹{orderDetail.items.reduce((s, i) => s + i.unit_price * i.quantity, 0).toFixed(0)}</span>
-            </div>
-          )}
+          {orderDetail?.items && <div className="flex justify-between font-semibold text-sm border-t pt-2"><span>Total</span><span>₹{orderDetail.items.reduce((s, i) => s + i.unit_price * i.quantity, 0).toFixed(0)}</span></div>}
           {orderDetail?.notes && <p className="text-xs text-muted-foreground">{orderDetail.notes}</p>}
         </DialogContent>
       </Dialog>
-
       <Dialog open={!!showConvert} onOpenChange={() => setShowConvert(null)}>
         <DialogContent>
           <DialogHeader><DialogTitle>Convert to Bill — {showConvert?.order_number}</DialogTitle></DialogHeader>
@@ -279,18 +283,13 @@ export function PosView() {
           </div>
         </DialogContent>
       </Dialog>
-
       <Dialog open={!!showReceipt} onOpenChange={() => setShowReceipt(null)}>
         <DialogContent className="max-w-sm">
           <DialogHeader><DialogTitle>Receipt — {showReceipt?.number}</DialogTitle></DialogHeader>
           <pre className="text-xs font-mono bg-muted p-4 rounded-lg whitespace-pre overflow-x-auto">{showReceipt?.content}</pre>
           <div className="flex gap-2">
             <Button className="flex-1" variant="outline" onClick={() => { if (showReceipt) navigator.clipboard?.writeText(showReceipt.content) }}>Copy</Button>
-            <Button className="flex-1" variant="outline" onClick={async () => {
-              if (!showReceipt) return
-              await invoke('mark_receipt_printed', { receiptId: showReceipt.id }).catch(console.error)
-              window.print()
-            }}>Print</Button>
+            <Button className="flex-1" variant="outline" onClick={async () => { if (!showReceipt) return; await invoke('mark_receipt_printed', { receiptId: showReceipt.id }).catch(console.error); window.print() }}>Print</Button>
             <Button className="flex-1 gradient-spice text-white" onClick={() => setShowReceipt(null)}>Done</Button>
           </div>
         </DialogContent>
