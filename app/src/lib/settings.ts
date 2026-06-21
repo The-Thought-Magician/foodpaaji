@@ -8,6 +8,7 @@ interface AppSettings {
   service_charge_percent: number
   address: string
   phone: string
+  receipt_footer: string
 }
 
 const defaults: AppSettings = {
@@ -18,6 +19,7 @@ const defaults: AppSettings = {
   service_charge_percent: 0,
   address: '',
   phone: '',
+  receipt_footer: 'Thank you! Visit again',
 }
 
 export function getSettings(): AppSettings {

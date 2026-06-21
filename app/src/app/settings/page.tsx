@@ -119,6 +119,24 @@ export default function SettingsPage() {
         </Card>
       ))}
 
+      <Card>
+        <CardContent className="p-6 space-y-3">
+          <div className="flex items-center gap-2 mb-2">
+            <Settings className="w-4 h-4 text-muted-foreground" />
+            <h3 className="font-semibold">Receipt</h3>
+          </div>
+          <div>
+            <Label>Footer Message</Label>
+            <textarea
+              className="w-full mt-1.5 px-3 py-2 text-sm border border-input rounded-md bg-background resize-none"
+              rows={2}
+              value={settings.receipt_footer}
+              onChange={e => update('receipt_footer', e.target.value)}
+            />
+          </div>
+        </CardContent>
+      </Card>
+
       <Button className="gradient-spice text-white" onClick={save}>
         {saved ? 'Saved!' : 'Save Settings'}
       </Button>
