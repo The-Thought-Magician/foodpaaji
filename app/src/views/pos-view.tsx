@@ -68,7 +68,6 @@ export function PosView() {
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null)
   const [showReceipt, setShowReceipt] = useState<{ id: number; content: string; number: string } | null>(null)
   const [orderDetail, setOrderDetail] = useState<{ order_number: string; table_number?: string; status: string; notes?: string; items: { item_name: string; quantity: number; unit_price: number; menu_item_id?: number; notes?: string }[] } | null>(null)
-
   const viewOrderDetails = async (orderId: number) => { try { const res = await invoke<{ success: boolean; data: typeof orderDetail }>('get_order_details', { orderId }); if (res.success && res.data) setOrderDetail(res.data) } catch (e) { console.error(e) } }
   const [showConvert, setShowConvert] = useState<Order | null>(null)
   const [taxPercent, setTaxPercent] = useState(() => getSettings().default_tax_percent)
@@ -82,7 +81,11 @@ export function PosView() {
     } catch (e) { console.error(e) }
   }, [])
 
-  useEffect(() => { loadOrders() }, [loadOrders])
+  useEffect(() => {
+    loadOrders()
+    const t = setInterval(loadOrders, 30000)
+    return () => clearInterval(t)
+  }, [loadOrders])
 
   const searchCustomers = async (q: string) => {
     setCustomerSearch(q)
