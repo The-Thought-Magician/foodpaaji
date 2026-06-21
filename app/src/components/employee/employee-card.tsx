@@ -19,9 +19,10 @@ interface Props {
   onEdit?: (employee: Employee) => void
   onDelete?: (employee: Employee) => void
   onView?: (employee: Employee) => void
+  onToggleStatus?: (employee: Employee) => void
 }
 
-export default function EmployeeCard({ employee, onEdit, onDelete, onView }: Props) {
+export default function EmployeeCard({ employee, onEdit, onDelete, onView, onToggleStatus }: Props) {
   const config = ROLE_CONFIG[employee.role as keyof typeof ROLE_CONFIG] ?? ROLE_CONFIG.waiter
   const RoleIcon = config.icon
   const initials = employee.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
@@ -74,11 +75,10 @@ export default function EmployeeCard({ employee, onEdit, onDelete, onView }: Pro
       </div>
 
       <div className="flex items-center justify-between pt-4 border-t border-border">
-        <span className={`px-2.5 py-1 rounded-full text-xs font-medium border ${
-          employee.status === 'active'
-            ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20'
-            : 'bg-rose-500/10 text-rose-600 border-rose-500/20'
-        }`}>{employee.status}</span>
+        <button
+          className={`px-2.5 py-1 rounded-full text-xs font-medium border transition-colors ${employee.status === 'active' ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20 hover:bg-emerald-500/20' : 'bg-rose-500/10 text-rose-600 border-rose-500/20 hover:bg-rose-500/20'}`}
+          onClick={() => onToggleStatus?.(employee)}
+        >{employee.status}</button>
         <div className="flex gap-1">
           {onView && <Button variant="ghost" size="sm" className="text-xs" onClick={() => onView(employee)}>View</Button>}
           <Button variant="ghost" size="sm" className="text-xs" onClick={() => onEdit?.(employee)}>Edit</Button>

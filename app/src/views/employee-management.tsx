@@ -64,6 +64,12 @@ export function EmployeeManagement() {
       .finally(() => setLoading(false))
   }, [])
 
+  const toggleStatus = async (emp: Employee) => {
+    const [first, ...rest] = emp.name.split(' ')
+    await invoke('update_employee', { request: { id: emp.id, restaurant_id: RESTAURANT_ID, email: emp.email, phone: emp.phone || null, first_name: first, last_name: rest.join(' ') || '', role: emp.role.toUpperCase(), salary: emp.salary, hire_date: emp.joiningDate || null, is_active: emp.status !== 'active' } }).catch(console.error)
+    loadEmployees()
+  }
+
   const confirmDelete = async () => {
     if (!deleteTarget) return
     try {
@@ -163,7 +169,7 @@ export function EmployeeManagement() {
       ) : (
         <>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {paginated.map(emp => <EmployeeCard key={emp.id} employee={emp} onEdit={e => setEditEmployee(e)} onDelete={e => setDeleteTarget(e)} onView={e => setDashboardEmployee(e)} />)}
+            {paginated.map(emp => <EmployeeCard key={emp.id} employee={emp} onEdit={e => setEditEmployee(e)} onDelete={e => setDeleteTarget(e)} onView={e => setDashboardEmployee(e)} onToggleStatus={toggleStatus} />)}
           </div>
           {totalPages > 1 && (
             <div className="flex items-center justify-between">
