@@ -61,6 +61,7 @@ use modules::customer_orders::{get_customer_order_history, get_customer_profitab
 use modules::inventory_export::export_inventory_csv;
 use modules::staff_performance::get_staff_performance;
 use modules::sales_export::export_sales_csv;
+use modules::menu_performance::get_menu_performance;
 use tauri::Manager;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -264,6 +265,7 @@ pub fn run() {
       export_inventory_csv,
       get_staff_performance,
       export_sales_csv,
+      get_menu_performance,
     ])
     .setup(|app| {
       let level = if cfg!(debug_assertions) { log::LevelFilter::Debug } else { log::LevelFilter::Info };

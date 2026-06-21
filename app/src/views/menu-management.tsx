@@ -10,10 +10,11 @@ import MenuCategories from '@/components/menu/menu-categories'
 import RecipeManagement from '@/components/menu/recipe-management'
 import MenuItems from '@/components/menu/menu-items'
 import { ComboDeals } from '@/components/menu/combo-deals'
+import { MenuPerformance } from '@/components/menu/menu-performance'
 
 const RESTAURANT_ID = 1
 
-type Tab = 'dashboard' | 'items' | 'categories' | 'pricing' | 'recipes' | 'combos'
+type Tab = 'dashboard' | 'items' | 'categories' | 'pricing' | 'recipes' | 'combos' | 'performance'
 
 const TABS: { key: Tab; label: string }[] = [
   { key: 'dashboard', label: 'Dashboard' },
@@ -22,6 +23,7 @@ const TABS: { key: Tab; label: string }[] = [
   { key: 'pricing', label: 'Pricing' },
   { key: 'recipes', label: 'Recipes' },
   { key: 'combos', label: 'Combos' },
+  { key: 'performance', label: 'Performance' },
 ]
 
 export function MenuManagement() {
@@ -55,6 +57,7 @@ export function MenuManagement() {
       {activeTab === 'pricing' && <PricingManagement restaurantId={RESTAURANT_ID} categories={categories as []} onPricesChange={() => {}} />}
       {activeTab === 'recipes' && <RecipeManagement />}
       {activeTab === 'combos' && <ComboDeals />}
+      {activeTab === 'performance' && <MenuPerformance />}
     </div>
   )
 }
