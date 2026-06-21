@@ -53,7 +53,7 @@ pub fn parse_date_to_i64(date_str: &str) -> i64 {
     NaiveDate::parse_from_str(date_str, "%Y-%m-%d")
         .ok()
         .and_then(|d| d.and_hms_opt(0, 0, 0))
-        .map(|dt| dt.timestamp())
+        .map(|dt| dt.and_utc().timestamp())
         .unwrap_or(0)
 }
 

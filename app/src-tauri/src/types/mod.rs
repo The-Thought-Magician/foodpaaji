@@ -47,6 +47,7 @@ pub struct UserWithHash {
     pub salary: Option<f64>,
     pub hire_date: Option<String>,
     pub is_active: bool,
+    #[allow(dead_code)]
     pub last_login: Option<DateTime<Utc>>,
     pub created_at: Option<DateTime<Utc>>,
     pub updated_at: Option<DateTime<Utc>>,

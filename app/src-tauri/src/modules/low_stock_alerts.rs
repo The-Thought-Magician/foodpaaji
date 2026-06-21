@@ -1,5 +1,5 @@
 use crate::database::DbPool;
-use crate::types::{LowStockAlert, ApiResponse};
+use crate::types::ApiResponse;
 use tauri::State;
 use serde::{Deserialize, Serialize};
 use chrono::Utc;

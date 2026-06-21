@@ -93,6 +93,7 @@ pub struct CreateMenuItemRequest {
 }
 
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)]
 pub struct UpdateMenuItemRequest {
     pub category_id: Option<i64>,
     pub name: Option<String>,

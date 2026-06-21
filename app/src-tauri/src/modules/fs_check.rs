@@ -1,5 +1,4 @@
 use std::fs;
-use std::path::PathBuf;
 
 #[tauri::command]
 pub fn cross_platform_fs_check() -> Result<bool, String> {

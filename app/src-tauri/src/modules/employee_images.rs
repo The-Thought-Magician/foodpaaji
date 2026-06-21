@@ -1,12 +1,10 @@
 use crate::database::{DbPool, get_app_data_dir};
 use crate::types::ApiResponse;
 use tauri::State;
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use chrono::Utc;
-use std::path::PathBuf;
 use std::fs;
 use base64::{Engine as _, engine::general_purpose};
-use sqlx::Row;
 
 #[derive(Deserialize)]
 pub struct EmployeeImageUploadRequest {

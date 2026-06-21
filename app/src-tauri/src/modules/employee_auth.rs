@@ -1,6 +1,5 @@
 use crate::database::DbPool;
 use crate::types::{User, UserWithHash, ApiResponse};
-use crate::modules::employee::get_employee_by_id;
 use tauri::State;
 use bcrypt::{hash, verify, DEFAULT_COST};
 use serde::{Deserialize, Serialize};

@@ -57,6 +57,7 @@ impl Role {
         }
     }
 
+    #[allow(dead_code)]
     pub fn has_permission(&self, permission: &Permission) -> bool {
         self.permissions.contains(permission)
     }
@@ -166,10 +167,12 @@ pub fn check_permission(user_role: &str, required_permission: Permission) -> boo
     permissions.contains(&required_permission)
 }
 
+#[allow(dead_code)]
 pub fn serialize_permissions(permissions: &HashSet<Permission>) -> String {
     serde_json::to_string(permissions).unwrap_or_default()
 }
 
+#[allow(dead_code)]
 pub fn deserialize_permissions(permissions_str: &str) -> HashSet<Permission> {
     serde_json::from_str(permissions_str).unwrap_or_default()
 }

@@ -16,6 +16,7 @@ pub struct RecipeIngredient {
 
 #[derive(Deserialize)]
 pub struct CreateRecipeRequest {
+    #[allow(dead_code)]
     pub restaurant_id: i64,
     pub menu_item_id: i64,
     pub ingredients: Vec<RecipeIngredient>,
@@ -23,6 +24,7 @@ pub struct CreateRecipeRequest {
 
 #[derive(Deserialize)]
 pub struct StockValidationRequest {
+    #[allow(dead_code)]
     pub restaurant_id: i64,
     pub order_items: Vec<OrderItem>,
 }

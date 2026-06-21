@@ -4,6 +4,7 @@ use tauri::State;
 use chrono::Utc;
 
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub enum MovementType {
     In, Out, Adjustment, Transfer, Waste, Return,
 }

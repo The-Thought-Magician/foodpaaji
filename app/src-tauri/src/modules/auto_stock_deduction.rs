@@ -68,7 +68,7 @@ pub async fn get_menu_item_ingredients(menu_item_id: i64, db: &DbPool) -> Result
     .map_err(|e| format!("Failed to fetch ingredients: {}", e))
 }
 
-pub async fn check_stock_availability(inventory_item_id: i64, required_quantity: f64, db: &DbPool) -> Result<(f64, String), String> {
+pub async fn check_stock_availability(inventory_item_id: i64, _required_quantity: f64, db: &DbPool) -> Result<(f64, String), String> {
     let result = sqlx::query("SELECT current_stock, name FROM inventory_items WHERE id = ? AND is_active = 1")
         .bind(inventory_item_id)
         .fetch_optional(db)

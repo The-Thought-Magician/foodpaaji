@@ -36,7 +36,9 @@ pub struct ClockOutRequest {
 #[derive(Deserialize)]
 pub struct BreakRequest {
     pub employee_id: i64,
+    #[allow(dead_code)]
     pub break_type: String,
+    #[allow(dead_code)]
     pub notes: Option<String>,
 }
 

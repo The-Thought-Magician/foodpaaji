@@ -1,6 +1,5 @@
 use sqlx::{migrate::MigrateDatabase, Pool, Sqlite, SqlitePool};
 use std::path::PathBuf;
-use tauri::Manager;
 
 pub type DbPool = Pool<Sqlite>;
 

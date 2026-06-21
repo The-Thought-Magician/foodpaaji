@@ -1,7 +1,6 @@
 use crate::database::get_connection;
 use std::fs;
 use std::path::PathBuf;
-use sqlx::Row;
 
 fn db_file_path() -> Result<PathBuf, String> {
     let base = dirs::data_dir().ok_or("Could not get data directory")?;

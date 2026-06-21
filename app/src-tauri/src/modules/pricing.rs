@@ -44,7 +44,7 @@ pub struct UpdateMenuItemPriceRequest {
 
 pub fn calculate_price_by_strategy(
     cost_price: f64,
-    current_price: f64,
+    _current_price: f64,
     strategy: &PricingStrategy,
     markup_percentage: Option<f64>,
     fixed_markup: Option<f64>,
