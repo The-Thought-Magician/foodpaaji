@@ -9,7 +9,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { FileText, Plus, IndianRupee, Receipt, TrendingUp, Eye } from 'lucide-react'
+import { FileText, Plus, IndianRupee, Receipt, TrendingUp, Eye, Download } from 'lucide-react'
 import { UpiQr } from '@/components/ui/upi-qr'
 import { getSettings } from '@/lib/settings'
 
@@ -68,14 +68,12 @@ export function BillingManagement() {
   const [upiRef, setUpiRef] = useState('')
   const [showDetails, setShowDetails] = useState<null | { bill: Bill; items: BillDetailItem[]; payments: BillPayment[] }>(null)
   const [paymentHistory, setPaymentHistory] = useState<BillPayment[]>([])
-
   const viewDetails = async (bill: Bill) => {
     try {
       const res = await invoke<{ success: boolean; data: { items: BillDetailItem[]; payments: BillPayment[] } }>('get_bill_details', { billId: bill.id })
       if (res.success) setShowDetails({ bill, items: res.data.items, payments: res.data.payments })
     } catch (e) { console.error(e) }
   }
-
   const loadBills = useCallback(async () => {
     try {
       const res = await invoke<{ success: boolean; data: Bill[] }>('get_bills', { status: filterStatus, limit: 50 })
@@ -89,7 +87,6 @@ export function BillingManagement() {
       if (res.success) setSummary(res.data)
     } catch (e) { console.error(e) }
   }, [])
-
   useEffect(() => { loadBills(); loadSummary() }, [loadBills, loadSummary])
 
   const addItem = () => setItems([...items, { item_name: '', quantity: 1, unit_price: 0, discount_amount: 0 }])
@@ -155,6 +152,13 @@ export function BillingManagement() {
     } catch (e) { console.error(e) }
   }
 
+  const exportCSV = () => {
+    const hdr = 'Bill#,Table,Subtotal,Discount,Tax,Total,Status,Date'
+    const rows = bills.map(b => `"${b.bill_number}","${b.table_number ?? 'Takeaway'}",${b.subtotal.toFixed(2)},${b.discount_amount.toFixed(2)},${b.tax_amount.toFixed(2)},${b.total_amount.toFixed(2)},"${b.status}","${new Date(b.created_at).toLocaleString()}"`)
+    const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(new Blob([[hdr, ...rows].join('\n')], { type: 'text/csv' })), download: `bills-${new Date().toISOString().split('T')[0]}.csv` })
+    a.click()
+  }
+
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-3 gap-4">
@@ -181,7 +185,10 @@ export function BillingManagement() {
             </Button>
           ))}
         </div>
-        <Button onClick={() => setShowNewBill(true)} className="gradient-spice text-white"><Plus className="w-4 h-4 mr-2" />New Bill</Button>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={exportCSV} disabled={bills.length === 0}><Download className="w-4 h-4 mr-1" />CSV</Button>
+          <Button onClick={() => setShowNewBill(true)} className="gradient-spice text-white"><Plus className="w-4 h-4 mr-2" />New Bill</Button>
+        </div>
       </div>
 
       <div className="space-y-2">
