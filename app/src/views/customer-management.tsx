@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Card, CardContent } from '@/components/ui/card'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
-import { Plus, Search, UserCircle, Star, TrendingUp, Users } from 'lucide-react'
+import { Plus, Search, UserCircle, Star, TrendingUp, Users, Download } from 'lucide-react'
 
 interface Customer {
   id: number
@@ -112,6 +112,12 @@ export function CustomerManagement() {
     } catch (e) { console.error(e) }
   }
 
+  const exportCSV = () => {
+    const hdr = 'Name,Phone,Email,Visits,Total Spent,Loyalty Points'
+    const rows = customers.map(c => `"${c.name}","${c.phone ?? ''}","${c.email ?? ''}",${c.visit_count},${c.total_spent.toFixed(2)},${c.loyalty_points}`)
+    const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(new Blob([[hdr, ...rows].join('\n')], { type: 'text/csv' })), download: `customers-${new Date().toISOString().split('T')[0]}.csv` })
+    a.click()
+  }
   const sorted = [...customers].sort((a, b) => sortBy === 'name' ? a.name.localeCompare(b.name) : b[sortBy] - a[sortBy])
 
   return (
@@ -144,6 +150,7 @@ export function CustomerManagement() {
             </button>
           ))}
         </div>
+        <Button variant="outline" onClick={exportCSV} disabled={customers.length === 0}><Download className="w-4 h-4 mr-2" />CSV</Button>
         <Button onClick={openCreate} className="gradient-spice text-white"><Plus className="w-4 h-4 mr-2" />Add Customer</Button>
       </div>
 
