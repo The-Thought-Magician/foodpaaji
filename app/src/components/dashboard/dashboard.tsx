@@ -10,6 +10,9 @@ interface DashboardData {
   today_bills: number
   today_revenue: number
   today_collected: number
+  cash_collected: number
+  upi_collected: number
+  card_collected: number
   active_orders: number
   total_customers: number
   low_stock_count: number
@@ -50,7 +53,7 @@ export function Dashboard() {
       try {
         const today = new Date().toISOString().split('T')[0]
         const [summary, bills, orders, customers, alerts, reservations, anns] = await Promise.all([
-          invoke<{ success: boolean; data: { today_bills: number; today_revenue: number; today_collected: number } }>('get_billing_summary'),
+          invoke<{ success: boolean; data: { today_bills: number; today_revenue: number; today_collected: number; cash_collected: number; upi_collected: number; card_collected: number } }>('get_billing_summary'),
           invoke<{ success: boolean; data: RecentBill[] }>('get_bills', { status: null, limit: 200 }),
           invoke<{ success: boolean; data: { id: number }[] }>('get_orders', { status: 'pending', limit: 50 }),
           invoke<{ success: boolean; data: { total_customers: number } }>('get_customer_stats'),
@@ -63,6 +66,9 @@ export function Dashboard() {
           today_bills: summary.success ? summary.data.today_bills : 0,
           today_revenue: summary.success ? summary.data.today_revenue : 0,
           today_collected: summary.success ? summary.data.today_collected : 0,
+          cash_collected: summary.success ? summary.data.cash_collected : 0,
+          upi_collected: summary.success ? summary.data.upi_collected : 0,
+          card_collected: summary.success ? summary.data.card_collected : 0,
           active_orders: orders.success ? orders.data.length : 0,
           total_customers: customers.success ? customers.data.total_customers : 0,
           low_stock_count: alerts.success ? alerts.data.total_alerts : 0,
@@ -151,6 +157,20 @@ export function Dashboard() {
           <div key={i} className="bg-card rounded-2xl p-6 border border-border animate-pulse h-32" />
         ))}
       </div>
+
+      {data && (data.cash_collected > 0 || data.upi_collected > 0 || data.card_collected > 0) && (
+        <div className="bg-card rounded-2xl border border-border p-6">
+          <h3 className="font-semibold text-lg mb-4">Today&apos;s Collections by Method</h3>
+          <div className="grid grid-cols-3 gap-4">
+            {[{ label: 'Cash', value: data.cash_collected, color: 'text-green-600' }, { label: 'UPI', value: data.upi_collected, color: 'text-blue-600' }, { label: 'Card', value: data.card_collected, color: 'text-purple-600' }].map(m => (
+              <div key={m.label} className="text-center p-4 rounded-xl bg-muted/50">
+                <p className={`text-xl font-bold ${m.color}`}>₹{m.value.toFixed(0)}</p>
+                <p className="text-sm text-muted-foreground mt-1">{m.label}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {weekRevenue.length > 0 && (() => {
         const max = Math.max(...weekRevenue.map(d => d.revenue), 1)
