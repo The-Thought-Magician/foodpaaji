@@ -1,6 +1,6 @@
 1. Always use proper naming convention, dont use terms like revised, fixed or anything else. If say Something is x file name, it should remain x file name. 
 2. Ensure the codebase is always structured. No unorganized or messy code should be committed. 
-3. Each file should contain not more than 300 lines of code.
+3. Prefer keeping files under 300-400 lines. Split into smaller files when it aids readability, but no hard limit.
 4. Write clear and concise commit messages that accurately describe the changes made.
 5. Dont use comments more than one line - example " this is a comment about code below" 
 6. The code must never be overengineered. Think Simple. 
