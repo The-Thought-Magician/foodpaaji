@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "tauri dev",
     "build": "tauri build",
-    "frontend:dev": "next dev -p 3000",
+    "frontend:dev": "next dev -p 3001",
     "frontend:build": "next build",
     "lint": "next lint"
   },

@@ -5,7 +5,7 @@
   "identifier": "com.foodpaaji.restaurant",
   "build": {
     "frontendDist": "../out",
-    "devUrl": "http://localhost:3000",
+    "devUrl": "http://localhost:3001",
     "beforeDevCommand": "pnpm frontend:dev",
     "beforeBuildCommand": "pnpm frontend:build"
   },
