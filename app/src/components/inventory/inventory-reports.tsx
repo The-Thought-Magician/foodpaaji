@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { FileText, AlertTriangle, TrendingUp } from 'lucide-react'
+import { FileText, AlertTriangle, TrendingUp, Download } from 'lucide-react'
 
 const RESTAURANT_ID = 1
 
@@ -76,6 +76,20 @@ export default function InventoryReports() {
     setLoading(false)
   }, [reportType, startDate, endDate])
 
+  const exportCSV = () => {
+    let csv = ''
+    if (reportType === 'stock' && stockRows.length) {
+      csv = 'Item,SKU,Category,Current Stock,Min Stock,Reorder Point\n' + stockRows.map(r => `"${r.item_name}","${r.sku ?? ''}","${r.category_name ?? ''}",${r.current_stock},${r.minimum_stock},${r.reorder_point}`).join('\n')
+    } else if (reportType === 'movement' && movementRows.length) {
+      csv = 'Item,Type,Total Quantity,Total Value,Count\n' + movementRows.map(r => `"${r.item_name}","${r.movement_type}",${r.total_quantity},${r.total_value.toFixed(2)},${r.movement_count}`).join('\n')
+    } else if (reportType === 'lowstock' && lowStockRows.length) {
+      csv = 'Item,SKU,Current Stock,Reorder Point,Shortage,Supplier\n' + lowStockRows.map(r => `"${r.item_name}","${r.sku ?? ''}",${r.current_stock},${r.reorder_point},${r.shortage},"${r.supplier_name ?? ''}"`).join('\n')
+    }
+    if (!csv) return
+    const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(new Blob([csv], { type: 'text/csv' })), download: `inventory-${reportType}-${new Date().toISOString().split('T')[0]}.csv` })
+    a.click()
+  }
+
   const TABS: { key: ReportType; label: string; icon: React.ReactNode }[] = [
     { key: 'lowstock', label: 'Low Stock', icon: <AlertTriangle className="w-4 h-4" /> },
     { key: 'stock', label: 'Stock Summary', icon: <FileText className="w-4 h-4" /> },
@@ -105,6 +119,10 @@ export default function InventoryReports() {
         )}
         <Button size="sm" onClick={run} disabled={loading} className="gradient-spice text-white ml-auto">
           {loading ? 'Running...' : 'Run Report'}
+        </Button>
+        <Button size="sm" variant="outline" onClick={exportCSV}
+          disabled={stockRows.length + movementRows.length + lowStockRows.length === 0}>
+          <Download className="w-4 h-4 mr-1" />CSV
         </Button>
       </div>
 
