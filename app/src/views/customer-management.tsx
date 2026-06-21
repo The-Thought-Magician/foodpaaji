@@ -18,6 +18,8 @@ interface Customer {
   total_spent: number
   visit_count: number
   created_at?: string
+  segment?: string
+  days_since_visit?: number | null
 }
 
 interface CustomerStats {
@@ -35,21 +37,22 @@ export function CustomerManagement() {
   const [showForm, setShowForm] = useState(false)
   const [editCustomer, setEditCustomer] = useState<Customer | null>(null)
   const [form, setForm] = useState({ name: '', phone: '', email: '', address: '', notes: '' })
-  const [segment, setSegment] = useState<'all' | 'vip' | 'regular' | 'new' | 'loyal'>('all')
+  const [segment, setSegment] = useState<'all' | 'vip' | 'loyal' | 'regular' | 'new' | 'at_risk'>('all')
+  const [segmentCounts, setSegmentCounts] = useState<Record<string, number>>({})
 
-  const getSegment = (c: Customer) => {
-    if (c.total_spent >= 5000) return 'vip'
-    if (c.visit_count >= 5) return 'regular'
-    if (c.loyalty_points >= 100) return 'loyal'
-    return 'new'
-  }
-  const SEGMENT_LABEL: Record<string, string> = { vip: 'VIP', regular: 'Regular', loyal: 'Loyal', new: 'New' }
-  const SEGMENT_COLOR: Record<string, string> = { vip: 'bg-amber-100 text-amber-800', regular: 'bg-blue-100 text-blue-800', loyal: 'bg-purple-100 text-purple-800', new: 'bg-green-100 text-green-800' }
+  const getSegment = (c: Customer) => c.segment ?? (c.total_spent >= 10000 ? 'vip' : c.total_spent >= 5000 || c.visit_count >= 6 ? 'loyal' : c.visit_count >= 2 ? 'regular' : 'new')
+  const SEGMENT_LABEL: Record<string, string> = { vip: 'VIP', loyal: 'Loyal', regular: 'Regular', new: 'New', at_risk: 'At Risk' }
+  const SEGMENT_COLOR: Record<string, string> = { vip: 'bg-amber-100 text-amber-800', loyal: 'bg-purple-100 text-purple-800', regular: 'bg-blue-100 text-blue-800', new: 'bg-green-100 text-green-800', at_risk: 'bg-red-100 text-red-700' }
 
   const loadCustomers = useCallback(async () => {
     try {
-      const res = await invoke<{ success: boolean; data: Customer[] }>('get_customers', { search: search || null, limit: 100 })
-      if (res.success) setCustomers(res.data)
+      if (!search) {
+        const res = await invoke<{ success: boolean; data: Customer[]; counts: Record<string, number> }>('get_customer_segments')
+        if (res.success) { setCustomers(res.data); setSegmentCounts(res.counts ?? {}) }
+      } else {
+        const res = await invoke<{ success: boolean; data: Customer[] }>('get_customers', { search, limit: 100 })
+        if (res.success) setCustomers(res.data)
+      }
     } catch (e) { console.error(e) }
   }, [search])
 
@@ -141,7 +144,7 @@ export function CustomerManagement() {
     const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(new Blob([[hdr, ...rows].join('\n')], { type: 'text/csv' })), download: `customers-${new Date().toISOString().split('T')[0]}.csv` })
     a.click()
   }
-  const sorted = [...customers].filter(c => segment === 'all' || getSegment(c) === segment).sort((a, b) => sortBy === 'name' ? a.name.localeCompare(b.name) : b[sortBy] - a[sortBy])
+  const sorted = [...customers].filter(c => segment === 'all' || getSegment(c) === segment).filter(c => !search || c.name.toLowerCase().includes(search.toLowerCase()) || (c.phone ?? '').includes(search)).sort((a, b) => sortBy === 'name' ? a.name.localeCompare(b.name) : b[sortBy] - a[sortBy])
 
   return (
     <div className="space-y-6">
@@ -173,10 +176,16 @@ export function CustomerManagement() {
             </button>
           ))}
         </div>
-        <div className="flex gap-1">
-          {(['all', 'vip', 'regular', 'loyal', 'new'] as const).map(s => (
-            <button key={s} onClick={() => setSegment(s)} className={`text-xs px-2.5 py-1 rounded border transition-colors ${segment === s ? 'bg-primary text-primary-foreground border-primary' : 'border-border text-muted-foreground hover:text-foreground'}`}>{s === 'all' ? 'All' : SEGMENT_LABEL[s]}</button>
-          ))}
+        <div className="flex gap-1 flex-wrap">
+          {(['all', 'vip', 'loyal', 'regular', 'new', 'at_risk'] as const).map(s => {
+            const count = s === 'all' ? customers.length : (segmentCounts[s] ?? 0)
+            return (
+              <button key={s} onClick={() => setSegment(s)} className={`text-xs px-2.5 py-1 rounded border transition-colors flex items-center gap-1 ${segment === s ? 'bg-primary text-primary-foreground border-primary' : 'border-border text-muted-foreground hover:text-foreground'}`}>
+                {s === 'all' ? 'All' : SEGMENT_LABEL[s]}
+                {count > 0 && <span className={`text-[10px] font-semibold px-1 rounded-full ${segment === s ? 'bg-white/20' : 'bg-muted'}`}>{count}</span>}
+              </button>
+            )
+          })}
         </div>
         <Button variant="outline" onClick={exportCSV} disabled={customers.length === 0}><Download className="w-4 h-4 mr-2" />CSV</Button>
         <Button onClick={openCreate} className="gradient-spice text-white"><Plus className="w-4 h-4 mr-2" />Add Customer</Button>
@@ -203,6 +212,11 @@ export function CustomerManagement() {
                 <div className="bg-muted rounded p-2"><p className="font-bold">₹{c.total_spent.toFixed(0)}</p><p className="text-muted-foreground">Spent</p></div>
                 <div className="bg-muted rounded p-2"><p className="font-bold">{c.loyalty_points}</p><p className="text-muted-foreground">Points</p></div>
               </div>
+              {c.days_since_visit != null && (
+                <p className={`text-xs mt-2 ${c.days_since_visit > 30 ? 'text-red-500' : 'text-muted-foreground'}`}>
+                  Last visit: {c.days_since_visit === 0 ? 'today' : `${c.days_since_visit}d ago`}
+                </p>
+              )}
               <div className="mt-3 flex gap-2 flex-wrap">
                 <Button variant="outline" size="sm" onClick={() => viewProfile(c.id)}>View</Button>
                 <Button variant="outline" size="sm" className="flex-1" onClick={() => openEdit(c)}>Edit</Button>

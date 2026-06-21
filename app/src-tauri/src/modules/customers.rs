@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
 use sqlx::{SqlitePool, Row};
 use tauri::State;
+use chrono::Local;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct CreateCustomerRequest {
@@ -122,6 +123,71 @@ pub async fn get_loyalty_transactions(pool: State<'_, SqlitePool>, customer_id: 
         "created_at": r.try_get::<String,_>("created_at").unwrap_or_default(),
     })).collect();
     Ok(serde_json::json!({ "success": true, "data": data }))
+}
+
+#[tauri::command]
+pub async fn get_customer_segments(pool: State<'_, SqlitePool>) -> Result<serde_json::Value, String> {
+    let rows = sqlx::query(
+        "SELECT c.id, c.name, c.phone, c.email, c.loyalty_points, c.total_spent, c.visit_count,
+                MAX(b.created_at) as last_visit
+         FROM customers c
+         LEFT JOIN bills b ON b.customer_id = c.id AND b.status = 'paid'
+         WHERE c.is_active = 1
+         GROUP BY c.id"
+    ).fetch_all(pool.inner()).await.map_err(|e| e.to_string())?;
+
+    let data: Vec<serde_json::Value> = rows.iter().map(|r| {
+        let visit_count = r.try_get::<i64,_>("visit_count").unwrap_or(0);
+        let total_spent = r.try_get::<f64,_>("total_spent").unwrap_or(0.0);
+        let loyalty_points = r.try_get::<i64,_>("loyalty_points").unwrap_or(0);
+        let last_visit: Option<String> = r.try_get("last_visit").ok().flatten();
+
+        let days_since_visit = last_visit.as_ref().map(|lv| {
+            let parsed = chrono::NaiveDateTime::parse_from_str(lv, "%Y-%m-%dT%H:%M:%S")
+                .or_else(|_| chrono::NaiveDateTime::parse_from_str(lv, "%Y-%m-%d %H:%M:%S"))
+                .ok();
+            parsed.map(|dt| {
+                let now = chrono::Local::now().naive_local();
+                (now - dt).num_days()
+            }).unwrap_or(9999)
+        }).unwrap_or(9999);
+
+        let segment = if total_spent >= 10000.0 || loyalty_points >= 1000 {
+            "vip"
+        } else if visit_count == 0 || last_visit.is_none() {
+            "new"
+        } else if days_since_visit > 30 && visit_count >= 2 {
+            "at_risk"
+        } else if visit_count >= 6 || total_spent >= 5000.0 {
+            "loyal"
+        } else if visit_count >= 2 {
+            "regular"
+        } else {
+            "new"
+        };
+
+        serde_json::json!({
+            "id": r.try_get::<i64,_>("id").unwrap_or(0),
+            "name": r.try_get::<String,_>("name").unwrap_or_default(),
+            "phone": r.try_get::<Option<String>,_>("phone").unwrap_or(None),
+            "email": r.try_get::<Option<String>,_>("email").unwrap_or(None),
+            "loyalty_points": loyalty_points,
+            "total_spent": total_spent,
+            "visit_count": visit_count,
+            "last_visit": last_visit,
+            "days_since_visit": if days_since_visit == 9999 { serde_json::Value::Null } else { serde_json::json!(days_since_visit) },
+            "segment": segment,
+        })
+    }).collect();
+
+    let counts = data.iter().fold(serde_json::json!({ "vip": 0, "loyal": 0, "regular": 0, "new": 0, "at_risk": 0 }), |mut acc, c| {
+        if let Some(seg) = c["segment"].as_str() {
+            if let Some(n) = acc[seg].as_i64() { acc[seg] = serde_json::json!(n + 1); }
+        }
+        acc
+    });
+
+    Ok(serde_json::json!({ "success": true, "data": data, "counts": counts }))
 }
 
 #[tauri::command]
