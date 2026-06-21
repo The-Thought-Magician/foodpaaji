@@ -39,15 +39,16 @@ export default function InventoryTransfers() {
   const [actionItemId, setActionItemId] = useState('')
   const [actionQty, setActionQty] = useState('')
   const [form, setForm] = useState({ from_location: '', to_location: '', notes: '', item_id: '', quantity: '' })
+  const [statusFilter, setStatusFilter] = useState<string | null>(null)
 
   const load = useCallback(async () => {
     try {
       const res = await invoke<{ success: boolean; data: { transfers: Transfer[] } }>('get_inventory_transfers', {
-        request: { restaurant_id: RESTAURANT_ID, status: null, from_location: null, to_location: null, page: 1, limit: 50 }
+        request: { restaurant_id: RESTAURANT_ID, status: statusFilter, from_location: null, to_location: null, page: 1, limit: 50 }
       })
       if (res.success) setTransfers(res.data.transfers ?? [])
     } catch (e) { console.error(e) }
-  }, [])
+  }, [statusFilter])
 
   useEffect(() => { load() }, [load])
 
@@ -91,8 +92,16 @@ export default function InventoryTransfers() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2"><Package className="w-4 h-4" /><h3 className="font-semibold">Inventory Transfers</h3></div>
+      <div className="flex items-center justify-between flex-wrap gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex items-center gap-2"><Package className="w-4 h-4" /><h3 className="font-semibold">Inventory Transfers</h3></div>
+          {(['All', 'PENDING', 'APPROVED', 'COMPLETED', 'CANCELLED'] as const).map(s => (
+            <button key={s} onClick={() => setStatusFilter(s === 'All' ? null : s)}
+              className={`px-2.5 py-1 rounded-full text-xs font-medium border transition-colors ${statusFilter === (s === 'All' ? null : s) ? 'bg-primary text-primary-foreground border-primary' : 'bg-muted text-muted-foreground border-border hover:text-foreground'}`}>
+              {s}
+            </button>
+          ))}
+        </div>
         <Button size="sm" className="gradient-spice text-white" onClick={() => setShowCreate(true)}>
           <Plus className="w-4 h-4 mr-1" />New Transfer
         </Button>
