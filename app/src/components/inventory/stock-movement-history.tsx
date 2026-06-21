@@ -47,12 +47,21 @@ export default function StockMovementHistory() {
 
   const clearFilters = () => { setFilters(DEFAULT_FILTERS); setSearchTerm('') }
 
+  const exportCSV = () => {
+    if (!movements.length) return
+    const rows = ['Item,SKU,Type,Qty,Unit Cost,Total Cost,Batch,Notes,Date',
+      ...movements.map(m => `"${m.item_name}","${m.item_sku ?? ''}","${m.movement_type}",${m.quantity},${m.unit_cost?.toFixed(2) ?? ''},${m.total_cost?.toFixed(2) ?? ''},"${m.batch_number ?? ''}","${m.notes ?? ''}","${m.movement_date ?? ''}"`)
+    ]
+    const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(new Blob([rows.join('\n')], { type: 'text/csv' })), download: `stock-movements-${new Date().toISOString().split('T')[0]}.csv` })
+    a.click()
+  }
+
   return (
     <div className="space-y-6 p-6">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold">Stock Movement History</h1>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm"><Download className="h-4 w-4 mr-2" />Export</Button>
+          <Button variant="outline" size="sm" onClick={exportCSV} disabled={!movements.length}><Download className="h-4 w-4 mr-2" />Export</Button>
           <Button onClick={() => loadMovements()} variant="outline" size="sm"><RefreshCw className="h-4 w-4 mr-2" />Refresh</Button>
         </div>
       </div>
