@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { invoke } from '@tauri-apps/api/core'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { ChefHat, Clock, RefreshCw } from 'lucide-react'
+import { AlertTriangle, ChefHat, Clock, RefreshCw } from 'lucide-react'
 
 interface OrderItem { item_name: string; quantity: number; notes?: string }
 interface KitchenOrder {
@@ -30,9 +30,20 @@ const BADGE_COLOR: Record<string, string> = {
   ready: 'bg-green-200 text-green-800',
 }
 
+const elapsedMin = (iso: string) => Math.floor((Date.now() - new Date(iso).getTime()) / 60000)
+
 const elapsed = (iso: string) => {
-  const m = Math.floor((Date.now() - new Date(iso).getTime()) / 60000)
+  const m = elapsedMin(iso)
   return m < 1 ? 'just now' : `${m}m ago`
+}
+
+const urgency = (status: string, iso: string): 'critical' | 'warning' | 'normal' => {
+  const m = elapsedMin(iso)
+  if (status === 'pending' && m >= 15) return 'critical'
+  if (status === 'pending' && m >= 8) return 'warning'
+  if (status === 'preparing' && m >= 25) return 'critical'
+  if (status === 'preparing' && m >= 15) return 'warning'
+  return 'normal'
 }
 
 export function KitchenDisplay() {
@@ -99,13 +110,20 @@ export function KitchenDisplay() {
       )}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-        {filtered.map(order => (
-          <div key={order.id} className={`rounded-2xl border-2 p-4 space-y-3 ${STATUS_COLOR[order.status] ?? ''}`}>
+        {filtered.map(order => {
+          const u = urgency(order.status, order.created_at)
+          const urgencyBorder = u === 'critical' ? 'ring-2 ring-red-500 animate-pulse' : u === 'warning' ? 'ring-2 ring-orange-400' : ''
+          return (
+          <div key={order.id} className={`rounded-2xl border-2 p-4 space-y-3 ${STATUS_COLOR[order.status] ?? ''} ${urgencyBorder}`}>
             <div className="flex items-center justify-between">
               <span className="font-bold text-lg">{order.order_number}</span>
-              <Badge className={`text-xs ${BADGE_COLOR[order.status] ?? ''}`}>{order.status}</Badge>
+              <div className="flex items-center gap-1.5">
+                {u === 'critical' && <AlertTriangle className="w-4 h-4 text-red-600" />}
+                {u === 'warning' && <AlertTriangle className="w-4 h-4 text-orange-500" />}
+                <Badge className={`text-xs ${BADGE_COLOR[order.status] ?? ''}`}>{order.status}</Badge>
+              </div>
             </div>
-            <div className="flex items-center gap-2 text-sm opacity-70">
+            <div className={`flex items-center gap-2 text-sm ${u === 'critical' ? 'text-red-700 font-semibold' : u === 'warning' ? 'text-orange-700' : 'opacity-70'}`}>
               <Clock className="w-3.5 h-3.5" />
               <span>{elapsed(order.created_at)}</span>
               {order.table_number && <span>· Table {order.table_number}</span>}
@@ -126,7 +144,7 @@ export function KitchenDisplay() {
               </Button>
             )}
           </div>
-        ))}
+        )})}
       </div>
     </div>
   )
