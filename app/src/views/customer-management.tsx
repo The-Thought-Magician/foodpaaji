@@ -74,11 +74,16 @@ export function CustomerManagement() {
   }
 
   const [viewCustomer, setViewCustomer] = useState<Customer & { address?: string } | null>(null)
+  const [customerBills, setCustomerBills] = useState<{ id: number; bill_number: string; total_amount: number; status: string; created_at: string; customer_id?: number }[]>([])
 
   const viewProfile = async (id: number) => {
     try {
-      const res = await invoke<{ success: boolean; data: Customer & { address?: string } }>('get_customer', { customerId: id })
-      if (res.success && res.data) setViewCustomer(res.data)
+      const [cr, br] = await Promise.all([
+        invoke<{ success: boolean; data: Customer & { address?: string } }>('get_customer', { customerId: id }),
+        invoke<{ success: boolean; data: { id: number; bill_number: string; total_amount: number; status: string; created_at: string; customer_id?: number }[] }>('get_bills', { status: null, limit: 100 }),
+      ])
+      if (cr.success && cr.data) setViewCustomer(cr.data)
+      if (br.success) setCustomerBills((br.data ?? []).filter(b => b.customer_id === id).slice(0, 5))
     } catch (e) { console.error(e) }
   }
 
@@ -178,6 +183,20 @@ export function CustomerManagement() {
               {viewCustomer.email && <p><span className="text-muted-foreground">Email:</span> {viewCustomer.email}</p>}
               {viewCustomer.address && <p><span className="text-muted-foreground">Address:</span> {viewCustomer.address}</p>}
               {viewCustomer.created_at && <p className="text-xs text-muted-foreground">Member since {new Date(viewCustomer.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</p>}
+              {customerBills.length > 0 && (
+                <div className="pt-2 border-t">
+                  <p className="text-xs font-medium text-muted-foreground mb-2">Recent Bills</p>
+                  <div className="space-y-1">
+                    {customerBills.map(b => (
+                      <div key={b.id} className="flex justify-between text-xs">
+                        <span className="font-mono text-muted-foreground">{b.bill_number}</span>
+                        <span>₹{b.total_amount.toFixed(0)}</span>
+                        <span className={b.status === 'paid' ? 'text-green-600' : 'text-amber-600'}>{b.status}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
               <div className="grid grid-cols-3 gap-2 text-center pt-2">
                 <div className="bg-muted rounded p-3"><p className="font-bold text-lg">{viewCustomer.visit_count}</p><p className="text-muted-foreground text-xs">Visits</p></div>
                 <div className="bg-muted rounded p-3"><p className="font-bold text-lg">₹{viewCustomer.total_spent.toFixed(0)}</p><p className="text-muted-foreground text-xs">Spent</p></div>
