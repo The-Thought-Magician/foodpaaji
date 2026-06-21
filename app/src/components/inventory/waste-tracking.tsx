@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Trash2, Plus, AlertTriangle, TrendingDown, RefreshCw } from 'lucide-react'
+import { Trash2, Plus, AlertTriangle, TrendingDown, RefreshCw, Download } from 'lucide-react'
 
 const RESTAURANT_ID = 1
 
@@ -83,6 +83,13 @@ export default function WasteTracking() {
     loadItems()
     loadWasteHistory()
   }, [loadItems, loadWasteHistory])
+
+  const exportCSV = () => {
+    if (!wasteRecords.length) return
+    const rows = ['Item,Qty,Unit Cost,Total Cost,Date,Notes', ...wasteRecords.map(r => `"${r.item_name}",${r.quantity},${r.unit_cost?.toFixed(2) ?? ''},${r.total_cost?.toFixed(2) ?? ''},"${r.movement_date ?? ''}","${r.notes ?? ''}"`) ]
+    const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(new Blob([rows.join('\n')], { type: 'text/csv' })), download: `waste-log-${new Date().toISOString().split('T')[0]}.csv` })
+    a.click()
+  }
 
   const selectedItem = items.find(i => i.id === Number(form.inventory_item_id))
 
@@ -171,6 +178,7 @@ export default function WasteTracking() {
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle className="text-base font-semibold">Waste Records</CardTitle>
           <div className="flex gap-2">
+            <Button variant="outline" size="sm" onClick={exportCSV} disabled={!wasteRecords.length}><Download className="w-4 h-4" /></Button>
             <Button variant="outline" size="sm" onClick={loadWasteHistory} disabled={loading}>
               <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
             </Button>
