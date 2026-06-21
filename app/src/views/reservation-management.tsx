@@ -9,7 +9,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Calendar, Plus, Clock, Users, QrCode, CheckCircle, XCircle } from 'lucide-react'
+import { Calendar, Plus, Clock, Users, QrCode, CheckCircle, XCircle, Search } from 'lucide-react'
 import { TableQrManager } from '@/components/reservations/table-qr'
 
 interface Reservation {
@@ -48,6 +48,7 @@ export function ReservationManagement() {
   const [reservations, setReservations] = useState<Reservation[]>([])
   const [tables, setTables] = useState<Table[]>([])
   const [date, setDate] = useState(new Date().toISOString().split('T')[0])
+  const [search, setSearch] = useState('')
   const [activeTab, setActiveTab] = useState<'reservations' | 'qr' | 'availability'>('reservations')
   const [availDate, setAvailDate] = useState(new Date().toISOString().split('T')[0])
   const [availTime, setAvailTime] = useState('19:00')
@@ -116,9 +117,10 @@ export function ReservationManagement() {
     } catch (e) { console.error(e) }
   }
 
-  const seated = reservations.filter(r => r.status === 'seated').length
-  const confirmed = reservations.filter(r => r.status === 'confirmed').length
-  const pending = reservations.filter(r => r.status === 'pending').length
+  const filteredReservations = search ? reservations.filter(r => r.customer_name.toLowerCase().includes(search.toLowerCase()) || r.customer_phone.includes(search)) : reservations
+  const seated = filteredReservations.filter(r => r.status === 'seated').length
+  const confirmed = filteredReservations.filter(r => r.status === 'confirmed').length
+  const pending = filteredReservations.filter(r => r.status === 'pending').length
 
   return (
     <div className="space-y-6">
@@ -177,11 +179,14 @@ export function ReservationManagement() {
             <Badge className="bg-yellow-100 text-yellow-700">{pending} Pending</Badge>
           </div>
         </div>
-        <Button onClick={openCreate} className="gradient-spice text-white"><Plus className="w-4 h-4 mr-2" />New Reservation</Button>
+        <div className="flex items-center gap-2">
+          <div className="relative"><Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" /><Input className="pl-8 h-8 w-44 text-sm" placeholder="Name or phone…" value={search} onChange={e => setSearch(e.target.value)} /></div>
+          <Button onClick={openCreate} className="gradient-spice text-white"><Plus className="w-4 h-4 mr-2" />New Reservation</Button>
+        </div>
       </div>
 
       <div className="space-y-3">
-        {reservations.map(r => (
+        {filteredReservations.map(r => (
           <Card key={r.id} className="card-hover">
             <CardContent className="p-4 flex items-center justify-between">
               <div className="flex items-center gap-4">
