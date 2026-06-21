@@ -9,7 +9,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { FileText, Plus, IndianRupee, Receipt, TrendingUp, Eye, Download } from 'lucide-react'
+import { FileText, Plus, IndianRupee, Receipt, TrendingUp, Eye, Download, Search } from 'lucide-react'
 import { UpiQr } from '@/components/ui/upi-qr'
 import { getSettings } from '@/lib/settings'
 
@@ -52,13 +52,13 @@ const STATUS_COLOR: Record<string, string> = {
   cancelled: 'bg-red-100 text-red-700',
   refunded: 'bg-yellow-100 text-yellow-700',
 }
-
 export function BillingManagement() {
   const [bills, setBills] = useState<Bill[]>([])
   const [summary, setSummary] = useState({ today_bills: 0, today_revenue: 0, today_collected: 0 })
   const [showNewBill, setShowNewBill] = useState(false)
   const [showPayment, setShowPayment] = useState<Bill | null>(null)
   const [filterStatus, setFilterStatus] = useState<string | null>(null)
+  const [search, setSearch] = useState('')
   const [items, setItems] = useState<BillItem[]>([{ item_name: '', quantity: 1, unit_price: 0, discount_amount: 0 }])
   const [tableNumber, setTableNumber] = useState('')
   const [discountPercent, setDiscountPercent] = useState(0)
@@ -89,10 +89,9 @@ export function BillingManagement() {
   }, [])
   useEffect(() => { loadBills(); loadSummary() }, [loadBills, loadSummary])
 
+  const filteredBills = search ? bills.filter(b => b.bill_number.toLowerCase().includes(search.toLowerCase()) || (b.table_number ?? '').toLowerCase().includes(search.toLowerCase())) : bills
   const addItem = () => setItems([...items, { item_name: '', quantity: 1, unit_price: 0, discount_amount: 0 }])
-  const updateItem = (i: number, field: keyof BillItem, value: string | number) => {
-    setItems(items.map((item, idx) => idx === i ? { ...item, [field]: value } : item))
-  }
+  const updateItem = (i: number, field: keyof BillItem, value: string | number) => { setItems(items.map((item, idx) => idx === i ? { ...item, [field]: value } : item)) }
   const removeItem = (i: number) => setItems(items.filter((_, idx) => idx !== i))
 
   const subtotal = items.reduce((s, i) => s + (i.unit_price * i.quantity) - i.discount_amount, 0)
@@ -154,7 +153,7 @@ export function BillingManagement() {
 
   const exportCSV = () => {
     const hdr = 'Bill#,Table,Subtotal,Discount,Tax,Total,Status,Date'
-    const rows = bills.map(b => `"${b.bill_number}","${b.table_number ?? 'Takeaway'}",${b.subtotal.toFixed(2)},${b.discount_amount.toFixed(2)},${b.tax_amount.toFixed(2)},${b.total_amount.toFixed(2)},"${b.status}","${new Date(b.created_at).toLocaleString()}"`)
+    const rows = filteredBills.map(b => `"${b.bill_number}","${b.table_number ?? 'Takeaway'}",${b.subtotal.toFixed(2)},${b.discount_amount.toFixed(2)},${b.tax_amount.toFixed(2)},${b.total_amount.toFixed(2)},"${b.status}","${new Date(b.created_at).toLocaleString()}"`)
     const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(new Blob([[hdr, ...rows].join('\n')], { type: 'text/csv' })), download: `bills-${new Date().toISOString().split('T')[0]}.csv` })
     a.click()
   }
@@ -176,23 +175,24 @@ export function BillingManagement() {
         ))}
       </div>
 
-      <div className="flex items-center justify-between">
-        <div className="flex gap-2">
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <div className="flex gap-2 flex-wrap">
           {['all', 'open', 'paid', 'cancelled'].map(s => (
             <Button key={s} variant={filterStatus === (s === 'all' ? null : s) ? 'default' : 'outline'} size="sm"
               onClick={() => setFilterStatus(s === 'all' ? null : s)}>
               {s.charAt(0).toUpperCase() + s.slice(1)}
             </Button>
           ))}
+          <div className="relative"><Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" /><Input className="pl-8 h-8 w-44 text-sm" placeholder="Bill # or table…" value={search} onChange={e => setSearch(e.target.value)} /></div>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={exportCSV} disabled={bills.length === 0}><Download className="w-4 h-4 mr-1" />CSV</Button>
+          <Button variant="outline" size="sm" onClick={exportCSV} disabled={filteredBills.length === 0}><Download className="w-4 h-4 mr-1" />CSV</Button>
           <Button onClick={() => setShowNewBill(true)} className="gradient-spice text-white"><Plus className="w-4 h-4 mr-2" />New Bill</Button>
         </div>
       </div>
 
       <div className="space-y-2">
-        {bills.map(bill => (
+        {filteredBills.map(bill => (
           <Card key={bill.id} className="card-hover">
             <CardContent className="p-4 flex items-center justify-between">
               <div className="flex items-center gap-4">
