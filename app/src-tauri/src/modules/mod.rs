@@ -53,3 +53,4 @@ pub mod campaigns;
 pub mod reservation_analytics;
 pub mod audit_log;
 pub mod menu_history;
+pub mod seasonal_adjustments;

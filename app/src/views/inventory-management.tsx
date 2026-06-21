@@ -22,10 +22,11 @@ import { DeleteInventoryDialog, RestockDialog, EditInventoryDialog, AdjustStockD
 import { ExpiringStock } from '@/components/inventory/expiring-stock'
 import PurchaseOrders from '@/components/inventory/purchase-orders'
 import { InventoryForecast } from '@/components/inventory/inventory-forecast'
+import { SeasonalAdjustments } from '@/components/inventory/seasonal-adjustments'
 
 const RESTAURANT_ID = 1
 const ITEMS_PER_PAGE = 12
-type Tab = 'items' | 'waste' | 'analytics' | 'transfers' | 'reports' | 'valuation' | 'alerts' | 'suppliers' | 'bulk' | 'movements' | 'units' | 'search' | 'import' | 'purchase' | 'forecast'
+type Tab = 'items' | 'waste' | 'analytics' | 'transfers' | 'reports' | 'valuation' | 'alerts' | 'suppliers' | 'bulk' | 'movements' | 'units' | 'search' | 'import' | 'purchase' | 'forecast' | 'seasonal'
 
 export function InventoryManagement() {
   const [items, setItems] = useState<InventoryItem[]>([])
@@ -171,6 +172,11 @@ export function InventoryManagement() {
             tab === 'forecast' ? 'bg-background shadow text-foreground' : 'text-muted-foreground hover:text-foreground')}>
           Forecast
         </button>
+        <button onClick={() => setTab('seasonal')}
+          className={cn('px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2',
+            tab === 'seasonal' ? 'bg-background shadow text-foreground' : 'text-muted-foreground hover:text-foreground')}>
+          Seasonal
+        </button>
       </div>
 
       {tab === 'waste' && <WasteTracking />}
@@ -187,6 +193,7 @@ export function InventoryManagement() {
       {tab === 'import' && <InventoryCsvImport />}
       {tab === 'purchase' && <PurchaseOrders />}
       {tab === 'forecast' && <InventoryForecast />}
+      {tab === 'seasonal' && <SeasonalAdjustments />}
 
       {tab === 'items' && (
         <>

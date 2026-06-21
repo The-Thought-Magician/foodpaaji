@@ -56,6 +56,7 @@ use modules::campaigns::{get_campaigns, create_campaign, update_campaign_status,
 use modules::reservation_analytics::get_reservation_analytics;
 use modules::audit_log::{create_audit_entry, get_audit_log};
 use modules::menu_history::{record_menu_change, get_menu_item_history};
+use modules::seasonal_adjustments::{get_seasonal_adjustments, create_seasonal_adjustment, delete_seasonal_adjustment, toggle_seasonal_adjustment};
 use tauri::Manager;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -250,6 +251,10 @@ pub fn run() {
       get_audit_log,
       record_menu_change,
       get_menu_item_history,
+      get_seasonal_adjustments,
+      create_seasonal_adjustment,
+      delete_seasonal_adjustment,
+      toggle_seasonal_adjustment,
     ])
     .setup(|app| {
       let level = if cfg!(debug_assertions) { log::LevelFilter::Debug } else { log::LevelFilter::Info };
