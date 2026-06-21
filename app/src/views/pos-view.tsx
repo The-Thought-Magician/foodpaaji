@@ -35,7 +35,6 @@ interface CouponResult {
   final_amount?: number
   error?: string
 }
-
 interface PromoResult {
   valid: boolean
   promo_id?: number
@@ -46,7 +45,6 @@ interface PromoResult {
 }
 
 const elapsed = (iso: string) => { const m = Math.floor((Date.now() - new Date(iso).getTime()) / 60000); return m < 1 ? 'just now' : m < 60 ? `${m}m ago` : `${Math.floor(m / 60)}h ${m % 60}m ago` }
-
 const STATUS_COLOR: Record<string, string> = {
   pending: 'bg-yellow-100 text-yellow-700',
   preparing: 'bg-blue-100 text-blue-700',
@@ -58,6 +56,7 @@ const STATUS_COLOR: Record<string, string> = {
 export function PosView() {
   const [cart, setCart] = useState<CartItem[]>([])
   const [tableNumber, setTableNumber] = useState('')
+  const [orderNotes, setOrderNotes] = useState('')
   const [couponCode, setCouponCode] = useState('')
   const [coupon, setCoupon] = useState<CouponResult | null>(null)
   const [promoCode, setPromoCode] = useState('')
@@ -121,8 +120,8 @@ export function PosView() {
       }
       if (coupon?.valid && coupon.coupon_id) await invoke('apply_coupon', { couponId: coupon.coupon_id })
       if (promo?.valid && promo.promo_id) await invoke('apply_promo', { promoId: promo.promo_id })
-      await invoke('create_order', { request: { customer_id: selectedCustomer?.id ?? null, table_number: tableNumber || null, items: cart, notes: null } })
-      setCart([]); setTableNumber(''); setCouponCode(''); setCoupon(null); setPromoCode(''); setPromo(null); setSelectedCustomer(null); setCustomerSearch(''); setCustomerResults([]); loadOrders()
+      await invoke('create_order', { request: { customer_id: selectedCustomer?.id ?? null, table_number: tableNumber || null, items: cart, notes: orderNotes || null } })
+      setCart([]); setTableNumber(''); setOrderNotes(''); setCouponCode(''); setCoupon(null); setPromoCode(''); setPromo(null); setSelectedCustomer(null); setCustomerSearch(''); setCustomerResults([]); loadOrders()
     } catch (e) { console.error(e) }
   }
 
@@ -174,6 +173,7 @@ export function PosView() {
           onClear={() => { setSelectedCustomer(null); setCustomerSearch('') }}
         />
         <Input placeholder="Table number (e.g. T1)" value={tableNumber} onChange={e => setTableNumber(e.target.value)} />
+        <Input placeholder="Order notes (e.g. no onion, extra spicy)" value={orderNotes} onChange={e => setOrderNotes(e.target.value)} />
 
         <div className="flex-1 overflow-y-auto space-y-2">
           {cart.map((item, i) => (
