@@ -4,8 +4,10 @@ interface AppSettings {
   restaurant_name: string
   upi_id: string
   gstin: string
+  fssai_number: string
   default_tax_percent: number
   service_charge_percent: number
+  packaging_fee: number
   address: string
   phone: string
   receipt_footer: string
@@ -16,8 +18,10 @@ const defaults: AppSettings = {
   restaurant_name: 'FoodPaaji',
   upi_id: 'restaurant@upi',
   gstin: '',
+  fssai_number: '',
   default_tax_percent: 5,
   service_charge_percent: 0,
+  packaging_fee: 0,
   address: '',
   phone: '',
   receipt_footer: 'Thank you! Visit again',

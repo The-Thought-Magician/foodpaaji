@@ -20,9 +20,11 @@ interface Bill {
   customer_id?: number | null
   customer_name?: string | null
   table_number?: string
+  order_type?: string
   subtotal: number
   discount_amount: number
   tax_amount: number
+  packaging_fee?: number
   total_amount: number
   status: string
   created_at: string
@@ -291,6 +293,7 @@ export function BillingManagement() {
                 <div className="flex justify-between"><span>Subtotal</span><span>₹{showDetails?.bill.subtotal.toFixed(2)}</span></div>
                 {(showDetails?.bill.discount_amount ?? 0) > 0 && <div className="flex justify-between text-green-600"><span>Discount</span><span>-₹{showDetails?.bill.discount_amount.toFixed(2)}</span></div>}
                 {(showDetails?.bill.tax_amount ?? 0) > 0 && <div className="flex justify-between"><span>GST</span><span>₹{showDetails?.bill.tax_amount.toFixed(2)}</span></div>}
+                {(showDetails?.bill.packaging_fee ?? 0) > 0 && <div className="flex justify-between"><span>Packaging Fee</span><span>₹{showDetails?.bill.packaging_fee?.toFixed(2)}</span></div>}
               </div>
               <div className="flex justify-between font-bold border-t pt-2"><span>Total</span><span>₹{showDetails?.bill.total_amount.toFixed(2)}</span></div>
             </div>

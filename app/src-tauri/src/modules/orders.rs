@@ -151,6 +151,7 @@ pub async fn convert_order_to_bill(
     order_id: i64,
     discount_percent: f64,
     tax_percent: f64,
+    packaging_fee: Option<f64>,
 ) -> Result<serde_json::Value, String> {
     let order_row = sqlx::query("SELECT customer_id, table_number, order_type, notes FROM orders WHERE id = ?")
         .bind(order_id).fetch_optional(pool.inner()).await.map_err(|e| e.to_string())?;
@@ -170,16 +171,17 @@ pub async fn convert_order_to_bill(
     let discount_amount = subtotal * discount_percent / 100.0;
     let taxable = subtotal - discount_amount;
     let tax_amount = taxable * tax_percent / 100.0;
-    let total_amount = taxable + tax_amount;
+    let pkg_fee = packaging_fee.unwrap_or(0.0);
+    let total_amount = taxable + tax_amount + pkg_fee;
 
     let now = Local::now();
     let bill_number = format!("BILL-{}", now.format("%Y%m%d%H%M%S"));
 
     let bill_id = sqlx::query(
-        "INSERT INTO bills (bill_number, customer_id, table_number, order_type, subtotal, discount_amount, discount_percent, tax_amount, tax_percent, total_amount, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+        "INSERT INTO bills (bill_number, customer_id, table_number, order_type, subtotal, discount_amount, discount_percent, tax_amount, tax_percent, packaging_fee, total_amount, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
     )
     .bind(&bill_number).bind(order_customer_id).bind(&order_table).bind(&order_type)
-    .bind(subtotal).bind(discount_amount).bind(discount_percent).bind(tax_amount).bind(tax_percent).bind(total_amount).bind(&order_notes)
+    .bind(subtotal).bind(discount_amount).bind(discount_percent).bind(tax_amount).bind(tax_percent).bind(pkg_fee).bind(total_amount).bind(&order_notes)
     .execute(pool.inner()).await.map_err(|e| e.to_string())?
     .last_insert_rowid();
 

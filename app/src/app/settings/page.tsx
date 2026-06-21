@@ -72,6 +72,7 @@ export default function SettingsPage() {
         { label: 'Address', key: 'address' as const, type: 'text' },
         { label: 'Phone', key: 'phone' as const, type: 'tel' },
         { label: 'GSTIN', key: 'gstin' as const, type: 'text' },
+        { label: 'FSSAI License Number', key: 'fssai_number' as const, type: 'text' },
       ],
     },
     {
@@ -87,6 +88,7 @@ export default function SettingsPage() {
       fields: [
         { label: 'Default Tax %', key: 'default_tax_percent' as const, type: 'number' },
         { label: 'Service Charge %', key: 'service_charge_percent' as const, type: 'number' },
+        { label: 'Packaging Fee ₹ (takeaway/delivery)', key: 'packaging_fee' as const, type: 'number' },
       ],
     },
     {

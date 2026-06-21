@@ -82,7 +82,7 @@ pub async fn create_bill(pool: State<'_, SqlitePool>, request: CreateBillRequest
 #[tauri::command]
 pub async fn get_bills(pool: State<'_, SqlitePool>, status: Option<String>, customer_id: Option<i64>, limit: Option<i64>) -> Result<serde_json::Value, String> {
     let limit = limit.unwrap_or(50);
-    let sql_base = "SELECT b.id, b.bill_number, b.customer_id, c.name as customer_name, b.table_number, b.subtotal, b.discount_amount, b.tax_amount, b.total_amount, b.status, b.created_at FROM bills b LEFT JOIN customers c ON b.customer_id = c.id";
+    let sql_base = "SELECT b.id, b.bill_number, b.customer_id, c.name as customer_name, b.table_number, b.order_type, b.subtotal, b.discount_amount, b.tax_amount, b.packaging_fee, b.total_amount, b.status, b.created_at FROM bills b LEFT JOIN customers c ON b.customer_id = c.id";
     let rows = match (status.as_deref(), customer_id) {
         (Some(s), Some(cid)) => sqlx::query(&format!("{} WHERE b.status = ? AND b.customer_id = ? ORDER BY b.created_at DESC LIMIT ?", sql_base))
             .bind(s).bind(cid).bind(limit).fetch_all(pool.inner()).await.map_err(|e| e.to_string())?,
@@ -95,7 +95,7 @@ pub async fn get_bills(pool: State<'_, SqlitePool>, status: Option<String>, cust
     };
     let data: Vec<serde_json::Value> = rows.into_iter().map(|r| {
         let customer_name: Option<String> = r.try_get("customer_name").ok();
-        serde_json::json!({ "id": r.try_get::<i64,_>("id").unwrap_or(0), "bill_number": r.try_get::<String,_>("bill_number").unwrap_or_default(), "customer_id": r.try_get::<Option<i64>,_>("customer_id").unwrap_or(None), "customer_name": customer_name, "table_number": r.try_get::<Option<String>,_>("table_number").unwrap_or(None), "subtotal": r.try_get::<f64,_>("subtotal").unwrap_or(0.0), "discount_amount": r.try_get::<f64,_>("discount_amount").unwrap_or(0.0), "tax_amount": r.try_get::<f64,_>("tax_amount").unwrap_or(0.0), "total_amount": r.try_get::<f64,_>("total_amount").unwrap_or(0.0), "status": r.try_get::<String,_>("status").unwrap_or_default(), "created_at": r.try_get::<String,_>("created_at").unwrap_or_default() })
+        serde_json::json!({ "id": r.try_get::<i64,_>("id").unwrap_or(0), "bill_number": r.try_get::<String,_>("bill_number").unwrap_or_default(), "customer_id": r.try_get::<Option<i64>,_>("customer_id").unwrap_or(None), "customer_name": customer_name, "table_number": r.try_get::<Option<String>,_>("table_number").unwrap_or(None), "order_type": r.try_get::<String,_>("order_type").unwrap_or_else(|_| "dine_in".to_string()), "subtotal": r.try_get::<f64,_>("subtotal").unwrap_or(0.0), "discount_amount": r.try_get::<f64,_>("discount_amount").unwrap_or(0.0), "tax_amount": r.try_get::<f64,_>("tax_amount").unwrap_or(0.0), "packaging_fee": r.try_get::<f64,_>("packaging_fee").unwrap_or(0.0), "total_amount": r.try_get::<f64,_>("total_amount").unwrap_or(0.0), "status": r.try_get::<String,_>("status").unwrap_or_default(), "created_at": r.try_get::<String,_>("created_at").unwrap_or_default() })
     }).collect();
     Ok(serde_json::json!({ "success": true, "data": data }))
 }

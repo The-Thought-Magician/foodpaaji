@@ -1,0 +1,1 @@
+ALTER TABLE bills ADD COLUMN packaging_fee REAL NOT NULL DEFAULT 0.0;
