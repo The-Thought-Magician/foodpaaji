@@ -59,6 +59,19 @@ export default function MenuItems({ restaurantId, categories, onItemsChange }: P
   const [search, setSearch] = useState('')
   const [showForm, setShowForm] = useState(false)
   const [editingItem, setEditingItem] = useState<MenuItem | null>(null)
+  const [quickEditId, setQuickEditId] = useState<number | null>(null)
+  const [quickPrice, setQuickPrice] = useState('')
+
+  const saveQuickPrice = async (id: number) => {
+    const price = parseFloat(quickPrice)
+    if (!isNaN(price) && price > 0) {
+      await invoke('update_menu_item', { id, request: { price } }).catch(console.error)
+      if (selectedCategory) loadItems(selectedCategory)
+      onItemsChange()
+    }
+    setQuickEditId(null)
+    setQuickPrice('')
+  }
 
   const loadItems = useCallback(async (categoryId: number) => {
     setLoading(true)
@@ -180,7 +193,28 @@ export default function MenuItems({ restaurantId, categories, onItemsChange }: P
                   <p className="text-sm text-muted-foreground mb-3">{item.short_description}</p>
                 )}
                 <div className="flex justify-between items-center mb-2">
-                  <span className="text-lg font-bold text-green-600">{fmt(item.price)}</span>
+                  {quickEditId === item.id ? (
+                    <div className="flex items-center gap-1">
+                      <span className="text-sm text-muted-foreground">₹</span>
+                      <input
+                        autoFocus
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        className="w-24 h-7 text-sm font-bold border rounded px-2 focus:outline-none focus:ring-1 focus:ring-primary"
+                        value={quickPrice}
+                        onChange={e => setQuickPrice(e.target.value)}
+                        onBlur={() => saveQuickPrice(item.id!)}
+                        onKeyDown={e => { if (e.key === 'Enter') saveQuickPrice(item.id!); if (e.key === 'Escape') { setQuickEditId(null); setQuickPrice('') } }}
+                      />
+                    </div>
+                  ) : (
+                    <button
+                      className="text-lg font-bold text-green-600 hover:underline hover:text-green-700 transition-colors"
+                      title="Click to edit price"
+                      onClick={() => { setQuickEditId(item.id!); setQuickPrice(String(item.price)) }}
+                    >{fmt(item.price)}</button>
+                  )}
                   <button onClick={async () => { await invoke('update_menu_item', { id: item.id, request: { is_featured: !item.is_featured } }).catch(console.error); if (selectedCategory) loadItems(selectedCategory) }} className="p-0.5 rounded transition-colors hover:bg-muted">
                     <Star className={`h-4 w-4 ${item.is_featured ? 'fill-yellow-400 text-yellow-400' : 'text-muted-foreground'}`} />
                   </button>
