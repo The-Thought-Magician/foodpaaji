@@ -49,6 +49,8 @@ interface NutritionInfo { serving_size?: string; calories: number; protein: numb
 interface Variant { id: number; menu_item_id: number; name: string; description?: string; price_modifier: number; sort_order: number; is_active: boolean }
 interface ModifierOption { id: number; modifier_id: number; name: string; price_modifier: number }
 interface Modifier { id: number; menu_item_id: number; name: string; modifier_type: string; min_selections: number; max_selections: number; options: ModifierOption[] }
+interface AvailabilitySlot { id: number; menu_item_id: number; day_of_week: number; start_time: string; end_time: string; is_active: boolean }
+const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
 const ALLERGEN_PRESETS = ['Gluten', 'Dairy', 'Nuts', 'Peanuts', 'Eggs', 'Soy', 'Fish', 'Shellfish', 'Sesame']
 const SEVERITY_OPTS = [['LOW', 'Low'], ['MEDIUM', 'Medium'], ['HIGH', 'High'], ['SEVERE', 'Severe']]
 const NUTRITION_DEFAULTS: NutritionInfo = { serving_size: '', calories: 0, protein: 0, carbohydrates: 0, fat: 0, fiber: 0, sugar: 0, sodium: 0 }
@@ -67,6 +69,8 @@ export function MenuItemFormDialog({ open, editingId, initialData, categories, r
   const [newModifier, setNewModifier] = useState({ name: '', modifier_type: 'OPTIONAL' })
   const [newOptions, setNewOptions] = useState<Record<number, { name: string; price: string }>>({})
   const MOD_TYPES = [['REQUIRED', 'Required'], ['OPTIONAL', 'Optional'], ['MULTI_SELECT', 'Multi-select']]
+  const [availability, setAvailability] = useState<AvailabilitySlot[]>([])
+  const [newSlot, setNewSlot] = useState({ day_of_week: '1', start_time: '09:00', end_time: '22:00' })
 
   useEffect(() => {
     setForm(initialData)
@@ -93,6 +97,8 @@ export function MenuItemFormDialog({ open, editingId, initialData, categories, r
         .then(r => { if (r.success && r.data) setVariants(r.data) }).catch(() => {})
       invoke<{ success: boolean; data?: Modifier[] }>('get_menu_item_modifiers', { menuItemId: editingId })
         .then(r => { if (r.success && r.data) setModifiers(r.data) }).catch(() => {})
+      invoke<{ success: boolean; data?: AvailabilitySlot[] }>('get_item_availability', { menuItemId: editingId })
+        .then(r => { if (r.success && r.data) setAvailability(r.data) }).catch(() => {})
     }
   }, [open, editingId, restaurantId, initialData])
 
@@ -151,12 +157,13 @@ export function MenuItemFormDialog({ open, editingId, initialData, categories, r
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <Tabs defaultValue="basic" className="space-y-4">
-            <TabsList className={`grid w-full ${editingId ? 'grid-cols-5' : 'grid-cols-3'}`}>
-              <TabsTrigger value="basic">Basic Info</TabsTrigger>
+            <TabsList className={`grid w-full ${editingId ? 'grid-cols-6' : 'grid-cols-3'}`}>
+              <TabsTrigger value="basic">Basic</TabsTrigger>
               <TabsTrigger value="details">Details</TabsTrigger>
               <TabsTrigger value="settings">Settings</TabsTrigger>
               {editingId && <TabsTrigger value="variants">Variants</TabsTrigger>}
               {editingId && <TabsTrigger value="health">Health</TabsTrigger>}
+              {editingId && <TabsTrigger value="schedule">Schedule</TabsTrigger>}
             </TabsList>
 
             <TabsContent value="basic" className="space-y-4">
@@ -431,6 +438,49 @@ export function MenuItemFormDialog({ open, editingId, initialData, categories, r
                   <Button type="button" size="sm" className="mt-3" onClick={async () => {
                     await invoke('upsert_nutrition_info', { menuItemId: editingId, request: nutrition }).catch(console.error)
                   }}>Save Nutrition</Button>
+                </div>
+              </TabsContent>
+            )}
+            {editingId && (
+              <TabsContent value="schedule" className="space-y-4">
+                <p className="text-xs text-muted-foreground">Define when this item is available. Leave empty = always available.</p>
+                <div className="flex gap-2 items-end flex-wrap">
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium">Day</label>
+                    <Select value={newSlot.day_of_week} onValueChange={v => setNewSlot(s => ({ ...s, day_of_week: v ?? '1' }))}>
+                      <SelectTrigger className="w-32 h-8 text-xs"><SelectValue /></SelectTrigger>
+                      <SelectContent>{DAYS.map((d, i) => <SelectItem key={i} value={String(i)}>{d}</SelectItem>)}</SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium">From</label>
+                    <input type="time" className="h-8 text-xs border rounded px-2 focus:outline-none focus:ring-1 focus:ring-primary"
+                      value={newSlot.start_time} onChange={e => setNewSlot(s => ({ ...s, start_time: e.target.value }))} />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium">To</label>
+                    <input type="time" className="h-8 text-xs border rounded px-2 focus:outline-none focus:ring-1 focus:ring-primary"
+                      value={newSlot.end_time} onChange={e => setNewSlot(s => ({ ...s, end_time: e.target.value }))} />
+                  </div>
+                  <Button type="button" size="sm" className="h-8" onClick={async () => {
+                    const res = await invoke<{ success: boolean; data?: AvailabilitySlot }>('add_availability_slot', {
+                      menuItemId: editingId, request: { day_of_week: parseInt(newSlot.day_of_week), start_time: newSlot.start_time, end_time: newSlot.end_time }
+                    }).catch(() => null)
+                    if (res?.success && res.data) setAvailability(a => [...a, res.data!])
+                  }}>Add</Button>
+                </div>
+                <div className="space-y-1">
+                  {availability.length === 0 && <p className="text-xs text-muted-foreground">No restrictions set — item available all the time</p>}
+                  {availability.map(slot => (
+                    <div key={slot.id} className="flex items-center justify-between p-2 border rounded text-sm">
+                      <span className="font-medium">{DAYS[slot.day_of_week]}</span>
+                      <span className="text-muted-foreground">{slot.start_time} – {slot.end_time}</span>
+                      <button type="button" className="text-xs text-destructive" onClick={async () => {
+                        await invoke('remove_availability_slot', { slotId: slot.id }).catch(() => {})
+                        setAvailability(a => a.filter(x => x.id !== slot.id))
+                      }}>Remove</button>
+                    </div>
+                  ))}
                 </div>
               </TabsContent>
             )}
