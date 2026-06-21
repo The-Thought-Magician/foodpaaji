@@ -38,6 +38,18 @@ export function CustomerManagement() {
   const [editCustomer, setEditCustomer] = useState<Customer | null>(null)
   const [form, setForm] = useState({ name: '', phone: '', email: '', address: '', notes: '' })
   const [segment, setSegment] = useState<'all' | 'vip' | 'loyal' | 'regular' | 'new' | 'at_risk'>('all')
+  const [showAnalytics, setShowAnalytics] = useState(false)
+  const [analytics, setAnalytics] = useState<{
+    top_spenders: { id: number; name: string; phone?: string; total_spent: number; visit_count: number; avg_order_value: number }[]
+    returning_customers: number; at_risk_customers: number; retention_rate: number; churn_rate: number
+    ltv_distribution: { zero: number; low_under_500: number; mid_500_2000: number; high_2000_10000: number; vip_over_10000: number }
+    monthly_acquisition: { month: string; new_customers: number }[]
+  } | null>(null)
+
+  const loadAnalytics = async () => {
+    const res = await invoke<{ success: boolean; data: typeof analytics }>('get_customer_analytics').catch(() => null)
+    if (res?.success && res.data) setAnalytics(res.data)
+  }
   const [segmentCounts, setSegmentCounts] = useState<Record<string, number>>({})
 
   const getSegment = (c: Customer) => c.segment ?? (c.total_spent >= 10000 ? 'vip' : c.total_spent >= 5000 || c.visit_count >= 6 ? 'loyal' : c.visit_count >= 2 ? 'regular' : 'new')
@@ -163,6 +175,69 @@ export function CustomerManagement() {
           </Card>
         ))}
       </div>
+
+      <div className="flex items-center gap-2 flex-wrap">
+        <Button size="sm" variant={showAnalytics ? 'default' : 'outline'} onClick={() => { setShowAnalytics(s => !s); if (!analytics) loadAnalytics() }}>
+          <TrendingUp className="w-4 h-4 mr-1" />Analytics
+        </Button>
+      </div>
+
+      {showAnalytics && analytics && (
+        <div className="space-y-4 p-4 border rounded-xl bg-muted/30">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            {[
+              { label: 'Retention Rate', value: `${analytics.retention_rate}%`, sub: `${analytics.returning_customers} returning` },
+              { label: 'Churn Risk', value: `${analytics.churn_rate}%`, sub: `${analytics.at_risk_customers} at risk (30d)` },
+              { label: 'LTV ≥₹2000', value: (analytics.ltv_distribution.high_2000_10000 + analytics.ltv_distribution.vip_over_10000).toString(), sub: 'high-value customers' },
+              { label: 'VIP (≥₹10k)', value: analytics.ltv_distribution.vip_over_10000.toString(), sub: 'total spent >₹10,000' },
+            ].map(m => (
+              <div key={m.label} className="bg-card rounded-lg p-3 border">
+                <p className="text-xs text-muted-foreground">{m.label}</p>
+                <p className="text-xl font-bold">{m.value}</p>
+                <p className="text-xs text-muted-foreground">{m.sub}</p>
+              </div>
+            ))}
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <p className="text-sm font-medium mb-2">LTV Distribution</p>
+              <div className="space-y-1.5">
+                {[
+                  { label: 'No spend', count: analytics.ltv_distribution.zero, color: 'bg-gray-300' },
+                  { label: '< ₹500', count: analytics.ltv_distribution.low_under_500, color: 'bg-blue-300' },
+                  { label: '₹500–₹2000', count: analytics.ltv_distribution.mid_500_2000, color: 'bg-green-400' },
+                  { label: '₹2k–₹10k', count: analytics.ltv_distribution.high_2000_10000, color: 'bg-amber-400' },
+                  { label: '> ₹10k', count: analytics.ltv_distribution.vip_over_10000, color: 'bg-purple-500' },
+                ].map(b => {
+                  const total = Object.values(analytics.ltv_distribution).reduce((a, v) => a + v, 0)
+                  return (
+                    <div key={b.label} className="flex items-center gap-2 text-xs">
+                      <span className="w-16 text-muted-foreground shrink-0">{b.label}</span>
+                      <div className="flex-1 bg-muted rounded-full h-2"><div className={`h-2 rounded-full ${b.color}`} style={{ width: total > 0 ? `${(b.count / total * 100).toFixed(0)}%` : '0%' }} /></div>
+                      <span className="w-6 text-right text-muted-foreground">{b.count}</span>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+
+            <div>
+              <p className="text-sm font-medium mb-2">Top Spenders</p>
+              <div className="space-y-1">
+                {analytics.top_spenders.slice(0, 5).map((c, i) => (
+                  <div key={c.id} className="flex items-center gap-2 text-xs">
+                    <span className="w-4 text-muted-foreground">{i + 1}.</span>
+                    <span className="flex-1 font-medium truncate">{c.name}</span>
+                    <span className="text-muted-foreground">{c.visit_count}v</span>
+                    <span className="font-semibold text-green-700">₹{c.total_spent.toFixed(0)}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="flex items-center gap-4 flex-wrap">
         <div className="relative flex-1 max-w-md">

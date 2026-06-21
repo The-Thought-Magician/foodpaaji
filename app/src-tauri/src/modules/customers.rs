@@ -191,6 +191,87 @@ pub async fn get_customer_segments(pool: State<'_, SqlitePool>) -> Result<serde_
 }
 
 #[tauri::command]
+pub async fn get_customer_analytics(pool: State<'_, SqlitePool>) -> Result<serde_json::Value, String> {
+    // Top spenders
+    let top_spenders = sqlx::query(
+        "SELECT id, name, phone, total_spent, visit_count, loyalty_points,
+         ROUND(total_spent / NULLIF(visit_count, 0), 2) as avg_order_value
+         FROM customers WHERE is_active = 1 AND total_spent > 0
+         ORDER BY total_spent DESC LIMIT 10"
+    ).fetch_all(pool.inner()).await.map_err(|e| e.to_string())?;
+
+    let top_spenders_json: Vec<serde_json::Value> = top_spenders.iter().map(|r| serde_json::json!({
+        "id": r.try_get::<i64,_>("id").unwrap_or(0),
+        "name": r.try_get::<String,_>("name").unwrap_or_default(),
+        "phone": r.try_get::<Option<String>,_>("phone").unwrap_or(None),
+        "total_spent": r.try_get::<f64,_>("total_spent").unwrap_or(0.0),
+        "visit_count": r.try_get::<i64,_>("visit_count").unwrap_or(0),
+        "loyalty_points": r.try_get::<i64,_>("loyalty_points").unwrap_or(0),
+        "avg_order_value": r.try_get::<f64,_>("avg_order_value").unwrap_or(0.0),
+    })).collect();
+
+    // Retention: customers with >1 visit
+    let retention = sqlx::query(
+        "SELECT COUNT(*) as returning_customers FROM customers WHERE is_active = 1 AND visit_count > 1"
+    ).fetch_one(pool.inner()).await.map_err(|e| e.to_string())?;
+    let returning: i64 = retention.try_get("returning_customers").unwrap_or(0);
+
+    // Churn risk: active customers not seen in 30+ days
+    let churn = sqlx::query(
+        "SELECT COUNT(*) as at_risk FROM customers c
+         WHERE c.is_active = 1 AND c.visit_count > 0
+         AND (SELECT MAX(b.created_at) FROM bills b WHERE b.customer_id = c.id) < datetime('now', '-30 days')"
+    ).fetch_one(pool.inner()).await.map_err(|e| e.to_string())?;
+    let at_risk: i64 = churn.try_get("at_risk").unwrap_or(0);
+
+    // LTV distribution buckets
+    let ltv = sqlx::query(
+        "SELECT
+           COUNT(CASE WHEN total_spent = 0 THEN 1 END) as zero,
+           COUNT(CASE WHEN total_spent > 0 AND total_spent <= 500 THEN 1 END) as low,
+           COUNT(CASE WHEN total_spent > 500 AND total_spent <= 2000 THEN 1 END) as mid,
+           COUNT(CASE WHEN total_spent > 2000 AND total_spent <= 10000 THEN 1 END) as high,
+           COUNT(CASE WHEN total_spent > 10000 THEN 1 END) as vip
+         FROM customers WHERE is_active = 1"
+    ).fetch_one(pool.inner()).await.map_err(|e| e.to_string())?;
+
+    // Monthly new customers (last 6 months)
+    let monthly = sqlx::query(
+        "SELECT strftime('%Y-%m', created_at) as month, COUNT(*) as new_customers
+         FROM customers WHERE is_active = 1 AND created_at >= datetime('now', '-6 months')
+         GROUP BY month ORDER BY month ASC"
+    ).fetch_all(pool.inner()).await.map_err(|e| e.to_string())?;
+
+    let monthly_json: Vec<serde_json::Value> = monthly.iter().map(|r| serde_json::json!({
+        "month": r.try_get::<String,_>("month").unwrap_or_default(),
+        "new_customers": r.try_get::<i64,_>("new_customers").unwrap_or(0),
+    })).collect();
+
+    let total_active: i64 = sqlx::query("SELECT COUNT(*) as n FROM customers WHERE is_active = 1 AND visit_count > 0")
+        .fetch_one(pool.inner()).await.map_err(|e| e.to_string())?
+        .try_get("n").unwrap_or(1);
+
+    Ok(serde_json::json!({
+        "success": true,
+        "data": {
+            "top_spenders": top_spenders_json,
+            "returning_customers": returning,
+            "at_risk_customers": at_risk,
+            "retention_rate": if total_active > 0 { (returning as f64 / total_active as f64 * 100.0).round() } else { 0.0 },
+            "churn_rate": if total_active > 0 { (at_risk as f64 / total_active as f64 * 100.0).round() } else { 0.0 },
+            "ltv_distribution": {
+                "zero": ltv.try_get::<i64,_>("zero").unwrap_or(0),
+                "low_under_500": ltv.try_get::<i64,_>("low").unwrap_or(0),
+                "mid_500_2000": ltv.try_get::<i64,_>("mid").unwrap_or(0),
+                "high_2000_10000": ltv.try_get::<i64,_>("high").unwrap_or(0),
+                "vip_over_10000": ltv.try_get::<i64,_>("vip").unwrap_or(0),
+            },
+            "monthly_acquisition": monthly_json,
+        }
+    }))
+}
+
+#[tauri::command]
 pub async fn get_customer_stats(pool: State<'_, SqlitePool>) -> Result<serde_json::Value, String> {
     let stats = sqlx::query!(
         "SELECT COUNT(*) as total, COALESCE(SUM(total_spent), 0.0) as revenue, COALESCE(AVG(total_spent), 0.0) as avg_spend, COALESCE(SUM(loyalty_points), 0) as total_points FROM customers WHERE is_active = 1"
