@@ -112,7 +112,10 @@ export default function MenuCategories({ restaurantId, onCategoriesChange }: Pro
                   <span>{cat.sort_order}</span>
                 </div>
                 <div className="flex gap-2 pt-2">
-                  <Badge variant={cat.is_active ? 'default' : 'secondary'}>{cat.is_active ? 'Active' : 'Inactive'}</Badge>
+                  <button
+                    className={`px-2 py-0.5 rounded-full text-xs font-medium border transition-colors ${cat.is_active ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20 hover:bg-emerald-500/20' : 'bg-rose-500/10 text-rose-600 border-rose-500/20 hover:bg-rose-500/20'}`}
+                    onClick={async () => { await invoke('update_menu_category', { id: cat.id, request: { is_active: !cat.is_active } }).catch(console.error); load(); onCategoriesChange() }}
+                  >{cat.is_active ? 'Active' : 'Inactive'}</button>
                   <Badge variant={cat.display_in_menu ? 'default' : 'secondary'}>
                     {cat.display_in_menu ? <><Eye className="h-3 w-3 mr-1" />Visible</> : <><EyeOff className="h-3 w-3 mr-1" />Hidden</>}
                   </Badge>
