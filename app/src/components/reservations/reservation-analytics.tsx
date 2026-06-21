@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { invoke } from '@tauri-apps/api/core'
-import { CalendarCheck, UserX, Clock, Users } from 'lucide-react'
+import { CalendarCheck, UserX, Users } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 

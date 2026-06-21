@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent } from '@/components/ui/card'
-import { Settings, Store, CreditCard, Percent, Download, Upload, FlaskConical, Star, Languages } from 'lucide-react'
+import { Settings, Store, CreditCard, Percent, Download, Upload, FlaskConical, Star } from 'lucide-react'
 import { TranslationManager } from '@/components/settings/translation-manager'
 import { getSettings } from '@/lib/settings'
 

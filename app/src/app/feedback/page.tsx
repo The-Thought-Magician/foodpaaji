@@ -16,7 +16,6 @@ interface FeedbackEntry {
   customer_name: string | null
 }
 
-const RATING_COLOR = ['', 'text-red-500', 'text-orange-500', 'text-amber-500', 'text-lime-500', 'text-green-500']
 
 export default function FeedbackPage() {
   const [summary, setSummary] = useState<FeedbackSummary | null>(null)
