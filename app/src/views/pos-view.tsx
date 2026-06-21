@@ -12,6 +12,7 @@ import { Plus, Minus, Trash2, ShoppingCart, Receipt, Tag, Clock } from 'lucide-r
 import { MenuPicker } from '@/components/pos/menu-picker'
 import { CustomerPicker, type Customer } from '@/components/pos/customer-picker'
 import { getSettings } from '@/lib/settings'
+import { UpiQr } from '@/components/ui/upi-qr'
 
 interface CartItem {
   item_name: string
@@ -29,7 +30,6 @@ interface Order {
   notes?: string
   created_at: string
 }
-
 interface CouponResult { valid: boolean; coupon_id?: number; discount_amount?: number; final_amount?: number; error?: string }
 interface PromoResult { valid: boolean; promo_id?: number; discount_type?: string; discount_value?: number; discount_amount?: number; message?: string }
 
@@ -278,6 +278,7 @@ export function PosView() {
               <div className="flex gap-2">
                 {(['cash', 'upi', 'card'] as const).map(m => <button key={m} onClick={() => setPaymentMethod(m)} className={`flex-1 py-2 rounded-lg text-sm font-medium border capitalize ${paymentMethod === m ? 'gradient-spice text-white border-transparent' : 'border-border hover:bg-muted'}`}>{m}</button>)}
               </div>
+              {paymentMethod === 'upi' && (() => { const s = getSettings(); return s.upi_id ? <div className="flex justify-center pt-2"><UpiQr amount={0} upiId={s.upi_id} name={s.restaurant_name} note={showConvert?.order_number} size={160} /></div> : null })()}
             </div>
             <Button className="w-full gradient-spice text-white" onClick={convertToBill}>Generate Bill & Receipt</Button>
           </div>

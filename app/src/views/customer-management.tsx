@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Card, CardContent } from '@/components/ui/card'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
-import { Plus, Search, UserCircle, Star, TrendingUp, Users, Download } from 'lucide-react'
+import { Plus, Search, Star, TrendingUp, Users, Download } from 'lucide-react'
 
 interface Customer {
   id: number

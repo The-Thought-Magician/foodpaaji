@@ -154,7 +154,7 @@ export function Dashboard() {
 
       {weekRevenue.length > 0 && (() => {
         const max = Math.max(...weekRevenue.map(d => d.revenue), 1)
-        const W = 48, H = 60, GAP = 8
+        const H = 60
         return (
           <div className="bg-card rounded-2xl border border-border p-6">
             <h3 className="font-semibold text-lg mb-4">7-Day Revenue</h3>
