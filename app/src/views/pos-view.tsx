@@ -29,21 +29,8 @@ interface Order {
   created_at: string
 }
 
-interface CouponResult {
-  valid: boolean
-  coupon_id?: number
-  discount_amount?: number
-  final_amount?: number
-  error?: string
-}
-interface PromoResult {
-  valid: boolean
-  promo_id?: number
-  discount_type?: string
-  discount_value?: number
-  discount_amount?: number
-  message?: string
-}
+interface CouponResult { valid: boolean; coupon_id?: number; discount_amount?: number; final_amount?: number; error?: string }
+interface PromoResult { valid: boolean; promo_id?: number; discount_type?: string; discount_value?: number; discount_amount?: number; message?: string }
 
 const elapsed = (iso: string) => { const m = Math.floor((Date.now() - new Date(iso).getTime()) / 60000); return m < 1 ? 'just now' : m < 60 ? `${m}m ago` : `${Math.floor(m / 60)}h ${m % 60}m ago` }
 const STATUS_COLOR: Record<string, string> = {
@@ -72,6 +59,7 @@ export function PosView() {
   const [showConvert, setShowConvert] = useState<Order | null>(null)
   const [taxPercent, setTaxPercent] = useState(() => getSettings().default_tax_percent)
   const [discountPercent, setDiscountPercent] = useState(0)
+  const [paymentMethod, setPaymentMethod] = useState<'cash' | 'upi' | 'card'>('cash')
   const [showAllOrders, setShowAllOrders] = useState(false)
 
   const loadOrders = useCallback(async () => {
@@ -132,17 +120,17 @@ export function PosView() {
   const convertToBill = async () => {
     if (!showConvert) return
     try {
-      const details = await invoke<{ success: boolean; data: { items: { item_name: string; quantity: number; unit_price: number; menu_item_id?: number; notes?: string }[] } | null }>('get_order_details', { orderId: showConvert.id })
-      const res = await invoke<{ success: boolean; bill_id: number }>('convert_order_to_bill', {
-        orderId: showConvert.id, discountPercent, taxPercent
-      })
+      const [details, res] = await Promise.all([
+        invoke<{ success: boolean; data: { items: { item_name: string; quantity: number; unit_price: number; menu_item_id?: number; notes?: string }[] } | null }>('get_order_details', { orderId: showConvert.id }),
+        invoke<{ success: boolean; bill_id: number }>('convert_order_to_bill', { orderId: showConvert.id, discountPercent, taxPercent }),
+      ])
       if (res.success) {
+        await invoke('record_payment', { billId: res.bill_id, amount: 0, method: paymentMethod, upiReference: null, upiApp: null }).catch(console.error)
         const receipt = await invoke<{ success: boolean; data: { receipt_id: number; content: string; receipt_number: string } }>('generate_receipt', { billId: res.bill_id })
         if (receipt.success) setShowReceipt({ id: receipt.data.receipt_id, content: receipt.data.content, number: receipt.data.receipt_number })
         const orderItems = (details.success && details.data?.items || []).filter(i => i.menu_item_id).map(i => ({ menu_item_id: i.menu_item_id!, quantity: i.quantity, notes: i.notes ?? null }))
         if (orderItems.length > 0) await invoke('process_order_completion', { request: { restaurant_id: 1, order_id: showConvert.id, order_items: orderItems, user_id: 1 } }).catch(console.error)
-        setShowConvert(null)
-        loadOrders()
+        setShowConvert(null); loadOrders()
       }
     } catch (e) { console.error(e) }
   }
@@ -279,6 +267,12 @@ export function PosView() {
             <div className="grid grid-cols-2 gap-4">
               <div><Label>Discount %</Label><Input type="number" value={discountPercent} onChange={e => setDiscountPercent(parseFloat(e.target.value) || 0)} /></div>
               <div><Label>Tax %</Label><Input type="number" value={taxPercent} onChange={e => setTaxPercent(parseFloat(e.target.value) || 0)} /></div>
+            </div>
+            <div>
+              <Label className="text-sm mb-1 block">Payment Method</Label>
+              <div className="flex gap-2">
+                {(['cash', 'upi', 'card'] as const).map(m => <button key={m} onClick={() => setPaymentMethod(m)} className={`flex-1 py-2 rounded-lg text-sm font-medium border capitalize ${paymentMethod === m ? 'gradient-spice text-white border-transparent' : 'border-border hover:bg-muted'}`}>{m}</button>)}
+              </div>
             </div>
             <Button className="w-full gradient-spice text-white" onClick={convertToBill}>Generate Bill & Receipt</Button>
           </div>
