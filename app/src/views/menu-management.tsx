@@ -9,10 +9,11 @@ import PricingManagement from '@/components/menu/pricing-management'
 import MenuCategories from '@/components/menu/menu-categories'
 import RecipeManagement from '@/components/menu/recipe-management'
 import MenuItems from '@/components/menu/menu-items'
+import { ComboDeals } from '@/components/menu/combo-deals'
 
 const RESTAURANT_ID = 1
 
-type Tab = 'dashboard' | 'items' | 'categories' | 'pricing' | 'recipes'
+type Tab = 'dashboard' | 'items' | 'categories' | 'pricing' | 'recipes' | 'combos'
 
 const TABS: { key: Tab; label: string }[] = [
   { key: 'dashboard', label: 'Dashboard' },
@@ -20,6 +21,7 @@ const TABS: { key: Tab; label: string }[] = [
   { key: 'categories', label: 'Categories' },
   { key: 'pricing', label: 'Pricing' },
   { key: 'recipes', label: 'Recipes' },
+  { key: 'combos', label: 'Combos' },
 ]
 
 export function MenuManagement() {
@@ -52,6 +54,7 @@ export function MenuManagement() {
       {activeTab === 'categories' && <MenuCategories restaurantId={RESTAURANT_ID} onCategoriesChange={loadCategories} />}
       {activeTab === 'pricing' && <PricingManagement restaurantId={RESTAURANT_ID} categories={categories as []} onPricesChange={() => {}} />}
       {activeTab === 'recipes' && <RecipeManagement />}
+      {activeTab === 'combos' && <ComboDeals />}
     </div>
   )
 }

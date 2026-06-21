@@ -1,0 +1,17 @@
+CREATE TABLE IF NOT EXISTS combo_deals (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    restaurant_id INTEGER NOT NULL DEFAULT 1,
+    name TEXT NOT NULL,
+    description TEXT,
+    combo_price REAL NOT NULL,
+    original_price REAL NOT NULL DEFAULT 0,
+    is_active INTEGER NOT NULL DEFAULT 1,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS combo_deal_items (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    combo_id INTEGER NOT NULL REFERENCES combo_deals(id) ON DELETE CASCADE,
+    menu_item_id INTEGER NOT NULL REFERENCES menu_items(id) ON DELETE CASCADE,
+    quantity INTEGER NOT NULL DEFAULT 1
+);
