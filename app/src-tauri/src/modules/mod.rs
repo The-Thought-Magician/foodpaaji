@@ -50,3 +50,4 @@ pub mod inventory_forecast;
 pub mod combo_deals;
 pub mod menu_recommendations;
 pub mod campaigns;
+pub mod reservation_analytics;

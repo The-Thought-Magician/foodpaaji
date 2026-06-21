@@ -13,6 +13,7 @@ import { Calendar, Plus, Clock, Users, QrCode, CheckCircle, XCircle, Search, Dow
 import { TableQrManager } from '@/components/reservations/table-qr'
 import { WalkinQueue } from '@/components/reservations/walkin-queue'
 import { TableUtilizationAnalytics } from '@/components/reservations/table-utilization'
+import { ReservationAnalyticsPanel } from '@/components/reservations/reservation-analytics'
 
 interface Reservation {
   id: number
@@ -162,7 +163,12 @@ export function ReservationManagement() {
 
       {activeTab === 'walkin' && <WalkinQueue />}
       {activeTab === 'qr' && <TableQrManager />}
-      {activeTab === 'analytics' && <TableUtilizationAnalytics />}
+      {activeTab === 'analytics' && (
+        <div className="space-y-6">
+          <ReservationAnalyticsPanel />
+          <TableUtilizationAnalytics />
+        </div>
+      )}
 
       {activeTab === 'availability' && (
         <div className="space-y-4">
