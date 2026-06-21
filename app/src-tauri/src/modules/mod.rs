@@ -49,3 +49,4 @@ pub mod daily_settlement;
 pub mod inventory_forecast;
 pub mod combo_deals;
 pub mod menu_recommendations;
+pub mod campaigns;

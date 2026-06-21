@@ -1,0 +1,20 @@
+CREATE TABLE IF NOT EXISTS campaigns (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    restaurant_id INTEGER NOT NULL DEFAULT 1,
+    name TEXT NOT NULL,
+    description TEXT,
+    campaign_type TEXT NOT NULL CHECK (campaign_type IN ('discount', 'bogo', 'loyalty_bonus', 'free_item', 'custom')),
+    target_segment TEXT CHECK (target_segment IN ('all', 'vip', 'loyal', 'regular', 'new', 'at_risk')),
+    discount_percent REAL,
+    discount_amount REAL,
+    min_order_value REAL,
+    promo_code TEXT,
+    start_date TEXT NOT NULL,
+    end_date TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'draft' CHECK (status IN ('draft', 'active', 'paused', 'completed', 'cancelled')),
+    budget REAL,
+    spent REAL NOT NULL DEFAULT 0,
+    redemption_count INTEGER NOT NULL DEFAULT 0,
+    max_redemptions INTEGER,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);

@@ -52,6 +52,7 @@ use modules::daily_settlement::get_daily_settlement;
 use modules::inventory_forecast::get_inventory_forecast;
 use modules::combo_deals::{get_combo_deals, create_combo_deal, toggle_combo_deal, delete_combo_deal};
 use modules::menu_recommendations::{get_frequently_ordered_together, get_trending_items};
+use modules::campaigns::{get_campaigns, create_campaign, update_campaign_status, delete_campaign};
 use tauri::Manager;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -235,6 +236,10 @@ pub fn run() {
       delete_combo_deal,
       get_frequently_ordered_together,
       get_trending_items,
+      get_campaigns,
+      create_campaign,
+      update_campaign_status,
+      delete_campaign,
     ])
     .setup(|app| {
       let level = if cfg!(debug_assertions) { log::LevelFilter::Debug } else { log::LevelFilter::Info };
