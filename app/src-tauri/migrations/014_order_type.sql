@@ -1,0 +1,2 @@
+ALTER TABLE orders ADD COLUMN order_type TEXT NOT NULL DEFAULT 'dine_in';
+ALTER TABLE bills ADD COLUMN order_type TEXT NOT NULL DEFAULT 'dine_in';

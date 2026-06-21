@@ -26,6 +26,7 @@ interface Order {
   id: number
   order_number: string
   table_number?: string
+  order_type?: string
   status: string
   notes?: string
   created_at: string
@@ -45,6 +46,7 @@ const STATUS_COLOR: Record<string, string> = {
 export function PosView() {
   const [cart, setCart] = useState<CartItem[]>([])
   const [tableNumber, setTableNumber] = useState('')
+  const [orderType, setOrderType] = useState<'dine_in' | 'takeaway' | 'delivery'>('dine_in')
   const [tables, setTables] = useState<{ id: number; table_number: string; capacity: number }[]>([])
   const [orderNotes, setOrderNotes] = useState('')
   const [couponCode, setCouponCode] = useState('')
@@ -112,8 +114,8 @@ export function PosView() {
       }
       if (coupon?.valid && coupon.coupon_id) await invoke('apply_coupon', { couponId: coupon.coupon_id })
       if (promo?.valid && promo.promo_id) await invoke('apply_promo', { promoId: promo.promo_id })
-      await invoke('create_order', { request: { customer_id: selectedCustomer?.id ?? null, table_number: tableNumber || null, items: cart, notes: orderNotes || null } })
-      setCart([]); setTableNumber(''); setOrderNotes(''); setCouponCode(''); setCoupon(null); setPromoCode(''); setPromo(null); setSelectedCustomer(null); setCustomerSearch(''); setCustomerResults([]); loadOrders()
+      await invoke('create_order', { request: { customer_id: selectedCustomer?.id ?? null, table_number: tableNumber || null, order_type: orderType, items: cart, notes: orderNotes || null } })
+      setCart([]); setTableNumber(''); setOrderType('dine_in'); setOrderNotes(''); setCouponCode(''); setCoupon(null); setPromoCode(''); setPromo(null); setSelectedCustomer(null); setCustomerSearch(''); setCustomerResults([]); loadOrders()
     } catch (e) { console.error(e) }
   }
 
@@ -164,7 +166,15 @@ export function PosView() {
           onSelect={c => { setSelectedCustomer(c); setCustomerSearch(''); setCustomerResults([]) }}
           onClear={() => { setSelectedCustomer(null); setCustomerSearch('') }}
         />
-        {tables.length > 0 ? <select className="w-full border rounded-md px-3 py-2 text-sm bg-background" value={tableNumber} onChange={e => setTableNumber(e.target.value)}><option value="">Takeaway / No table</option>{tables.map(t => <option key={t.id} value={t.table_number}>{t.table_number} (cap {t.capacity})</option>)}</select> : <Input placeholder="Table number (e.g. T1)" value={tableNumber} onChange={e => setTableNumber(e.target.value)} />}
+        <div className="flex gap-1 mb-2">
+          {(['dine_in', 'takeaway', 'delivery'] as const).map(t => (
+            <button key={t} onClick={() => setOrderType(t)}
+              className={`flex-1 py-1.5 rounded-md text-xs font-medium border transition-colors ${orderType === t ? 'gradient-spice text-white border-transparent' : 'border-border hover:bg-muted'}`}>
+              {t === 'dine_in' ? 'Dine-in' : t === 'takeaway' ? 'Takeaway' : 'Delivery'}
+            </button>
+          ))}
+        </div>
+        {orderType === 'dine_in' && (tables.length > 0 ? <select className="w-full border rounded-md px-3 py-2 text-sm bg-background" value={tableNumber} onChange={e => setTableNumber(e.target.value)}><option value="">No table selected</option>{tables.map(t => <option key={t.id} value={t.table_number}>{t.table_number} (cap {t.capacity})</option>)}</select> : <Input placeholder="Table number (e.g. T1)" value={tableNumber} onChange={e => setTableNumber(e.target.value)} />)}
         <Input placeholder="Order notes (e.g. no onion, extra spicy)" value={orderNotes} onChange={e => setOrderNotes(e.target.value)} />
 
         <div className="flex-1 overflow-y-auto space-y-2">
@@ -230,7 +240,12 @@ export function PosView() {
                 <div className="flex items-center justify-between mb-2">
                   <div>
                     <p className="font-medium">{order.order_number}</p>
-                    <p className="text-sm text-muted-foreground">{order.table_number ? `Table ${order.table_number}` : 'Takeaway'} · <Clock className="inline w-3 h-3 mb-0.5" /> {elapsed(order.created_at)}</p>
+                    <p className="text-sm text-muted-foreground">
+                      <span className={`inline-block text-xs rounded px-1 mr-1 ${order.order_type === 'delivery' ? 'bg-purple-100 text-purple-700' : order.order_type === 'takeaway' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'}`}>
+                        {order.order_type === 'delivery' ? 'Delivery' : order.order_type === 'takeaway' ? 'Takeaway' : 'Dine-in'}
+                      </span>
+                      {order.table_number && `T${order.table_number} · `}<Clock className="inline w-3 h-3 mb-0.5" /> {elapsed(order.created_at)}
+                    </p>
                     {order.notes && <p className="text-xs text-amber-600 mt-0.5">{order.notes}</p>}
                   </div>
                   <Badge className={STATUS_COLOR[order.status] || ''}>{order.status}</Badge>

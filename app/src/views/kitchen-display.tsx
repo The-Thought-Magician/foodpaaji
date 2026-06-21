@@ -11,6 +11,7 @@ interface KitchenOrder {
   id: number
   order_number: string
   table_number?: string
+  order_type?: string
   status: string
   notes?: string
   created_at: string
@@ -227,10 +228,15 @@ export function KitchenDisplay() {
                 <Badge className={`text-xs ${BADGE_COLOR[order.status] ?? ''}`}>{order.status}</Badge>
               </div>
             </div>
-            <div className={`flex items-center gap-2 text-sm ${u === 'critical' ? 'text-red-700 font-semibold' : u === 'warning' ? 'text-orange-700' : 'opacity-70'}`}>
+            <div className={`flex items-center gap-2 text-sm flex-wrap ${u === 'critical' ? 'text-red-700 font-semibold' : u === 'warning' ? 'text-orange-700' : 'opacity-70'}`}>
               <Clock className="w-3.5 h-3.5" />
               <span>{elapsed(order.created_at)}</span>
-              {order.table_number && <span>· Table {order.table_number}</span>}
+              {order.table_number && <span>· T{order.table_number}</span>}
+              {order.order_type && order.order_type !== 'dine_in' && (
+                <span className={`text-xs rounded px-1.5 py-0.5 font-medium ${order.order_type === 'delivery' ? 'bg-purple-200 text-purple-800' : 'bg-blue-200 text-blue-800'}`}>
+                  {order.order_type === 'delivery' ? '🛵 Delivery' : '📦 Takeaway'}
+                </span>
+              )}
             </div>
             {order.notes && <p className="text-xs bg-white/50 rounded p-1.5 italic">{order.notes}</p>}
             <div className="space-y-1">

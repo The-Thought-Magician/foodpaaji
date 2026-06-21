@@ -16,6 +16,7 @@ pub struct OrderItemRequest {
 pub struct CreateOrderRequest {
     pub customer_id: Option<i64>,
     pub table_number: Option<String>,
+    pub order_type: Option<String>,
     pub items: Vec<OrderItemRequest>,
     pub notes: Option<String>,
 }
@@ -28,13 +29,12 @@ fn generate_order_number() -> String {
 #[tauri::command]
 pub async fn create_order(pool: State<'_, SqlitePool>, request: CreateOrderRequest) -> Result<serde_json::Value, String> {
     let order_number = generate_order_number();
-    let order_id = sqlx::query!(
-        "INSERT INTO orders (order_number, customer_id, table_number, notes) VALUES (?, ?, ?, ?)",
-        order_number, request.customer_id, request.table_number, request.notes
+    let order_type = request.order_type.as_deref().unwrap_or("dine_in");
+    let order_id = sqlx::query(
+        "INSERT INTO orders (order_number, customer_id, table_number, order_type, notes) VALUES (?, ?, ?, ?, ?)"
     )
-    .execute(pool.inner())
-    .await
-    .map_err(|e| e.to_string())?
+    .bind(&order_number).bind(request.customer_id).bind(&request.table_number).bind(order_type).bind(&request.notes)
+    .execute(pool.inner()).await.map_err(|e| e.to_string())?
     .last_insert_rowid();
 
     for item in &request.items {
@@ -54,24 +54,36 @@ pub async fn create_order(pool: State<'_, SqlitePool>, request: CreateOrderReque
 pub async fn get_orders(pool: State<'_, SqlitePool>, status: Option<String>, limit: Option<i64>) -> Result<serde_json::Value, String> {
     let limit = limit.unwrap_or(50);
     let rows = if let Some(s) = status {
-        sqlx::query!(
-            "SELECT id, order_number, customer_id, table_number, status, notes, created_at FROM orders WHERE status = ? ORDER BY created_at DESC LIMIT ?",
-            s, limit
+        sqlx::query(
+            "SELECT id, order_number, customer_id, table_number, order_type, status, notes, created_at FROM orders WHERE status = ? ORDER BY created_at DESC LIMIT ?"
         )
+        .bind(s).bind(limit)
         .fetch_all(pool.inner()).await.map_err(|e| e.to_string())?
         .into_iter().map(|r| serde_json::json!({
-            "id": r.id, "order_number": r.order_number, "customer_id": r.customer_id,
-            "table_number": r.table_number, "status": r.status, "notes": r.notes, "created_at": r.created_at
+            "id": r.try_get::<i64,_>("id").unwrap_or(0),
+            "order_number": r.try_get::<String,_>("order_number").unwrap_or_default(),
+            "customer_id": r.try_get::<Option<i64>,_>("customer_id").unwrap_or(None),
+            "table_number": r.try_get::<Option<String>,_>("table_number").unwrap_or(None),
+            "order_type": r.try_get::<String,_>("order_type").unwrap_or_else(|_| "dine_in".to_string()),
+            "status": r.try_get::<String,_>("status").unwrap_or_default(),
+            "notes": r.try_get::<Option<String>,_>("notes").unwrap_or(None),
+            "created_at": r.try_get::<String,_>("created_at").unwrap_or_default(),
         })).collect::<Vec<_>>()
     } else {
-        sqlx::query!(
-            "SELECT id, order_number, customer_id, table_number, status, notes, created_at FROM orders ORDER BY created_at DESC LIMIT ?",
-            limit
+        sqlx::query(
+            "SELECT id, order_number, customer_id, table_number, order_type, status, notes, created_at FROM orders ORDER BY created_at DESC LIMIT ?"
         )
+        .bind(limit)
         .fetch_all(pool.inner()).await.map_err(|e| e.to_string())?
         .into_iter().map(|r| serde_json::json!({
-            "id": r.id, "order_number": r.order_number, "customer_id": r.customer_id,
-            "table_number": r.table_number, "status": r.status, "notes": r.notes, "created_at": r.created_at
+            "id": r.try_get::<i64,_>("id").unwrap_or(0),
+            "order_number": r.try_get::<String,_>("order_number").unwrap_or_default(),
+            "customer_id": r.try_get::<Option<i64>,_>("customer_id").unwrap_or(None),
+            "table_number": r.try_get::<Option<String>,_>("table_number").unwrap_or(None),
+            "order_type": r.try_get::<String,_>("order_type").unwrap_or_else(|_| "dine_in".to_string()),
+            "status": r.try_get::<String,_>("status").unwrap_or_default(),
+            "notes": r.try_get::<Option<String>,_>("notes").unwrap_or(None),
+            "created_at": r.try_get::<String,_>("created_at").unwrap_or_default(),
         })).collect::<Vec<_>>()
     };
     Ok(serde_json::json!({ "success": true, "data": rows }))
@@ -79,32 +91,44 @@ pub async fn get_orders(pool: State<'_, SqlitePool>, status: Option<String>, lim
 
 #[tauri::command]
 pub async fn get_order_details(pool: State<'_, SqlitePool>, order_id: i64) -> Result<serde_json::Value, String> {
-    let order = sqlx::query!(
-        "SELECT id, order_number, customer_id, table_number, status, notes, created_at FROM orders WHERE id = ?",
-        order_id
+    let order = sqlx::query(
+        "SELECT id, order_number, customer_id, table_number, order_type, status, notes, created_at FROM orders WHERE id = ?"
     )
+    .bind(order_id)
     .fetch_optional(pool.inner()).await.map_err(|e| e.to_string())?;
 
     let Some(order) = order else {
         return Err("Order not found".to_string());
     };
 
-    let items = sqlx::query!(
-        "SELECT id, menu_item_id, item_name, quantity, unit_price, notes FROM order_items WHERE order_id = ?",
-        order_id
+    let items = sqlx::query(
+        "SELECT oi.id, oi.menu_item_id, oi.item_name, oi.quantity, oi.unit_price, oi.notes,
+         mi.kitchen_station FROM order_items oi LEFT JOIN menu_items mi ON oi.menu_item_id = mi.id WHERE oi.order_id = ?"
     )
+    .bind(order_id)
     .fetch_all(pool.inner()).await.map_err(|e| e.to_string())?
     .into_iter().map(|r| serde_json::json!({
-        "id": r.id, "menu_item_id": r.menu_item_id, "item_name": r.item_name,
-        "quantity": r.quantity, "unit_price": r.unit_price, "notes": r.notes
+        "id": r.try_get::<i64,_>("id").unwrap_or(0),
+        "menu_item_id": r.try_get::<Option<i64>,_>("menu_item_id").unwrap_or(None),
+        "item_name": r.try_get::<String,_>("item_name").unwrap_or_default(),
+        "quantity": r.try_get::<i64,_>("quantity").unwrap_or(1),
+        "unit_price": r.try_get::<f64,_>("unit_price").unwrap_or(0.0),
+        "notes": r.try_get::<Option<String>,_>("notes").unwrap_or(None),
+        "kitchen_station": r.try_get::<Option<String>,_>("kitchen_station").unwrap_or(None),
     })).collect::<Vec<_>>();
 
     Ok(serde_json::json!({
         "success": true,
         "data": {
-            "id": order.id, "order_number": order.order_number, "customer_id": order.customer_id,
-            "table_number": order.table_number, "status": order.status, "notes": order.notes,
-            "created_at": order.created_at, "items": items
+            "id": order.try_get::<i64,_>("id").unwrap_or(0),
+            "order_number": order.try_get::<String,_>("order_number").unwrap_or_default(),
+            "customer_id": order.try_get::<Option<i64>,_>("customer_id").unwrap_or(None),
+            "table_number": order.try_get::<Option<String>,_>("table_number").unwrap_or(None),
+            "order_type": order.try_get::<String,_>("order_type").unwrap_or_else(|_| "dine_in".to_string()),
+            "status": order.try_get::<String,_>("status").unwrap_or_default(),
+            "notes": order.try_get::<Option<String>,_>("notes").unwrap_or(None),
+            "created_at": order.try_get::<String,_>("created_at").unwrap_or_default(),
+            "items": items
         }
     }))
 }
@@ -128,11 +152,12 @@ pub async fn convert_order_to_bill(
     discount_percent: f64,
     tax_percent: f64,
 ) -> Result<serde_json::Value, String> {
-    let order_row = sqlx::query("SELECT customer_id, table_number, notes FROM orders WHERE id = ?")
+    let order_row = sqlx::query("SELECT customer_id, table_number, order_type, notes FROM orders WHERE id = ?")
         .bind(order_id).fetch_optional(pool.inner()).await.map_err(|e| e.to_string())?;
     let Some(order_row) = order_row else { return Err("Order not found".to_string()); };
     let order_customer_id: Option<i64> = order_row.try_get("customer_id").ok();
     let order_table: Option<String> = order_row.try_get("table_number").ok().flatten();
+    let order_type: String = order_row.try_get("order_type").unwrap_or_else(|_| "dine_in".to_string());
     let order_notes: Option<String> = order_row.try_get("notes").ok().flatten();
 
     let items = sqlx::query!(
@@ -150,10 +175,11 @@ pub async fn convert_order_to_bill(
     let now = Local::now();
     let bill_number = format!("BILL-{}", now.format("%Y%m%d%H%M%S"));
 
-    let bill_id = sqlx::query!(
-        "INSERT INTO bills (bill_number, customer_id, table_number, subtotal, discount_amount, discount_percent, tax_amount, tax_percent, total_amount, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-        bill_number, order_customer_id, order_table, subtotal, discount_amount, discount_percent, tax_amount, tax_percent, total_amount, order_notes
+    let bill_id = sqlx::query(
+        "INSERT INTO bills (bill_number, customer_id, table_number, order_type, subtotal, discount_amount, discount_percent, tax_amount, tax_percent, total_amount, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
     )
+    .bind(&bill_number).bind(order_customer_id).bind(&order_table).bind(&order_type)
+    .bind(subtotal).bind(discount_amount).bind(discount_percent).bind(tax_amount).bind(tax_percent).bind(total_amount).bind(&order_notes)
     .execute(pool.inner()).await.map_err(|e| e.to_string())?
     .last_insert_rowid();
 
