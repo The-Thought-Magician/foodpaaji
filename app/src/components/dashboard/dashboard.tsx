@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { invoke } from '@tauri-apps/api/core'
-import { Users, Receipt, Package, ArrowUpRight, Clock, CalendarCheck, X, Megaphone, IndianRupee, UserCheck } from 'lucide-react'
+import { Users, Receipt, Package, ArrowUpRight, Clock, CalendarCheck, X, Megaphone, IndianRupee, UserCheck, Star } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
 
@@ -17,6 +17,8 @@ interface DashboardData {
   total_customers: number
   low_stock_count: number
   today_reservations: number
+  avg_rating: number
+  total_feedback: number
 }
 
 interface Announcement {
@@ -65,7 +67,7 @@ export function Dashboard() {
     async function load() {
       try {
         const today = new Date().toISOString().split('T')[0]
-        const [summary, bills, orders, customers, alerts, reservations, anns] = await Promise.all([
+        const [summary, bills, orders, customers, alerts, reservations, anns, feedback] = await Promise.all([
           invoke<{ success: boolean; data: { today_bills: number; today_revenue: number; today_collected: number; cash_collected: number; upi_collected: number; card_collected: number } }>('get_billing_summary'),
           invoke<{ success: boolean; data: RecentBill[] }>('get_bills', { status: null, limit: 200 }),
           invoke<{ success: boolean; data: { id: number }[] }>('get_orders', { status: 'pending', limit: 50 }),
@@ -73,6 +75,7 @@ export function Dashboard() {
           invoke<{ success: boolean; data: { total_alerts: number } }>('get_alert_summary', { restaurantId: 1 }).catch(() => ({ success: false, data: { total_alerts: 0 } })),
           invoke<{ success: boolean; data: Reservation[] }>('get_reservations', { date: today, status: null }).catch(() => ({ success: false, data: [] })),
           invoke<{ success: boolean; data: Announcement[] }>('get_announcements', { activeOnly: true }).catch(() => ({ success: false, data: [] })),
+          invoke<{ success: boolean; data: { average_rating: number; total: number } }>('get_feedback_summary').catch(() => ({ success: false, data: { average_rating: 0, total: 0 } })),
         ])
 
         setData({
@@ -86,6 +89,8 @@ export function Dashboard() {
           total_customers: customers.success ? customers.data.total_customers : 0,
           low_stock_count: alerts.success ? alerts.data.total_alerts : 0,
           today_reservations: reservations.success ? reservations.data.length : 0,
+          avg_rating: feedback.success ? feedback.data.average_rating : 0,
+          total_feedback: feedback.success ? feedback.data.total : 0,
         })
         if (reservations.success) {
           const now = new Date().toTimeString().slice(0, 5)
@@ -135,6 +140,7 @@ export function Dashboard() {
     { title: 'Total Customers', value: String(data.total_customers), icon: Users, gradient: 'bg-gradient-to-br from-purple-500 to-purple-600', href: '/customers' },
     { title: 'Low Stock Items', value: String(data.low_stock_count), icon: Package, gradient: 'bg-gradient-to-br from-rose-500 to-rose-600', href: '/inventory' },
     { title: "Today's Reservations", value: String(data.today_reservations), icon: CalendarCheck, gradient: 'bg-gradient-to-br from-teal-500 to-teal-600', href: '/reservations' },
+    ...(data.total_feedback > 0 ? [{ title: 'Avg Rating (30d)', value: `${data.avg_rating.toFixed(1)} ★`, icon: Star, gradient: 'bg-gradient-to-br from-amber-400 to-amber-500', href: '/customers' }] : []),
   ] : []
 
   return (

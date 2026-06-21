@@ -8,6 +8,7 @@ import { Printer } from 'lucide-react'
 interface Bill { total_amount: number; tax_amount: number; discount_amount: number; status: string; created_at: string }
 interface PopularItem { item_name: string; order_count: number; total_revenue: number }
 interface Alert { item_name: string; alert_level: string; current_stock: number; supplier_name?: string; supplier_phone?: string }
+interface PayMethod { total: number; count: number }
 
 const fmt = (n: number) => `₹${n.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`
 const today = () => new Date().toISOString().split('T')[0]
@@ -16,20 +17,23 @@ export function EodSummary() {
   const [bills, setBills] = useState<Bill[]>([])
   const [popular, setPopular] = useState<PopularItem[]>([])
   const [alerts, setAlerts] = useState<Alert[]>([])
+  const [payMethods, setPayMethods] = useState<Record<string, PayMethod>>({})
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     const load = async () => {
       setLoading(true)
-      const [br, pr, ar] = await Promise.all([
+      const t = today()
+      const [br, pr, ar, pm] = await Promise.all([
         invoke<{ success: boolean; data: Bill[] }>('get_bills', { status: null, limit: 500 }).catch(() => ({ success: false, data: [] as Bill[] })),
         invoke<{ success: boolean; data?: PopularItem[] }>('get_popular_menu_items', { limit: 5 }).catch(() => ({ success: false, data: [] as PopularItem[] })),
         invoke<{ success: boolean; data?: { alerts: Alert[] } }>('get_low_stock_alerts', { request: { restaurant_id: 1, is_acknowledged: false, page: 1, limit: 50 } }).catch(() => ({ success: false, data: { alerts: [] } })),
+        invoke<{ success: boolean; data: Record<string, PayMethod> }>('get_payment_method_summary', { fromDate: t, toDate: t }).catch(() => ({ success: false, data: {} })),
       ])
-      const t = today()
       if (br.success) setBills((br.data as Bill[]).filter(b => b.status === 'paid' && b.created_at.slice(0, 10) === t))
       if (pr.success && pr.data) setPopular(pr.data as PopularItem[])
       if (ar.success && ar.data) setAlerts((ar.data as { alerts: Alert[] }).alerts ?? [])
+      if (pm.success) setPayMethods(pm.data)
       setLoading(false)
     }
     load()
@@ -39,8 +43,7 @@ export function EodSummary() {
   const tax = bills.reduce((s, b) => s + b.tax_amount, 0)
   const discount = bills.reduce((s, b) => s + b.discount_amount, 0)
   const dateLabel = new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
-
-  const print = () => window.print()
+  const payMethodList = (['cash', 'upi', 'card', 'wallet', 'credit'] as const).filter(m => payMethods[m])
 
   if (loading) return <div className="text-center py-16 text-muted-foreground">Loading EOD summary…</div>
 
@@ -51,7 +54,7 @@ export function EodSummary() {
           <h2 className="text-xl font-bold">End of Day Summary</h2>
           <p className="text-sm text-muted-foreground">{dateLabel}</p>
         </div>
-        <Button variant="outline" onClick={print}><Printer className="w-4 h-4 mr-2" />Print</Button>
+        <Button variant="outline" onClick={() => window.print()}><Printer className="w-4 h-4 mr-2" />Print</Button>
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -67,6 +70,21 @@ export function EodSummary() {
           </div>
         ))}
       </div>
+
+      {payMethodList.length > 0 && (
+        <div className="bg-card border rounded-xl overflow-hidden">
+          <div className="px-4 py-3 border-b"><p className="font-semibold text-sm">Payment Collection by Method</p></div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-px bg-border">
+            {payMethodList.map(m => (
+              <div key={m} className="bg-card px-4 py-3 text-center">
+                <p className="text-lg font-bold">{fmt(payMethods[m].total)}</p>
+                <p className="text-xs text-muted-foreground uppercase mt-0.5">{m}</p>
+                <p className="text-xs text-muted-foreground">{payMethods[m].count} txn{payMethods[m].count !== 1 ? 's' : ''}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {popular.length > 0 && (
         <div className="bg-card border rounded-xl overflow-hidden">
