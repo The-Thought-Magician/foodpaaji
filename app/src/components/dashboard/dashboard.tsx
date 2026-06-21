@@ -47,6 +47,7 @@ export function Dashboard() {
   const [activeOrders, setActiveOrders] = useState<number>(0)
   const [announcements, setAnnouncements] = useState<Announcement[]>([])
   const [weekRevenue, setWeekRevenue] = useState<{ date: string; revenue: number }[]>([])
+  const [topItems, setTopItems] = useState<{ item_name: string; order_count: number; total_revenue: number }[]>([])
 
   useEffect(() => {
     async function load() {
@@ -86,6 +87,7 @@ export function Dashboard() {
           setRecentBills(bills.data.slice(0, 5))
         }
         if (anns.success) setAnnouncements(anns.data)
+        invoke<{ success: boolean; data?: { item_name: string; order_count: number; total_revenue: number }[] }>('get_popular_menu_items', { limit: 5 }).then(r => { if (r.success && r.data) setTopItems(r.data) }).catch(() => {})
       } catch (e) {
         console.error(e)
       }
@@ -216,11 +218,28 @@ export function Dashboard() {
               </div>
             </div>
           ))}
-          {recentBills.length === 0 && (
-            <p className="text-center text-muted-foreground py-8 text-sm">No bills today</p>
-          )}
+          {recentBills.length === 0 && <p className="text-center text-muted-foreground py-8 text-sm">No bills today</p>}
         </div>
       </div>
+
+      {topItems.length > 0 && (
+        <div className="bg-card rounded-2xl border border-border overflow-hidden">
+          <div className="p-6 border-b border-border flex items-center justify-between">
+            <h3 className="font-semibold text-lg">Top Selling Items</h3>
+            <Link href="/reports"><Button variant="outline" size="sm"><ArrowUpRight className="w-4 h-4 mr-1" />Reports</Button></Link>
+          </div>
+          <div className="divide-y divide-border">
+            {topItems.map((item, i) => (
+              <div key={item.item_name} className="flex items-center gap-3 p-4 hover:bg-muted/50">
+                <span className="w-6 h-6 rounded-full bg-muted flex items-center justify-center text-xs font-bold shrink-0">{i + 1}</span>
+                <p className="flex-1 text-sm font-medium truncate">{item.item_name}</p>
+                <span className="text-xs text-muted-foreground shrink-0">{item.order_count} orders</span>
+                <span className="text-sm font-semibold shrink-0">₹{item.total_revenue >= 1000 ? `${(item.total_revenue / 1000).toFixed(1)}k` : item.total_revenue.toFixed(0)}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
