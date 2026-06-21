@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { Building2, Phone, Mail, MapPin, CreditCard, Plus, Edit, Eye, Search, Users } from 'lucide-react'
+import { Building2, Phone, Mail, MapPin, CreditCard, Plus, Edit, Eye, Search, Users, Download } from 'lucide-react'
 import { SupplierFormDialog, SupplierDetailsDialog, FORM_DEFAULTS, type Supplier, type SupplierFormData } from './supplier-dialogs'
 
 const RESTAURANT_ID = 1
@@ -72,7 +72,14 @@ export default function SupplierManagement() {
     <div className="space-y-6 p-6">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold">Supplier Management</h1>
-        <Button onClick={openAdd}><Plus className="h-4 w-4 mr-2" />Add New Supplier</Button>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" disabled={!filtered.length} onClick={() => {
+            const rows = ['Name,Contact,Email,Phone,Address,GSTIN,Payment Terms', ...filtered.map(s => `"${s.name}","${s.contact_person ?? ''}","${s.email ?? ''}","${s.phone ?? ''}","${s.address ?? ''}","${s.gstin ?? ''}","${s.payment_terms ?? ''}"`)]
+            const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(new Blob([rows.join('\n')], { type: 'text/csv' })), download: `suppliers-${new Date().toISOString().split('T')[0]}.csv` })
+            a.click()
+          }}><Download className="h-4 w-4 mr-1" />Export</Button>
+          <Button onClick={openAdd}><Plus className="h-4 w-4 mr-2" />Add New Supplier</Button>
+        </div>
       </div>
 
       <Card>
