@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { invoke } from '@tauri-apps/api/core'
-import { Users, Receipt, Package, ArrowUpRight, Clock, CalendarCheck } from 'lucide-react'
+import { Users, Receipt, Package, ArrowUpRight, Clock, CalendarCheck, X, Megaphone } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
 
@@ -14,6 +14,13 @@ interface DashboardData {
   total_customers: number
   low_stock_count: number
   today_reservations: number
+}
+
+interface Announcement {
+  id: number
+  title: string
+  body: string
+  priority: string
 }
 
 interface RecentBill {
@@ -35,18 +42,20 @@ export function Dashboard() {
   const [data, setData] = useState<DashboardData | null>(null)
   const [recentBills, setRecentBills] = useState<RecentBill[]>([])
   const [activeOrders, setActiveOrders] = useState<number>(0)
+  const [announcements, setAnnouncements] = useState<Announcement[]>([])
 
   useEffect(() => {
     async function load() {
       try {
         const today = new Date().toISOString().split('T')[0]
-        const [summary, bills, orders, customers, alerts, reservations] = await Promise.all([
+        const [summary, bills, orders, customers, alerts, reservations, anns] = await Promise.all([
           invoke<{ success: boolean; data: { today_bills: number; today_revenue: number; today_collected: number } }>('get_billing_summary'),
           invoke<{ success: boolean; data: RecentBill[] }>('get_bills', { status: null, limit: 5 }),
           invoke<{ success: boolean; data: { id: number }[] }>('get_orders', { status: 'pending', limit: 50 }),
           invoke<{ success: boolean; data: { total_customers: number } }>('get_customer_stats'),
           invoke<{ success: boolean; data: { total_alerts: number } }>('get_alert_summary', { restaurantId: 1 }).catch(() => ({ success: false, data: { total_alerts: 0 } })),
           invoke<{ success: boolean; data: { id: number }[] }>('get_reservations', { date: today, status: null }).catch(() => ({ success: false, data: [] })),
+          invoke<{ success: boolean; data: Announcement[] }>('get_announcements', { activeOnly: true }).catch(() => ({ success: false, data: [] })),
         ])
 
         setData({
@@ -60,12 +69,24 @@ export function Dashboard() {
         })
         setActiveOrders(orders.success ? orders.data.length : 0)
         if (bills.success) setRecentBills(bills.data)
+        if (anns.success) setAnnouncements(anns.data)
       } catch (e) {
         console.error(e)
       }
     }
     load()
   }, [])
+
+  const PRIORITY_STYLE: Record<string, string> = {
+    urgent: 'bg-red-50 border-red-300 text-red-800',
+    high: 'bg-amber-50 border-amber-300 text-amber-800',
+    normal: 'bg-blue-50 border-blue-300 text-blue-800',
+  }
+
+  const dismissAnn = async (id: number) => {
+    await invoke('dismiss_announcement', { announcementId: id }).catch(console.error)
+    setAnnouncements(prev => prev.filter(a => a.id !== id))
+  }
 
   const stats = data ? [
     { title: "Today's Revenue", value: `₹${data.today_revenue.toFixed(0)}`, icon: Receipt, gradient: 'gradient-spice' },
@@ -86,6 +107,21 @@ export function Dashboard() {
           <Button className="gradient-spice text-white"><Receipt className="w-4 h-4 mr-2" />New Order</Button>
         </Link>
       </div>
+
+      {announcements.length > 0 && (
+        <div className="space-y-2">
+          {announcements.map(a => (
+            <div key={a.id} className={`flex items-start gap-3 px-4 py-3 rounded-xl border ${PRIORITY_STYLE[a.priority] ?? PRIORITY_STYLE.normal}`}>
+              <Megaphone className="w-4 h-4 mt-0.5 shrink-0" />
+              <div className="flex-1 min-w-0">
+                <p className="font-semibold text-sm">{a.title}</p>
+                {a.body && <p className="text-xs mt-0.5 opacity-80">{a.body}</p>}
+              </div>
+              <button onClick={() => dismissAnn(a.id)} className="shrink-0 opacity-60 hover:opacity-100"><X className="w-4 h-4" /></button>
+            </div>
+          ))}
+        </div>
+      )}
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {stats.map(s => (
