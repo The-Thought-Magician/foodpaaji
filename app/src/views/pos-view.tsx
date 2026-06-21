@@ -18,6 +18,7 @@ interface CartItem {
   quantity: number
   unit_price: number
   menu_item_id?: number
+  notes?: string
 }
 
 interface Order {
@@ -66,7 +67,7 @@ export function PosView() {
   const [customerResults, setCustomerResults] = useState<Customer[]>([])
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null)
   const [showReceipt, setShowReceipt] = useState<{ id: number; content: string; number: string } | null>(null)
-  const [orderDetail, setOrderDetail] = useState<{ order_number: string; table_number?: string; status: string; notes?: string; items: { item_name: string; quantity: number; unit_price: number }[] } | null>(null)
+  const [orderDetail, setOrderDetail] = useState<{ order_number: string; table_number?: string; status: string; notes?: string; items: { item_name: string; quantity: number; unit_price: number; menu_item_id?: number; notes?: string }[] } | null>(null)
 
   const viewOrderDetails = async (orderId: number) => { try { const res = await invoke<{ success: boolean; data: typeof orderDetail }>('get_order_details', { orderId }); if (res.success && res.data) setOrderDetail(res.data) } catch (e) { console.error(e) } }
   const [showConvert, setShowConvert] = useState<Order | null>(null)
@@ -109,7 +110,7 @@ export function PosView() {
   const placeOrder = async () => {
     if (cart.length === 0 || cart.some(i => !i.item_name)) return
     try {
-      const stockItems = cart.filter(i => i.menu_item_id).map(i => ({ menu_item_id: i.menu_item_id!, quantity: i.quantity, notes: null }))
+      const stockItems = cart.filter(i => i.menu_item_id).map(i => ({ menu_item_id: i.menu_item_id!, quantity: i.quantity, notes: i.notes ?? null }))
       if (stockItems.length > 0) {
         const sv = await invoke<{ success: boolean; data?: { item_name: string; shortage: number }[] }>('validate_stock_availability', { request: { restaurant_id: 1, order_items: stockItems } }).catch(() => null)
         if (sv?.success && sv.data && sv.data.length > 0) {
@@ -128,14 +129,14 @@ export function PosView() {
   const convertToBill = async () => {
     if (!showConvert) return
     try {
-      const details = await invoke<{ success: boolean; data: { items: { item_name: string; quantity: number; unit_price: number; menu_item_id?: number }[] } | null }>('get_order_details', { orderId: showConvert.id })
+      const details = await invoke<{ success: boolean; data: { items: { item_name: string; quantity: number; unit_price: number; menu_item_id?: number; notes?: string }[] } | null }>('get_order_details', { orderId: showConvert.id })
       const res = await invoke<{ success: boolean; bill_id: number }>('convert_order_to_bill', {
         orderId: showConvert.id, discountPercent, taxPercent
       })
       if (res.success) {
         const receipt = await invoke<{ success: boolean; data: { receipt_id: number; content: string; receipt_number: string } }>('generate_receipt', { billId: res.bill_id })
         if (receipt.success) setShowReceipt({ id: receipt.data.receipt_id, content: receipt.data.content, number: receipt.data.receipt_number })
-        const orderItems = (details.success && details.data?.items || []).filter(i => i.menu_item_id).map(i => ({ menu_item_id: i.menu_item_id!, quantity: i.quantity, notes: null }))
+        const orderItems = (details.success && details.data?.items || []).filter(i => i.menu_item_id).map(i => ({ menu_item_id: i.menu_item_id!, quantity: i.quantity, notes: i.notes ?? null }))
         if (orderItems.length > 0) await invoke('process_order_completion', { request: { restaurant_id: 1, order_id: showConvert.id, order_items: orderItems, user_id: 1 } }).catch(console.error)
         setShowConvert(null)
         loadOrders()
@@ -176,18 +177,17 @@ export function PosView() {
 
         <div className="flex-1 overflow-y-auto space-y-2">
           {cart.map((item, i) => (
-            <Card key={i} className="p-3">
-              <div className="space-y-2">
-                <Input placeholder="Item name" value={item.item_name} onChange={e => updateCartItem(i, 'item_name', e.target.value)} />
-                <div className="flex items-center gap-2">
-                  <Button variant="outline" size="sm" onClick={() => changeQty(i, -1)}><Minus className="w-3 h-3" /></Button>
-                  <span className="w-8 text-center font-medium">{item.quantity}</span>
-                  <Button variant="outline" size="sm" onClick={() => changeQty(i, 1)}><Plus className="w-3 h-3" /></Button>
-                  <Input className="flex-1" type="number" placeholder="Price" value={item.unit_price || ''} onChange={e => updateCartItem(i, 'unit_price', parseFloat(e.target.value) || 0)} />
-                  <span className="text-sm font-medium w-16 text-right">₹{(item.unit_price * item.quantity).toFixed(0)}</span>
-                  <Button variant="ghost" size="sm" onClick={() => removeCartItem(i)}><Trash2 className="w-4 h-4 text-red-500" /></Button>
-                </div>
+            <Card key={i} className="p-3 space-y-1.5">
+              <Input placeholder="Item name" value={item.item_name} onChange={e => updateCartItem(i, 'item_name', e.target.value)} />
+              <div className="flex items-center gap-2">
+                <Button variant="outline" size="sm" onClick={() => changeQty(i, -1)}><Minus className="w-3 h-3" /></Button>
+                <span className="w-8 text-center font-medium">{item.quantity}</span>
+                <Button variant="outline" size="sm" onClick={() => changeQty(i, 1)}><Plus className="w-3 h-3" /></Button>
+                <Input className="flex-1" type="number" placeholder="Price" value={item.unit_price || ''} onChange={e => updateCartItem(i, 'unit_price', parseFloat(e.target.value) || 0)} />
+                <span className="text-sm font-medium w-16 text-right">₹{(item.unit_price * item.quantity).toFixed(0)}</span>
+                <Button variant="ghost" size="sm" onClick={() => removeCartItem(i)}><Trash2 className="w-4 h-4 text-red-500" /></Button>
               </div>
+              <Input className="text-xs h-7" placeholder="Item note (e.g. no garlic)" value={item.notes ?? ''} onChange={e => updateCartItem(i, 'notes', e.target.value)} />
             </Card>
           ))}
           {cart.length === 0 && <p className="text-center text-muted-foreground py-8">Cart empty — add items above</p>}
