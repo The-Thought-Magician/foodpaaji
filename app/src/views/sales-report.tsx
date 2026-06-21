@@ -19,17 +19,20 @@ export function SalesReport() {
   const [to, setTo] = useState(today)
   const [bills, setBills] = useState<Bill[]>([])
   const [popular, setPopular] = useState<PopularItem[]>([])
+  const [payMethods, setPayMethods] = useState<Record<string, { total: number; count: number }>>({})
   const [loading, setLoading] = useState(false)
 
   const load = async () => {
     setLoading(true)
     try {
-      const [br, pr] = await Promise.all([
+      const [br, pr, pm] = await Promise.all([
         invoke<{ success: boolean; data: Bill[] }>('get_bills', { status: null, limit: 2000 }),
         invoke<{ success: boolean; data?: PopularItem[] }>('get_popular_menu_items', { limit: 10 }),
+        invoke<{ success: boolean; data: Record<string, { total: number; count: number }> }>('get_payment_method_summary', { fromDate: from, toDate: to }),
       ])
       if (br.success) setBills(br.data)
       if (pr.success && pr.data) setPopular(pr.data)
+      if (pm.success) setPayMethods(pm.data)
     } catch (e) { console.error(e) }
     setLoading(false)
   }
@@ -136,6 +139,25 @@ export function SalesReport() {
           </div>
         )}
       </div>
+
+      {Object.keys(payMethods).length > 0 && (
+        <div className="bg-card rounded-2xl border border-border p-6">
+          <h3 className="font-semibold mb-4">Payment Methods</h3>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
+            {(['cash', 'upi', 'card', 'wallet', 'credit'] as const).map(m => {
+              const d = payMethods[m]
+              if (!d) return null
+              return (
+                <div key={m} className="bg-muted/50 rounded-xl p-3 text-center">
+                  <p className="text-lg font-bold">{fmt(d.total)}</p>
+                  <p className="text-xs text-muted-foreground capitalize mt-0.5">{m.toUpperCase()}</p>
+                  <p className="text-xs text-muted-foreground">{d.count} txns</p>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
 
       {totalDiscount > 0 && (
         <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 text-sm text-amber-800">

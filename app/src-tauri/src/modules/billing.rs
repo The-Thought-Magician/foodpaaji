@@ -181,3 +181,27 @@ pub async fn get_billing_summary(pool: State<'_, SqlitePool>) -> Result<serde_js
     }
     Ok(serde_json::json!({ "success": true, "data": { "today_bills": summary.total_bills, "today_revenue": summary.total_revenue, "today_collected": summary.collected, "cash_collected": cash, "upi_collected": upi, "card_collected": card } }))
 }
+
+#[tauri::command]
+pub async fn get_payment_method_summary(pool: State<'_, SqlitePool>, from_date: String, to_date: String) -> Result<serde_json::Value, String> {
+    let rows = sqlx::query(
+        "SELECT p.method, SUM(p.amount) as total, COUNT(DISTINCT p.bill_id) as bill_count
+         FROM payments p
+         JOIN bills b ON p.bill_id = b.id
+         WHERE p.status = 'completed' AND b.status = 'paid'
+           AND date(b.created_at) BETWEEN ? AND ?
+         GROUP BY p.method"
+    )
+    .bind(&from_date).bind(&to_date)
+    .fetch_all(pool.inner()).await.map_err(|e| e.to_string())?;
+
+    let mut methods: std::collections::HashMap<String, serde_json::Value> = std::collections::HashMap::new();
+    for r in rows {
+        use sqlx::Row;
+        let method: String = r.try_get("method").unwrap_or_default();
+        let total: f64 = r.try_get("total").unwrap_or(0.0);
+        let count: i64 = r.try_get("bill_count").unwrap_or(0);
+        methods.insert(method, serde_json::json!({ "total": total, "count": count }));
+    }
+    Ok(serde_json::json!({ "success": true, "data": methods }))
+}

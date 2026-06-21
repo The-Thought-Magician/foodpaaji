@@ -33,7 +33,7 @@ use modules::menu_images::{upload_menu_item_image, upload_menu_category_image};
 use modules::menu_image_management::{get_menu_image, delete_menu_item_image, delete_menu_category_image};
 use modules::pricing::{calculate_menu_item_price, update_menu_item_price};
 use modules::pricing_bulk::{bulk_calculate_prices, get_pricing_analytics, sync_cost_prices_from_recipes};
-use modules::billing::{create_bill, get_bills, get_bill_details, update_bill_status, record_payment, get_billing_summary};
+use modules::billing::{create_bill, get_bills, get_bill_details, update_bill_status, record_payment, get_billing_summary, get_payment_method_summary};
 use modules::customers::{create_customer, get_customers, get_customer, update_customer, delete_customer, add_loyalty_points, redeem_loyalty_points, get_customer_stats};
 use modules::reservations::{get_tables, create_table, create_reservation, get_reservations, update_reservation_status, update_reservation, get_table_availability};
 use modules::promotions::{create_promotion, get_promotions, validate_promo_code, apply_promo, toggle_promotion, create_announcement, get_announcements, dismiss_announcement};
@@ -135,6 +135,7 @@ pub fn run() {
       update_bill_status,
       record_payment,
       get_billing_summary,
+      get_payment_method_summary,
       create_customer,
       get_customers,
       get_customer,
