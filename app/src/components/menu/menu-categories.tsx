@@ -4,7 +4,6 @@ import { useState, useEffect, useCallback } from 'react'
 import { invoke } from '@tauri-apps/api/core'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
 import { Plus, Edit, Trash2, Eye, EyeOff } from 'lucide-react'
 import { MenuImage } from '@/components/ui/menu-image'
 import CategoryFormDialog, { type MenuCategory, type CategoryFormData } from './category-form-dialog'
@@ -116,9 +115,10 @@ export default function MenuCategories({ restaurantId, onCategoriesChange }: Pro
                     className={`px-2 py-0.5 rounded-full text-xs font-medium border transition-colors ${cat.is_active ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20 hover:bg-emerald-500/20' : 'bg-rose-500/10 text-rose-600 border-rose-500/20 hover:bg-rose-500/20'}`}
                     onClick={async () => { await invoke('update_menu_category', { id: cat.id, request: { is_active: !cat.is_active } }).catch(console.error); load(); onCategoriesChange() }}
                   >{cat.is_active ? 'Active' : 'Inactive'}</button>
-                  <Badge variant={cat.display_in_menu ? 'default' : 'secondary'}>
-                    {cat.display_in_menu ? <><Eye className="h-3 w-3 mr-1" />Visible</> : <><EyeOff className="h-3 w-3 mr-1" />Hidden</>}
-                  </Badge>
+                  <button
+                    className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border transition-colors ${cat.display_in_menu ? 'bg-blue-500/10 text-blue-600 border-blue-500/20 hover:bg-blue-500/20' : 'bg-muted text-muted-foreground border-border hover:bg-muted/80'}`}
+                    onClick={async () => { await invoke('update_menu_category', { id: cat.id, request: { display_in_menu: !cat.display_in_menu } }).catch(console.error); load(); onCategoriesChange() }}
+                  >{cat.display_in_menu ? <><Eye className="h-3 w-3" />Visible</> : <><EyeOff className="h-3 w-3" />Hidden</>}</button>
                 </div>
               </div>
             </CardContent>
