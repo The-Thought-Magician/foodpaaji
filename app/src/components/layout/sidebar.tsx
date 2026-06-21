@@ -1,7 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
+import { invoke } from '@tauri-apps/api/core'
 import {
   LayoutDashboard,
   Users,
@@ -34,8 +35,23 @@ const navItems = [
 
 export function Sidebar() {
   const [collapsed, setCollapsed] = useState(false)
+  const [lowStockCount, setLowStockCount] = useState(0)
   const pathname = usePathname()
   const router = useRouter()
+
+  const [pendingOrders, setPendingOrders] = useState(0)
+
+  useEffect(() => {
+    const fetch = async () => {
+      invoke<{ success: boolean; data: { total_alerts: number } }>('get_alert_summary', { restaurantId: 1 })
+        .then(r => { if (r.success) setLowStockCount(r.data.total_alerts) }).catch(() => {})
+      invoke<{ success: boolean; data: { id: number }[] }>('get_orders', { status: 'pending', limit: 99 })
+        .then(r => { if (r.success) setPendingOrders(r.data.length) }).catch(() => {})
+    }
+    fetch()
+    const id = setInterval(fetch, 30000)
+    return () => clearInterval(id)
+  }, [])
 
   return (
     <aside
@@ -95,7 +111,13 @@ export function Sidebar() {
               )}>
                 <Icon className={cn('w-4 h-4', isActive ? 'text-white' : '')} />
               </div>
-              {!collapsed && <span className="animate-fade-in">{item.label}</span>}
+              {!collapsed && <span className="animate-fade-in flex-1">{item.label}</span>}
+              {!collapsed && item.id === '/inventory' && lowStockCount > 0 && (
+                <span className="ml-auto text-xs bg-red-500 text-white rounded-full px-1.5 py-0.5 font-bold min-w-[18px] text-center">{lowStockCount}</span>
+              )}
+              {!collapsed && item.id === '/pos' && pendingOrders > 0 && (
+                <span className="ml-auto text-xs bg-amber-500 text-white rounded-full px-1.5 py-0.5 font-bold min-w-[18px] text-center">{pendingOrders}</span>
+              )}
             </button>
           )
         })}

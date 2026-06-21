@@ -155,8 +155,8 @@ export function BillingManagement() {
     } catch (e) { console.error(e) }
   }
   const exportCSV = () => {
-    const hdr = 'Bill#,Table,Subtotal,Discount,Tax,Total,Status,Date'
-    const rows = filteredBills.map(b => `"${b.bill_number}","${b.table_number ?? 'Takeaway'}",${b.subtotal.toFixed(2)},${b.discount_amount.toFixed(2)},${b.tax_amount.toFixed(2)},${b.total_amount.toFixed(2)},"${b.status}","${new Date(b.created_at).toLocaleString()}"`)
+    const hdr = 'Bill#,Customer,Table,Subtotal,Discount,Tax,Total,Status,Date'
+    const rows = filteredBills.map(b => `"${b.bill_number}","${b.customer_name ?? ''}","${b.table_number ?? 'Takeaway'}",${b.subtotal.toFixed(2)},${b.discount_amount.toFixed(2)},${b.tax_amount.toFixed(2)},${b.total_amount.toFixed(2)},"${b.status}","${new Date(b.created_at).toLocaleString()}"`)
     const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(new Blob([[hdr, ...rows].join('\n')], { type: 'text/csv' })), download: `bills-${new Date().toISOString().split('T')[0]}.csv` })
     a.click()
   }
