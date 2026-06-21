@@ -205,3 +205,61 @@ pub async fn get_payment_method_summary(pool: State<'_, SqlitePool>, from_date: 
     }
     Ok(serde_json::json!({ "success": true, "data": methods }))
 }
+
+#[tauri::command]
+pub async fn get_gst_report(pool: State<'_, SqlitePool>, from_date: String, to_date: String) -> Result<serde_json::Value, String> {
+    let rows = sqlx::query(
+        "SELECT
+           strftime('%Y-%m', created_at) as month,
+           tax_percent,
+           COUNT(*) as bill_count,
+           COALESCE(SUM(subtotal), 0) as taxable_value,
+           COALESCE(SUM(tax_amount), 0) as total_gst,
+           COALESCE(SUM(tax_amount) / 2, 0) as cgst,
+           COALESCE(SUM(tax_amount) / 2, 0) as sgst,
+           COALESCE(SUM(total_amount), 0) as total_with_gst
+         FROM bills
+         WHERE status = 'paid'
+           AND date(created_at) BETWEEN ? AND ?
+         GROUP BY strftime('%Y-%m', created_at), tax_percent
+         ORDER BY month DESC, tax_percent"
+    )
+    .bind(&from_date).bind(&to_date)
+    .fetch_all(pool.inner()).await.map_err(|e| e.to_string())?;
+
+    let summary = sqlx::query(
+        "SELECT
+           COUNT(*) as total_bills,
+           COALESCE(SUM(subtotal), 0) as total_taxable,
+           COALESCE(SUM(tax_amount), 0) as total_gst,
+           COALESCE(SUM(discount_amount), 0) as total_discount,
+           COALESCE(SUM(total_amount), 0) as grand_total
+         FROM bills WHERE status = 'paid' AND date(created_at) BETWEEN ? AND ?"
+    )
+    .bind(&from_date).bind(&to_date)
+    .fetch_one(pool.inner()).await.map_err(|e| e.to_string())?;
+
+    let breakdown: Vec<serde_json::Value> = rows.iter().map(|r| serde_json::json!({
+        "month": r.try_get::<String, _>("month").unwrap_or_default(),
+        "tax_percent": r.try_get::<f64, _>("tax_percent").unwrap_or(0.0),
+        "bill_count": r.try_get::<i64, _>("bill_count").unwrap_or(0),
+        "taxable_value": r.try_get::<f64, _>("taxable_value").unwrap_or(0.0),
+        "total_gst": r.try_get::<f64, _>("total_gst").unwrap_or(0.0),
+        "cgst": r.try_get::<f64, _>("cgst").unwrap_or(0.0),
+        "sgst": r.try_get::<f64, _>("sgst").unwrap_or(0.0),
+        "total_with_gst": r.try_get::<f64, _>("total_with_gst").unwrap_or(0.0),
+    })).collect();
+
+    let total_gst: f64 = summary.try_get("total_gst").unwrap_or(0.0);
+    let summary_data = serde_json::json!({
+        "total_bills": summary.try_get::<i64, _>("total_bills").unwrap_or(0),
+        "total_taxable": summary.try_get::<f64, _>("total_taxable").unwrap_or(0.0),
+        "total_gst": total_gst,
+        "cgst": total_gst / 2.0,
+        "sgst": total_gst / 2.0,
+        "total_discount": summary.try_get::<f64, _>("total_discount").unwrap_or(0.0),
+        "grand_total": summary.try_get::<f64, _>("grand_total").unwrap_or(0.0),
+    });
+
+    Ok(serde_json::json!({ "success": true, "data": { "summary": summary_data, "breakdown": breakdown } }))
+}
