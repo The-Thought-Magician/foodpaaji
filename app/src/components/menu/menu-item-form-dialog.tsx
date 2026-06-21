@@ -46,6 +46,9 @@ interface Props {
 
 interface Allergen { id: number; allergen_name: string; severity: string; notes?: string }
 interface NutritionInfo { serving_size?: string; calories: number; protein: number; carbohydrates: number; fat: number; fiber: number; sugar: number; sodium: number }
+interface Variant { id: number; menu_item_id: number; name: string; description?: string; price_modifier: number; sort_order: number; is_active: boolean }
+interface ModifierOption { id: number; modifier_id: number; name: string; price_modifier: number }
+interface Modifier { id: number; menu_item_id: number; name: string; modifier_type: string; min_selections: number; max_selections: number; options: ModifierOption[] }
 const ALLERGEN_PRESETS = ['Gluten', 'Dairy', 'Nuts', 'Peanuts', 'Eggs', 'Soy', 'Fish', 'Shellfish', 'Sesame']
 const SEVERITY_OPTS = [['LOW', 'Low'], ['MEDIUM', 'Medium'], ['HIGH', 'High'], ['SEVERE', 'Severe']]
 const NUTRITION_DEFAULTS: NutritionInfo = { serving_size: '', calories: 0, protein: 0, carbohydrates: 0, fat: 0, fiber: 0, sugar: 0, sodium: 0 }
@@ -58,6 +61,12 @@ export function MenuItemFormDialog({ open, editingId, initialData, categories, r
   const [allergens, setAllergens] = useState<Allergen[]>([])
   const [nutrition, setNutrition] = useState<NutritionInfo>(NUTRITION_DEFAULTS)
   const [newAllergen, setNewAllergen] = useState({ name: '', severity: 'MEDIUM' })
+  const [variants, setVariants] = useState<Variant[]>([])
+  const [modifiers, setModifiers] = useState<Modifier[]>([])
+  const [newVariant, setNewVariant] = useState({ name: '', price_modifier: '' })
+  const [newModifier, setNewModifier] = useState({ name: '', modifier_type: 'OPTIONAL' })
+  const [newOptions, setNewOptions] = useState<Record<number, { name: string; price: string }>>({})
+  const MOD_TYPES = [['REQUIRED', 'Required'], ['OPTIONAL', 'Optional'], ['MULTI_SELECT', 'Multi-select']]
 
   useEffect(() => {
     setForm(initialData)
@@ -80,6 +89,10 @@ export function MenuItemFormDialog({ open, editingId, initialData, categories, r
         .then(r => { if (r.success && r.data) setAllergens(r.data) }).catch(() => {})
       invoke<{ success: boolean; data?: NutritionInfo | null }>('get_nutrition_info', { menuItemId: editingId })
         .then(r => { if (r.success && r.data) setNutrition(r.data) }).catch(() => {})
+      invoke<{ success: boolean; data?: Variant[] }>('get_menu_item_variants', { menuItemId: editingId })
+        .then(r => { if (r.success && r.data) setVariants(r.data) }).catch(() => {})
+      invoke<{ success: boolean; data?: Modifier[] }>('get_menu_item_modifiers', { menuItemId: editingId })
+        .then(r => { if (r.success && r.data) setModifiers(r.data) }).catch(() => {})
     }
   }, [open, editingId, restaurantId, initialData])
 
@@ -138,10 +151,11 @@ export function MenuItemFormDialog({ open, editingId, initialData, categories, r
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <Tabs defaultValue="basic" className="space-y-4">
-            <TabsList className={`grid w-full ${editingId ? 'grid-cols-4' : 'grid-cols-3'}`}>
+            <TabsList className={`grid w-full ${editingId ? 'grid-cols-5' : 'grid-cols-3'}`}>
               <TabsTrigger value="basic">Basic Info</TabsTrigger>
               <TabsTrigger value="details">Details</TabsTrigger>
               <TabsTrigger value="settings">Settings</TabsTrigger>
+              {editingId && <TabsTrigger value="variants">Variants</TabsTrigger>}
               {editingId && <TabsTrigger value="health">Health</TabsTrigger>}
             </TabsList>
 
@@ -256,6 +270,104 @@ export function MenuItemFormDialog({ open, editingId, initialData, categories, r
                 ))}
               </div>
             </TabsContent>
+
+            {editingId && (
+              <TabsContent value="variants" className="space-y-6">
+                <div>
+                  <h3 className="font-medium mb-3">Variants <span className="text-xs text-muted-foreground font-normal">(size, portion — adds to base price)</span></h3>
+                  <div className="flex gap-2 mb-3">
+                    <Input placeholder="e.g. Large" value={newVariant.name} onChange={e => setNewVariant(v => ({ ...v, name: e.target.value }))} />
+                    <Input type="number" step="0.01" placeholder="Price +" className="w-28" value={newVariant.price_modifier}
+                      onChange={e => setNewVariant(v => ({ ...v, price_modifier: e.target.value }))} />
+                    <Button type="button" size="sm" onClick={async () => {
+                      if (!newVariant.name.trim()) return
+                      const res = await invoke<{ success: boolean; data?: Variant }>('create_menu_item_variant', {
+                        menuItemId: editingId, request: { name: newVariant.name.trim(), price_modifier: parseFloat(newVariant.price_modifier) || 0 }
+                      }).catch(() => null)
+                      if (res?.success && res.data) { setVariants(v => [...v, res.data!]); setNewVariant({ name: '', price_modifier: '' }) }
+                    }}>Add</Button>
+                  </div>
+                  <div className="space-y-1">
+                    {variants.map(v => (
+                      <div key={v.id} className="flex items-center justify-between p-2 rounded border text-sm">
+                        <span className="font-medium">{v.name}</span>
+                        <div className="flex items-center gap-3">
+                          <span className="text-muted-foreground">{v.price_modifier >= 0 ? '+' : ''}₹{v.price_modifier.toFixed(2)}</span>
+                          <button type="button" className="text-destructive hover:text-destructive/80 text-xs" onClick={async () => {
+                            await invoke('delete_menu_item_variant', { variantId: v.id }).catch(() => {})
+                            setVariants(prev => prev.filter(x => x.id !== v.id))
+                          }}>Remove</button>
+                        </div>
+                      </div>
+                    ))}
+                    {variants.length === 0 && <p className="text-xs text-muted-foreground">No variants</p>}
+                  </div>
+                </div>
+
+                <div>
+                  <h3 className="font-medium mb-3">Modifiers <span className="text-xs text-muted-foreground font-normal">(add-ons, extras)</span></h3>
+                  <div className="flex gap-2 mb-3">
+                    <Input placeholder="e.g. Extra Toppings" value={newModifier.name} onChange={e => setNewModifier(m => ({ ...m, name: e.target.value }))} />
+                    <Select value={newModifier.modifier_type} onValueChange={v => setNewModifier(m => ({ ...m, modifier_type: v ?? 'OPTIONAL' }))}>
+                      <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>
+                      <SelectContent>{MOD_TYPES.map(([v, l]) => <SelectItem key={v} value={v}>{l}</SelectItem>)}</SelectContent>
+                    </Select>
+                    <Button type="button" size="sm" onClick={async () => {
+                      if (!newModifier.name.trim()) return
+                      const res = await invoke<{ success: boolean; data?: Modifier }>('create_menu_item_modifier', {
+                        menuItemId: editingId, request: { name: newModifier.name.trim(), modifier_type: newModifier.modifier_type }
+                      }).catch(() => null)
+                      if (res?.success && res.data) { setModifiers(m => [...m, res.data!]); setNewModifier({ name: '', modifier_type: 'OPTIONAL' }) }
+                    }}>Add</Button>
+                  </div>
+                  <div className="space-y-3">
+                    {modifiers.map(mod => (
+                      <div key={mod.id} className="border rounded p-3 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <span className="font-medium text-sm">{mod.name}</span>
+                            <span className="ml-2 text-xs text-muted-foreground capitalize">{mod.modifier_type.toLowerCase().replace('_', ' ')}</span>
+                          </div>
+                          <button type="button" className="text-xs text-destructive" onClick={async () => {
+                            await invoke('delete_menu_item_modifier', { modifierId: mod.id }).catch(() => {})
+                            setModifiers(prev => prev.filter(x => x.id !== mod.id))
+                          }}>Remove</button>
+                        </div>
+                        <div className="flex flex-wrap gap-1 mb-1">
+                          {mod.options.map(opt => (
+                            <span key={opt.id} className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded bg-muted">
+                              {opt.name}{opt.price_modifier !== 0 ? ` (+₹${opt.price_modifier})` : ''}
+                              <button type="button" className="hover:text-destructive" onClick={async () => {
+                                await invoke('delete_modifier_option', { optionId: opt.id }).catch(() => {})
+                                setModifiers(prev => prev.map(m => m.id === mod.id ? { ...m, options: m.options.filter(o => o.id !== opt.id) } : m))
+                              }}>×</button>
+                            </span>
+                          ))}
+                        </div>
+                        <div className="flex gap-1">
+                          <Input placeholder="Option name" className="h-7 text-xs"
+                            value={newOptions[mod.id]?.name ?? ''} onChange={e => setNewOptions(o => ({ ...o, [mod.id]: { ...(o[mod.id] ?? { name: '', price: '' }), name: e.target.value } }))} />
+                          <Input type="number" placeholder="+price" className="h-7 text-xs w-20"
+                            value={newOptions[mod.id]?.price ?? ''} onChange={e => setNewOptions(o => ({ ...o, [mod.id]: { ...(o[mod.id] ?? { name: '', price: '' }), price: e.target.value } }))} />
+                          <Button type="button" size="sm" className="h-7 text-xs" onClick={async () => {
+                            const opt = newOptions[mod.id]
+                            if (!opt?.name?.trim()) return
+                            const res = await invoke<{ success: boolean; data?: ModifierOption }>('add_modifier_option', {
+                              modifierId: mod.id, request: { name: opt.name.trim(), price_modifier: parseFloat(opt.price) || 0 }
+                            }).catch(() => null)
+                            if (res?.success && res.data) {
+                              setModifiers(prev => prev.map(m => m.id === mod.id ? { ...m, options: [...m.options, res.data!] } : m))
+                              setNewOptions(o => ({ ...o, [mod.id]: { name: '', price: '' } }))
+                            }
+                          }}>+</Button>
+                        </div>
+                      </div>
+                    ))}
+                    {modifiers.length === 0 && <p className="text-xs text-muted-foreground">No modifiers</p>}
+                  </div>
+                </div>
+              </TabsContent>
+            )}
 
             {editingId && (
               <TabsContent value="health" className="space-y-6">

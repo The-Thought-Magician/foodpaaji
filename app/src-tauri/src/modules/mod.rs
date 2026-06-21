@@ -41,3 +41,4 @@ pub mod feedback;
 pub mod staff_shifts;
 pub mod waste_tracking;
 pub mod menu_allergens;
+pub mod menu_variants;

@@ -44,6 +44,7 @@ use modules::feedback::{create_feedback, get_customer_feedback, get_feedback_sum
 use modules::staff_shifts::{create_shift, get_shifts, delete_shift, update_shift_status};
 use modules::waste_tracking::{create_waste_entry, get_waste_entries, get_waste_summary};
 use modules::menu_allergens::{get_menu_item_allergens, add_allergen, remove_allergen, get_nutrition_info, upsert_nutrition_info};
+use modules::menu_variants::{get_menu_item_variants, create_menu_item_variant, delete_menu_item_variant, get_menu_item_modifiers, create_menu_item_modifier, delete_menu_item_modifier, add_modifier_option, delete_modifier_option};
 use tauri::Manager;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -200,6 +201,14 @@ pub fn run() {
       remove_allergen,
       get_nutrition_info,
       upsert_nutrition_info,
+      get_menu_item_variants,
+      create_menu_item_variant,
+      delete_menu_item_variant,
+      get_menu_item_modifiers,
+      create_menu_item_modifier,
+      delete_menu_item_modifier,
+      add_modifier_option,
+      delete_modifier_option,
     ])
     .setup(|app| {
       let level = if cfg!(debug_assertions) { log::LevelFilter::Debug } else { log::LevelFilter::Info };
