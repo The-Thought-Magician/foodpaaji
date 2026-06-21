@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { invoke } from '@tauri-apps/api/core'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { AlertTriangle, ChefHat, Clock, RefreshCw } from 'lucide-react'
+import { AlertTriangle, ChefHat, Clock, RefreshCw, CheckCircle2, Circle } from 'lucide-react'
 
 interface OrderItem { item_name: string; quantity: number; notes?: string; kitchen_station?: string }
 interface KitchenOrder {
@@ -31,12 +31,7 @@ const BADGE_COLOR: Record<string, string> = {
 }
 
 const elapsedMin = (iso: string) => Math.floor((Date.now() - new Date(iso).getTime()) / 60000)
-
-const elapsed = (iso: string) => {
-  const m = elapsedMin(iso)
-  return m < 1 ? 'just now' : `${m}m ago`
-}
-
+const elapsed = (iso: string) => { const m = elapsedMin(iso); return m < 1 ? 'just now' : `${m}m ago` }
 const urgency = (status: string, iso: string): 'critical' | 'warning' | 'normal' => {
   const m = elapsedMin(iso)
   if (status === 'pending' && m >= 15) return 'critical'
@@ -48,12 +43,50 @@ const urgency = (status: string, iso: string): 'critical' | 'warning' | 'normal'
 
 interface KitchenStats { total_today: number; avg_prep_min: number; completed_with_times: number; pending_count: number; preparing_count: number }
 
+function QualityCheckModal({ order, onConfirm, onCancel }: { order: KitchenOrder; onConfirm: () => void; onCancel: () => void }) {
+  const items = order.items ?? []
+  const [checked, setChecked] = useState<boolean[]>(items.map(() => false))
+  const allChecked = checked.every(Boolean)
+
+  return (
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div className="bg-card rounded-2xl shadow-xl max-w-sm w-full p-6 space-y-4">
+        <div>
+          <h3 className="text-lg font-bold">Quality Check — {order.order_number}</h3>
+          {order.table_number && <p className="text-sm text-muted-foreground">Table {order.table_number}</p>}
+        </div>
+        <p className="text-sm text-muted-foreground">Confirm each dish is plated and ready:</p>
+        <div className="space-y-2">
+          {items.map((item, i) => (
+            <button key={i} onClick={() => setChecked(c => c.map((v, j) => j === i ? !v : v))}
+              className={`w-full flex items-center gap-3 p-3 rounded-xl border text-left transition-colors ${checked[i] ? 'bg-green-50 border-green-300' : 'border-border hover:bg-muted'}`}>
+              {checked[i]
+                ? <CheckCircle2 className="w-5 h-5 text-green-600 shrink-0" />
+                : <Circle className="w-5 h-5 text-muted-foreground shrink-0" />}
+              <span className="text-sm font-medium">{item.quantity}× {item.item_name}</span>
+              {item.notes && <span className="text-xs text-muted-foreground ml-auto truncate">{item.notes}</span>}
+            </button>
+          ))}
+        </div>
+        <div className="flex gap-3 pt-2">
+          <Button className="flex-1" disabled={!allChecked} onClick={onConfirm}>
+            Mark Ready
+          </Button>
+          <Button variant="outline" onClick={onCancel}>Cancel</Button>
+        </div>
+        {!allChecked && <p className="text-xs text-center text-muted-foreground">Check all items to proceed</p>}
+      </div>
+    </div>
+  )
+}
+
 export function KitchenDisplay() {
   const [orders, setOrders] = useState<KitchenOrder[]>([])
   const [loading, setLoading] = useState(false)
   const [filter, setFilter] = useState<'all' | 'pending' | 'preparing' | 'ready'>('all')
   const [stationFilter, setStationFilter] = useState<string>('all')
   const [kitchenStats, setKitchenStats] = useState<KitchenStats | null>(null)
+  const [checkOrder, setCheckOrder] = useState<KitchenOrder | null>(null)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -86,8 +119,19 @@ export function KitchenDisplay() {
   const advance = async (order: KitchenOrder) => {
     const next = STATUS_NEXT[order.status]
     if (!next) return
+    if (order.status === 'preparing') {
+      setCheckOrder(order)
+      return
+    }
     await invoke('update_order_status', { orderId: order.id, status: next }).catch(console.error)
     setOrders(prev => prev.map(o => o.id === order.id ? { ...o, status: next } : o))
+  }
+
+  const confirmReady = async () => {
+    if (!checkOrder) return
+    await invoke('update_order_status', { orderId: checkOrder.id, status: 'ready' }).catch(console.error)
+    setOrders(prev => prev.map(o => o.id === checkOrder.id ? { ...o, status: 'ready' } : o))
+    setCheckOrder(null)
   }
 
   const filtered = orders
@@ -101,6 +145,14 @@ export function KitchenDisplay() {
 
   return (
     <div className="space-y-4">
+      {checkOrder && (
+        <QualityCheckModal
+          order={checkOrder}
+          onConfirm={confirmReady}
+          onCancel={() => setCheckOrder(null)}
+        />
+      )}
+
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <ChefHat className="w-6 h-6" />
@@ -195,8 +247,7 @@ export function KitchenDisplay() {
               ))}
             </div>
             {STATUS_NEXT[order.status] && (
-              <Button className="w-full" size="sm"
-                onClick={() => advance(order)}>
+              <Button className="w-full" size="sm" onClick={() => advance(order)}>
                 {STATUS_LABEL[order.status]} Cooking
               </Button>
             )}
