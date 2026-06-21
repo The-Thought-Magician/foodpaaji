@@ -62,6 +62,7 @@ use modules::inventory_export::export_inventory_csv;
 use modules::staff_performance::get_staff_performance;
 use modules::sales_export::export_sales_csv;
 use modules::menu_performance::get_menu_performance;
+use modules::bill_refunds::{cancel_bill, partial_refund, get_bill_refunds};
 use tauri::Manager;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -266,6 +267,9 @@ pub fn run() {
       get_staff_performance,
       export_sales_csv,
       get_menu_performance,
+      cancel_bill,
+      partial_refund,
+      get_bill_refunds,
     ])
     .setup(|app| {
       let level = if cfg!(debug_assertions) { log::LevelFilter::Debug } else { log::LevelFilter::Info };
