@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { FileText, Plus, IndianRupee, Receipt, TrendingUp, Eye, Download, Search } from 'lucide-react'
 import { UpiQr } from '@/components/ui/upi-qr'
 import { getSettings } from '@/lib/settings'
+import { BillItemRow } from '@/components/billing/bill-item-row'
 
 interface Bill {
   id: number
@@ -229,13 +230,7 @@ export function BillingManagement() {
             <div className="space-y-2">
               <Label>Items</Label>
               {items.map((item, i) => (
-                <div key={i} className="grid grid-cols-12 gap-2 items-center">
-                  <Input className="col-span-4" placeholder="Item name" value={item.item_name} onChange={e => updateItem(i, 'item_name', e.target.value)} />
-                  <Input className="col-span-2" type="number" placeholder="Qty" value={item.quantity} onChange={e => updateItem(i, 'quantity', parseInt(e.target.value) || 1)} />
-                  <Input className="col-span-3" type="number" placeholder="Price" value={item.unit_price} onChange={e => updateItem(i, 'unit_price', parseFloat(e.target.value) || 0)} />
-                  <Input className="col-span-2" type="number" placeholder="Disc" value={item.discount_amount} onChange={e => updateItem(i, 'discount_amount', parseFloat(e.target.value) || 0)} />
-                  <Button variant="ghost" size="sm" className="col-span-1" onClick={() => removeItem(i)}>✕</Button>
-                </div>
+                <BillItemRow key={i} item={item} index={i} onUpdate={updateItem} onRemove={removeItem} />
               ))}
               <Button variant="outline" size="sm" onClick={addItem}><Plus className="w-4 h-4 mr-1" />Add Item</Button>
             </div>
