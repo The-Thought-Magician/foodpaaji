@@ -11,6 +11,7 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Calendar, Plus, Clock, Users, QrCode, CheckCircle, XCircle, Search, Download } from 'lucide-react'
 import { TableQrManager } from '@/components/reservations/table-qr'
+import { WalkinQueue } from '@/components/reservations/walkin-queue'
 
 interface Reservation {
   id: number
@@ -49,7 +50,7 @@ export function ReservationManagement() {
   const [tables, setTables] = useState<Table[]>([])
   const [date, setDate] = useState(new Date().toISOString().split('T')[0])
   const [search, setSearch] = useState('')
-  const [activeTab, setActiveTab] = useState<'reservations' | 'qr' | 'availability'>('reservations')
+  const [activeTab, setActiveTab] = useState<'reservations' | 'walkin' | 'qr' | 'availability'>('reservations')
   const [availDate, setAvailDate] = useState(new Date().toISOString().split('T')[0])
   const [availTime, setAvailTime] = useState('19:00')
   const [availTables, setAvailTables] = useState<{ id: number; table_number: string; capacity: number; location?: string; available: boolean }[]>([])
@@ -144,6 +145,9 @@ export function ReservationManagement() {
         <button onClick={() => setActiveTab('reservations')} className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors ${activeTab === 'reservations' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'}`}>
           <Calendar className="w-4 h-4" />Reservations
         </button>
+        <button onClick={() => setActiveTab('walkin')} className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors ${activeTab === 'walkin' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'}`}>
+          <Users className="w-4 h-4" />Walk-in Queue
+        </button>
         <button onClick={() => setActiveTab('qr')} className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors ${activeTab === 'qr' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'}`}>
           <QrCode className="w-4 h-4" />Table QR Codes
         </button>
@@ -152,6 +156,7 @@ export function ReservationManagement() {
         </button>
       </div>
 
+      {activeTab === 'walkin' && <WalkinQueue />}
       {activeTab === 'qr' && <TableQrManager />}
 
       {activeTab === 'availability' && (

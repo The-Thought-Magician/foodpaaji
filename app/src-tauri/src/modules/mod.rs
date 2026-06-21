@@ -43,3 +43,4 @@ pub mod waste_tracking;
 pub mod menu_allergens;
 pub mod menu_variants;
 pub mod menu_availability;
+pub mod walkin_queue;
