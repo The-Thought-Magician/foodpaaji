@@ -91,10 +91,10 @@ export function CustomerManagement() {
     try {
       const [cr, br] = await Promise.all([
         invoke<{ success: boolean; data: Customer & { address?: string } }>('get_customer', { customerId: id }),
-        invoke<{ success: boolean; data: { id: number; bill_number: string; total_amount: number; status: string; created_at: string; customer_id?: number }[] }>('get_bills', { status: null, limit: 100 }),
+        invoke<{ success: boolean; data: { id: number; bill_number: string; total_amount: number; status: string; created_at: string; customer_id?: number }[] }>('get_bills', { status: null, customerId: id, limit: 20 }),
       ])
       if (cr.success && cr.data) setViewCustomer(cr.data)
-      if (br.success) setCustomerBills((br.data ?? []).filter(b => b.customer_id === id).slice(0, 5))
+      if (br.success) setCustomerBills(br.data ?? [])
     } catch (e) { console.error(e) }
   }
 

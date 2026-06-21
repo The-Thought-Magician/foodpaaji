@@ -80,15 +80,18 @@ pub async fn create_bill(pool: State<'_, SqlitePool>, request: CreateBillRequest
 }
 
 #[tauri::command]
-pub async fn get_bills(pool: State<'_, SqlitePool>, status: Option<String>, limit: Option<i64>) -> Result<serde_json::Value, String> {
+pub async fn get_bills(pool: State<'_, SqlitePool>, status: Option<String>, customer_id: Option<i64>, limit: Option<i64>) -> Result<serde_json::Value, String> {
     let limit = limit.unwrap_or(50);
     let sql_base = "SELECT b.id, b.bill_number, b.customer_id, c.name as customer_name, b.table_number, b.subtotal, b.discount_amount, b.tax_amount, b.total_amount, b.status, b.created_at FROM bills b LEFT JOIN customers c ON b.customer_id = c.id";
-    let rows = if let Some(ref s) = status {
-        sqlx::query(&format!("{} WHERE b.status = ? ORDER BY b.created_at DESC LIMIT ?", sql_base))
-            .bind(s).bind(limit).fetch_all(pool.inner()).await.map_err(|e| e.to_string())?
-    } else {
-        sqlx::query(&format!("{} ORDER BY b.created_at DESC LIMIT ?", sql_base))
-            .bind(limit).fetch_all(pool.inner()).await.map_err(|e| e.to_string())?
+    let rows = match (status.as_deref(), customer_id) {
+        (Some(s), Some(cid)) => sqlx::query(&format!("{} WHERE b.status = ? AND b.customer_id = ? ORDER BY b.created_at DESC LIMIT ?", sql_base))
+            .bind(s).bind(cid).bind(limit).fetch_all(pool.inner()).await.map_err(|e| e.to_string())?,
+        (Some(s), None) => sqlx::query(&format!("{} WHERE b.status = ? ORDER BY b.created_at DESC LIMIT ?", sql_base))
+            .bind(s).bind(limit).fetch_all(pool.inner()).await.map_err(|e| e.to_string())?,
+        (None, Some(cid)) => sqlx::query(&format!("{} WHERE b.customer_id = ? ORDER BY b.created_at DESC LIMIT ?", sql_base))
+            .bind(cid).bind(limit).fetch_all(pool.inner()).await.map_err(|e| e.to_string())?,
+        (None, None) => sqlx::query(&format!("{} ORDER BY b.created_at DESC LIMIT ?", sql_base))
+            .bind(limit).fetch_all(pool.inner()).await.map_err(|e| e.to_string())?,
     };
     let data: Vec<serde_json::Value> = rows.into_iter().map(|r| {
         let customer_name: Option<String> = r.try_get("customer_name").ok();
