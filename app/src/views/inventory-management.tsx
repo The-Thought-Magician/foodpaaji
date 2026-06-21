@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo, useCallback } from 'react'
 import { invoke } from '@tauri-apps/api/core'
 import { Button } from '@/components/ui/button'
-import { Package, Plus, Search, X, Trash2, BarChart3, ArrowLeftRight, FileText, DollarSign, Bell, Truck, Layers, History } from 'lucide-react'
+import { Package, Plus, Search, X, Trash2, BarChart3, ArrowLeftRight, FileText, DollarSign, Bell, Truck, Layers, History, Download } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import InventoryCard, { type InventoryItem } from '@/components/inventory/inventory-card'
 import WasteTracking from '@/components/inventory/waste-tracking'
@@ -91,9 +91,22 @@ export function InventoryManagement() {
           <h2 className="text-2xl font-bold" style={{ fontFamily: 'Outfit, sans-serif' }}>Inventory Management</h2>
           <p className="text-muted-foreground">Manage your restaurant inventory and stock levels</p>
         </div>
-        <Button className="gradient-spice text-white shadow-lg" onClick={() => { setEditItem(null); setShowForm(true) }}>
-          <Plus className="w-4 h-4 mr-2" />Add Item
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={async () => {
+            const res = await invoke<{ success: boolean; data: { csv: string } }>('export_inventory_csv').catch(() => null)
+            if (!res?.success) return
+            const blob = new Blob([res.data.csv], { type: 'text/csv' })
+            const url = URL.createObjectURL(blob)
+            const a = document.createElement('a')
+            a.href = url; a.download = `inventory-${new Date().toISOString().slice(0, 10)}.csv`
+            a.click(); URL.revokeObjectURL(url)
+          }}>
+            <Download className="w-4 h-4 mr-2" />Export CSV
+          </Button>
+          <Button className="gradient-spice text-white shadow-lg" onClick={() => { setEditItem(null); setShowForm(true) }}>
+            <Plus className="w-4 h-4 mr-2" />Add Item
+          </Button>
+        </div>
       </div>
 
       <div className="flex gap-1 bg-muted p-1 rounded-xl w-fit">
