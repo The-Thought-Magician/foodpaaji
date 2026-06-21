@@ -169,9 +169,9 @@ export function BillingManagement() {
       </div>
 
       <div className="flex gap-3">
-        {([['Cash', summary.cash_collected], ['UPI', summary.upi_collected], ['Card', summary.card_collected]] as [string, number][]).map(([m, v]) => (
-          <div key={m} className="flex-1 border rounded-lg p-3 text-center"><p className="text-xs text-muted-foreground">{m} today</p><p className="font-bold">₹{v.toFixed(0)}</p></div>
-        ))}
+        {([['Cash', summary.cash_collected], ['UPI', summary.upi_collected], ['Card', summary.card_collected]] as [string, number][]).map(([m, v]) => (<div key={m} className="flex-1 border rounded-lg p-3 text-center"><p className="text-xs text-muted-foreground">{m} today</p><p className="font-bold">₹{v.toFixed(0)}</p></div>))}
+        <div className="flex-1 border rounded-lg p-3 text-center bg-amber-50 border-amber-200"><p className="text-xs text-muted-foreground">GST Collected</p><p className="font-bold text-amber-700">₹{filteredBills.reduce((s, b) => s + b.tax_amount, 0).toFixed(0)}</p></div>
+        <div className="flex-1 border rounded-lg p-3 text-center bg-blue-50 border-blue-200"><p className="text-xs text-muted-foreground">Taxable Value</p><p className="font-bold text-blue-700">₹{filteredBills.reduce((s, b) => s + b.subtotal - b.discount_amount, 0).toFixed(0)}</p></div>
       </div>
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div className="flex gap-2 flex-wrap">
