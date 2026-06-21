@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { ChefHat, Plus, Edit, Trash2, Star, Image as ImageIcon, Clock, Leaf } from 'lucide-react'
+import { ChefHat, Plus, Edit, Trash2, Star, Image as ImageIcon, Clock, Leaf, Copy } from 'lucide-react'
 import { MenuItemFormDialog } from './menu-item-form-dialog'
 
 interface MenuItem {
@@ -102,6 +102,14 @@ export default function MenuItems({ restaurantId, categories, onItemsChange }: P
     } catch (e) { console.error(e) }
   }
 
+  const handleDuplicate = async (id: number) => {
+    try {
+      await invoke('duplicate_menu_item', { id })
+      if (selectedCategory) loadItems(selectedCategory)
+      onItemsChange()
+    } catch (e) { console.error(e) }
+  }
+
   const filtered = items.filter(i =>
     !search ||
     i.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -176,6 +184,9 @@ export default function MenuItems({ restaurantId, categories, onItemsChange }: P
                     <Button variant="outline" size="sm"
                       onClick={() => { setEditingItem(item); setShowForm(true) }}>
                       <Edit className="h-4 w-4" />
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => handleDuplicate(item.id!)} title="Duplicate">
+                      <Copy className="h-4 w-4" />
                     </Button>
                     <Button variant="outline" size="sm" onClick={() => handleDelete(item.id!)}>
                       <Trash2 className="h-4 w-4" />

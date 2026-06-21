@@ -1,6 +1,7 @@
 use crate::database::DbPool;
 use crate::types::ApiResponse;
 use crate::modules::menu_types::{MenuItem, CreateMenuItemRequest, UpdateMenuItemRequest, generate_slug};
+use sqlx::Row;
 use tauri::State;
 
 #[tauri::command]
@@ -125,4 +126,57 @@ pub async fn delete_menu_item(
         .bind(id).execute(&*db).await
         .map_err(|e| format!("Failed to delete menu item: {}", e))?;
     Ok(ApiResponse { success: true, data: Some("Menu item deleted successfully".to_string()), message: None, error: None })
+}
+
+#[tauri::command]
+pub async fn duplicate_menu_item(
+    id: i64,
+    db: State<'_, DbPool>,
+) -> Result<ApiResponse<MenuItem>, String> {
+    let source = sqlx::query(
+        "SELECT restaurant_id, category_id, name, description, short_description, price,
+         preparation_time, calories, is_vegetarian, is_vegan, is_gluten_free, is_spicy,
+         spice_level, is_available, is_active, is_featured, sort_order, kitchen_station
+         FROM menu_items WHERE id = ?"
+    )
+    .bind(id)
+    .fetch_optional(&*db)
+    .await
+    .map_err(|e| format!("Database error: {}", e))?
+    .ok_or_else(|| "Menu item not found".to_string())?;
+
+    let name: String = source.get("name");
+    let new_name = format!("{} (Copy)", name);
+    let slug = generate_slug(&new_name);
+
+    let result = sqlx::query(
+        "INSERT INTO menu_items (restaurant_id, category_id, name, description, short_description,
+         price, preparation_time, calories, slug, is_vegetarian, is_vegan, is_gluten_free,
+         is_spicy, spice_level, is_available, is_active, is_featured, sort_order, kitchen_station)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+    )
+    .bind(source.get::<i64, _>("restaurant_id"))
+    .bind(source.get::<Option<i64>, _>("category_id"))
+    .bind(&new_name)
+    .bind(source.get::<Option<String>, _>("description"))
+    .bind(source.get::<Option<String>, _>("short_description"))
+    .bind(source.get::<f64, _>("price"))
+    .bind(source.get::<Option<i64>, _>("preparation_time"))
+    .bind(source.get::<Option<i64>, _>("calories"))
+    .bind(&slug)
+    .bind(source.get::<bool, _>("is_vegetarian"))
+    .bind(source.get::<bool, _>("is_vegan"))
+    .bind(source.get::<bool, _>("is_gluten_free"))
+    .bind(source.get::<bool, _>("is_spicy"))
+    .bind(source.get::<i64, _>("spice_level"))
+    .bind(source.get::<bool, _>("is_available"))
+    .bind(source.get::<bool, _>("is_active"))
+    .bind(source.get::<bool, _>("is_featured"))
+    .bind(source.get::<i64, _>("sort_order"))
+    .bind(source.get::<Option<String>, _>("kitchen_station"))
+    .execute(&*db)
+    .await
+    .map_err(|e| format!("Failed to duplicate: {}", e))?;
+
+    get_menu_item_by_id(result.last_insert_rowid(), db).await
 }
