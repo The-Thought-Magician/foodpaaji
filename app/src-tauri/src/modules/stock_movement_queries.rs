@@ -154,3 +154,37 @@ pub async fn adjust_stock_level(
         Err(e) => Ok(ApiResponse { success: false, data: None, message: None, error: Some(format!("Database error: {}", e)) }),
     }
 }
+
+#[tauri::command]
+pub async fn get_expiring_stock(pool: State<'_, sqlx::SqlitePool>, restaurant_id: i64, days_ahead: Option<i64>) -> Result<serde_json::Value, String> {
+    let days = days_ahead.unwrap_or(7);
+    let rows = sqlx::query(
+        "SELECT sm.id, sm.inventory_item_id, ii.name as item_name, sm.quantity, sm.batch_number, sm.expiry_date, sm.movement_date
+         FROM stock_movements sm
+         JOIN inventory_items ii ON sm.inventory_item_id = ii.id
+         WHERE sm.restaurant_id = ?
+           AND sm.movement_type = 'IN'
+           AND sm.expiry_date IS NOT NULL
+           AND sm.expiry_date >= date('now')
+           AND sm.expiry_date <= date('now', ? || ' days')
+           AND sm.quantity > 0
+         ORDER BY sm.expiry_date ASC
+         LIMIT 50"
+    )
+    .bind(restaurant_id)
+    .bind(format!("+{}", days))
+    .fetch_all(pool.inner()).await.map_err(|e| e.to_string())?;
+
+    let data: Vec<serde_json::Value> = rows.into_iter().map(|r| {
+        use sqlx::Row;
+        serde_json::json!({
+            "id": r.try_get::<i64,_>("id").unwrap_or(0),
+            "inventory_item_id": r.try_get::<i64,_>("inventory_item_id").unwrap_or(0),
+            "item_name": r.try_get::<String,_>("item_name").unwrap_or_default(),
+            "quantity": r.try_get::<f64,_>("quantity").unwrap_or(0.0),
+            "batch_number": r.try_get::<Option<String>,_>("batch_number").unwrap_or(None),
+            "expiry_date": r.try_get::<String,_>("expiry_date").unwrap_or_default(),
+        })
+    }).collect();
+    Ok(serde_json::json!({ "success": true, "data": data }))
+}

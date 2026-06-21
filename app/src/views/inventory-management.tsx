@@ -19,6 +19,7 @@ import UnitConversions from '@/components/inventory/unit-conversions'
 import InventorySearch from '@/components/inventory/inventory-search'
 import InventoryCsvImport from '@/components/inventory/inventory-csv-import'
 import { DeleteInventoryDialog, RestockDialog, EditInventoryDialog, AdjustStockDialog } from '@/components/inventory/inventory-dialogs'
+import { ExpiringStock } from '@/components/inventory/expiring-stock'
 
 const RESTAURANT_ID = 1
 const ITEMS_PER_PAGE = 12
@@ -165,7 +166,7 @@ export function InventoryManagement() {
       {tab === 'transfers' && <InventoryTransfers />}
       {tab === 'reports' && <InventoryReports />}
       {tab === 'valuation' && <InventoryValuation />}
-      {tab === 'alerts' && <LowStockAlerts />}
+      {tab === 'alerts' && <div className="space-y-6"><ExpiringStock /><LowStockAlerts /></div>}
       {tab === 'suppliers' && <SupplierManagement />}
       {tab === 'bulk' && <BulkInventoryUpdate />}
       {tab === 'movements' && <StockMovementHistory />}
