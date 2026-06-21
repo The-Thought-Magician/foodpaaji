@@ -45,6 +45,7 @@ export function Sidebar() {
 
   useEffect(() => { setRestaurantName(getSettings().restaurant_name || 'FoodPaaji') }, [])
   const [pendingOrders, setPendingOrders] = useState(0)
+  const [preparingOrders, setPreparingOrders] = useState(0)
 
   useEffect(() => {
     const fetch = async () => {
@@ -52,6 +53,8 @@ export function Sidebar() {
         .then(r => { if (r.success) setLowStockCount(r.data.total_alerts) }).catch(() => {})
       invoke<{ success: boolean; data: { id: number }[] }>('get_orders', { status: 'pending', limit: 99 })
         .then(r => { if (r.success) setPendingOrders(r.data.length) }).catch(() => {})
+      invoke<{ success: boolean; data: { id: number }[] }>('get_orders', { status: 'preparing', limit: 99 })
+        .then(r => { if (r.success) setPreparingOrders(r.data.length) }).catch(() => {})
     }
     fetch()
     const id = setInterval(fetch, 30000)
@@ -122,6 +125,9 @@ export function Sidebar() {
               )}
               {!collapsed && item.id === '/pos' && pendingOrders > 0 && (
                 <span className="ml-auto text-xs bg-amber-500 text-white rounded-full px-1.5 py-0.5 font-bold min-w-[18px] text-center">{pendingOrders}</span>
+              )}
+              {!collapsed && item.id === '/kitchen' && preparingOrders > 0 && (
+                <span className="ml-auto text-xs bg-blue-500 text-white rounded-full px-1.5 py-0.5 font-bold min-w-[18px] text-center">{preparingOrders}</span>
               )}
             </button>
           )
