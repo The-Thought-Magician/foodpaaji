@@ -4,8 +4,9 @@ import { useState } from 'react'
 import { SalesReport } from '@/views/sales-report'
 import { EodSummary } from '@/components/reports/eod-summary'
 import { GstReport } from '@/components/reports/gst-report'
+import { HourlySales } from '@/components/reports/hourly-sales'
 
-type Tab = 'sales' | 'eod' | 'gst'
+type Tab = 'sales' | 'eod' | 'gst' | 'hourly'
 
 export default function ReportsPage() {
   const [tab, setTab] = useState<Tab>('sales')
@@ -13,6 +14,7 @@ export default function ReportsPage() {
     { key: 'sales', label: 'Sales Report' },
     { key: 'eod', label: 'End of Day' },
     { key: 'gst', label: 'GST Report' },
+    { key: 'hourly', label: 'Peak Hours' },
   ]
   return (
     <div className="space-y-4">
@@ -27,6 +29,7 @@ export default function ReportsPage() {
       {tab === 'sales' && <SalesReport />}
       {tab === 'eod' && <EodSummary />}
       {tab === 'gst' && <GstReport />}
+      {tab === 'hourly' && <HourlySales />}
     </div>
   )
 }

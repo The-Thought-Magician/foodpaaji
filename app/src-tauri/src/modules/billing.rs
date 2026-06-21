@@ -263,3 +263,29 @@ pub async fn get_gst_report(pool: State<'_, SqlitePool>, from_date: String, to_d
 
     Ok(serde_json::json!({ "success": true, "data": { "summary": summary_data, "breakdown": breakdown } }))
 }
+
+#[tauri::command]
+pub async fn get_hourly_sales(pool: State<'_, SqlitePool>, from_date: String, to_date: String) -> Result<serde_json::Value, String> {
+    let rows = sqlx::query(
+        "SELECT
+           CAST(strftime('%H', created_at) AS INTEGER) as hour,
+           COUNT(*) as bill_count,
+           COALESCE(SUM(total_amount), 0) as revenue,
+           COALESCE(AVG(total_amount), 0) as avg_bill
+         FROM bills
+         WHERE status = 'paid' AND date(created_at) BETWEEN ? AND ?
+         GROUP BY hour
+         ORDER BY hour"
+    )
+    .bind(&from_date).bind(&to_date)
+    .fetch_all(pool.inner()).await.map_err(|e| e.to_string())?;
+
+    let data: Vec<serde_json::Value> = rows.iter().map(|r| serde_json::json!({
+        "hour": r.try_get::<i64, _>("hour").unwrap_or(0),
+        "bill_count": r.try_get::<i64, _>("bill_count").unwrap_or(0),
+        "revenue": r.try_get::<f64, _>("revenue").unwrap_or(0.0),
+        "avg_bill": r.try_get::<f64, _>("avg_bill").unwrap_or(0.0),
+    })).collect();
+
+    Ok(serde_json::json!({ "success": true, "data": data }))
+}
