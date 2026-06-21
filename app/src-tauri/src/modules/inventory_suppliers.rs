@@ -85,6 +85,41 @@ pub async fn create_supplier(
     }
 }
 
+#[tauri::command]
+pub async fn update_supplier(
+    supplier_id: i64,
+    request: CreateSupplierRequest,
+    db: State<'_, DbPool>,
+) -> Result<ApiResponse<Supplier>, String> {
+    match sqlx::query(
+        "UPDATE suppliers SET name = ?, contact_person = ?, email = ?, phone = ?,
+         address = ?, gstin = ?, payment_terms = ?, updated_at = datetime('now') WHERE id = ?"
+    )
+    .bind(&request.name).bind(&request.contact_person).bind(&request.email).bind(&request.phone)
+    .bind(&request.address).bind(&request.gstin).bind(&request.payment_terms).bind(supplier_id)
+    .execute(&*db).await
+    {
+        Ok(_) => match get_supplier_by_id(supplier_id, &db).await {
+            Ok(sup) => Ok(ApiResponse { success: true, data: Some(sup), message: Some("Supplier updated".to_string()), error: None }),
+            Err(e) => Ok(ApiResponse { success: false, data: None, message: None, error: Some(e) }),
+        },
+        Err(e) => Ok(ApiResponse { success: false, data: None, message: None, error: Some(format!("Database error: {}", e)) }),
+    }
+}
+
+#[tauri::command]
+pub async fn delete_supplier(
+    supplier_id: i64,
+    db: State<'_, DbPool>,
+) -> Result<ApiResponse<()>, String> {
+    match sqlx::query("UPDATE suppliers SET is_active = 0, updated_at = datetime('now') WHERE id = ?")
+        .bind(supplier_id).execute(&*db).await
+    {
+        Ok(_) => Ok(ApiResponse { success: true, data: None, message: Some("Supplier removed".to_string()), error: None }),
+        Err(e) => Ok(ApiResponse { success: false, data: None, message: None, error: Some(format!("Database error: {}", e)) }),
+    }
+}
+
 async fn get_supplier_by_id(id: i64, db: &DbPool) -> Result<Supplier, String> {
     sqlx::query_as::<_, Supplier>(
         "SELECT id, restaurant_id, name, contact_person, email, phone, address,

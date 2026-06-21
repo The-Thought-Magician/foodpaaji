@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { Building2, Phone, Mail, MapPin, CreditCard, Plus, Edit, Eye, Search, Users, Download } from 'lucide-react'
+import { Building2, Phone, Mail, MapPin, CreditCard, Plus, Edit, Eye, Search, Users, Download, Trash2 } from 'lucide-react'
 import { SupplierFormDialog, SupplierDetailsDialog, FORM_DEFAULTS, type Supplier, type SupplierFormData } from './supplier-dialogs'
 
 const RESTAURANT_ID = 1
@@ -62,10 +62,20 @@ export default function SupplierManagement() {
         gstin: data.gstin.trim().toUpperCase() || undefined,
         payment_terms: data.payment_terms.trim() || undefined,
       }
-      const res = await invoke<{ success: boolean }>('create_supplier', { request })
+      const cmd = isEditing && selected ? 'update_supplier' : 'create_supplier'
+      const args = isEditing && selected ? { supplierId: selected.id, request } : { request }
+      const res = await invoke<{ success: boolean }>(cmd, args)
       if (res.success) { setShowForm(false); load() }
     } catch (e) { console.error(e) }
     finally { setLoading(false) }
+  }
+
+  const handleDelete = async (s: Supplier) => {
+    if (!confirm(`Remove supplier "${s.name}"?`)) return
+    try {
+      await invoke('delete_supplier', { supplierId: s.id })
+      load()
+    } catch (e) { console.error(e) }
   }
 
   return (
@@ -147,6 +157,7 @@ export default function SupplierManagement() {
                         <div className="flex gap-2">
                           <Button size="sm" variant="outline" onClick={() => { setSelected(s); setShowDetails(true) }}><Eye className="h-3 w-3" /></Button>
                           <Button size="sm" variant="outline" onClick={() => openEdit(s)}><Edit className="h-3 w-3" /></Button>
+                          <Button size="sm" variant="outline" className="text-destructive hover:bg-destructive/10" onClick={() => handleDelete(s)}><Trash2 className="h-3 w-3" /></Button>
                         </div>
                       </TableCell>
                     </TableRow>
