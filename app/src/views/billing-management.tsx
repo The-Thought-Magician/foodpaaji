@@ -73,6 +73,8 @@ export function BillingManagement() {
   const [feedbackBill, setFeedbackBill] = useState<Bill | null>(null)
   const [feedbackRating, setFeedbackRating] = useState(0)
   const [feedbackComment, setFeedbackComment] = useState('')
+  const [splitBill, setSplitBill] = useState<Bill | null>(null)
+  const [splitPeople, setSplitPeople] = useState(2)
   const viewDetails = async (bill: Bill) => {
     try {
       const res = await invoke<{ success: boolean; data: { items: BillDetailItem[]; payments: BillPayment[] } }>('get_bill_details', { billId: bill.id })
@@ -295,6 +297,7 @@ export function BillingManagement() {
             {showDetails?.payments && showDetails.payments.length > 0 && <div><p className="text-sm font-medium mb-1">Payments</p>{showDetails.payments.map((p, i) => <div key={i} className="flex justify-between text-sm text-muted-foreground"><span>{p.method.toUpperCase()} · {new Date(p.paid_at).toLocaleString()}</span><span>₹{p.amount.toFixed(2)}</span></div>)}</div>}
             <div className="flex gap-2">
               <Button variant="outline" className="flex-1" onClick={async () => { if (!showDetails) return; const res = await invoke<{ success: boolean; data: { content: string } }>('get_receipt', { billId: showDetails.bill.id }).catch(() => null); if (res?.success) { const w = window.open('', '_blank'); if (w) { w.document.write(`<pre style="font-family:monospace">${res.data.content}</pre>`); w.print() } } }}><Receipt className="w-4 h-4 mr-2" />Reprint</Button>
+              <Button variant="outline" className="flex-1" onClick={() => { if (!showDetails) return; setSplitPeople(2); setSplitBill(showDetails.bill); setShowDetails(null) }}>Split Bill</Button>
               {showDetails?.bill.status === 'paid' && <Button variant="outline" className="flex-1 text-yellow-600 border-yellow-300 hover:bg-yellow-50" onClick={() => { if (!showDetails || !confirm('Mark this bill as refunded?')) return; updateBillStatus(showDetails.bill.id, 'refunded'); setShowDetails(null) }}>Mark Refunded</Button>}
             </div>
           </div>
@@ -328,6 +331,39 @@ export function BillingManagement() {
                 setFeedbackBill(null)
               }}>Submit</Button>
             </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!splitBill} onOpenChange={() => setSplitBill(null)}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader><DialogTitle>Split Bill — {splitBill?.bill_number}</DialogTitle></DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="flex items-center gap-3">
+              <Label className="shrink-0">Number of people</Label>
+              <div className="flex items-center gap-2">
+                <button onClick={() => setSplitPeople(p => Math.max(2, p - 1))} className="w-8 h-8 rounded-full border flex items-center justify-center text-lg font-medium hover:bg-muted">−</button>
+                <span className="w-8 text-center font-bold text-lg">{splitPeople}</span>
+                <button onClick={() => setSplitPeople(p => Math.min(20, p + 1))} className="w-8 h-8 rounded-full border flex items-center justify-center text-lg font-medium hover:bg-muted">+</button>
+              </div>
+            </div>
+            {splitBill && (
+              <div className="bg-muted/40 rounded-xl p-4 space-y-2">
+                <div className="flex justify-between text-sm text-muted-foreground"><span>Bill total</span><span>₹{splitBill.total_amount.toFixed(2)}</span></div>
+                <div className="flex justify-between text-sm text-muted-foreground"><span>Per person (subtotal share)</span><span>₹{(splitBill.subtotal / splitPeople).toFixed(2)}</span></div>
+                {splitBill.tax_amount > 0 && <div className="flex justify-between text-sm text-muted-foreground"><span>GST per person</span><span>₹{(splitBill.tax_amount / splitPeople).toFixed(2)}</span></div>}
+                <div className="flex justify-between font-bold border-t pt-2"><span>Each pays</span><span className="text-green-700">₹{(splitBill.total_amount / splitPeople).toFixed(2)}</span></div>
+              </div>
+            )}
+            <div className="grid gap-2">
+              {Array.from({ length: splitPeople }, (_, i) => (
+                <div key={i} className="flex justify-between items-center px-4 py-2 bg-card border rounded-lg text-sm">
+                  <span className="text-muted-foreground">Person {i + 1}</span>
+                  <span className="font-semibold">₹{splitBill ? (splitBill.total_amount / splitPeople).toFixed(2) : '0.00'}</span>
+                </div>
+              ))}
+            </div>
+            <Button variant="outline" className="w-full" onClick={() => setSplitBill(null)}>Done</Button>
           </div>
         </DialogContent>
       </Dialog>
