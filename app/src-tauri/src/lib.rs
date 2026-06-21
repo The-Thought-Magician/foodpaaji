@@ -40,7 +40,7 @@ use modules::promotions::{create_promotion, get_promotions, validate_promo_code,
 use modules::orders::{create_order, get_orders, get_order_details, update_order_status, convert_order_to_bill, get_kitchen_stats};
 use modules::receipts::{generate_receipt, mark_receipt_printed, get_receipt};
 use modules::coupons::{create_coupon, validate_coupon, apply_coupon, get_coupons, toggle_coupon, get_coupon_analytics};
-use modules::feedback::{create_feedback, get_customer_feedback, get_feedback_summary};
+use modules::feedback::{create_feedback, get_customer_feedback, get_feedback_summary, get_all_feedback};
 use modules::staff_shifts::{create_shift, get_shifts, delete_shift, update_shift_status};
 use modules::waste_tracking::{create_waste_entry, get_waste_entries, get_waste_summary};
 use modules::menu_allergens::{get_menu_item_allergens, add_allergen, remove_allergen, get_nutrition_info, upsert_nutrition_info};
@@ -215,6 +215,7 @@ pub fn run() {
       create_feedback,
       get_customer_feedback,
       get_feedback_summary,
+      get_all_feedback,
       create_shift,
       get_shifts,
       delete_shift,

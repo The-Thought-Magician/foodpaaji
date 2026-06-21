@@ -70,3 +70,32 @@ pub async fn get_feedback_summary(pool: State<'_, SqlitePool>) -> Result<serde_j
         "negative": row.try_get::<i64, _>("negative").unwrap_or(0),
     }}))
 }
+
+#[tauri::command]
+pub async fn get_all_feedback(
+    pool: State<'_, SqlitePool>, limit: Option<i64>,
+) -> Result<serde_json::Value, String> {
+    let limit = limit.unwrap_or(100);
+    let rows = sqlx::query(
+        "SELECT cf.id, cf.rating, cf.comment, cf.created_at, cf.bill_id,
+           b.bill_number, c.name as customer_name
+         FROM customer_feedback cf
+         LEFT JOIN bills b ON cf.bill_id = b.id
+         LEFT JOIN customers c ON cf.customer_id = c.id
+         ORDER BY cf.created_at DESC LIMIT ?"
+    )
+    .bind(limit)
+    .fetch_all(pool.inner()).await.map_err(|e| e.to_string())?;
+
+    let data: Vec<serde_json::Value> = rows.iter().map(|r| serde_json::json!({
+        "id": r.try_get::<i64, _>("id").unwrap_or(0),
+        "rating": r.try_get::<i64, _>("rating").unwrap_or(0),
+        "comment": r.try_get::<Option<String>, _>("comment").unwrap_or(None),
+        "created_at": r.try_get::<String, _>("created_at").unwrap_or_default(),
+        "bill_id": r.try_get::<Option<i64>, _>("bill_id").unwrap_or(None),
+        "bill_number": r.try_get::<Option<String>, _>("bill_number").unwrap_or(None),
+        "customer_name": r.try_get::<Option<String>, _>("customer_name").unwrap_or(None),
+    })).collect();
+
+    Ok(serde_json::json!({ "success": true, "data": data }))
+}

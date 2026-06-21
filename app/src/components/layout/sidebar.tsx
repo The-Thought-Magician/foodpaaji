@@ -20,6 +20,7 @@ import {
   FileText,
   ChefHat,
   BarChart2,
+  MessageSquare,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -34,6 +35,7 @@ const navItems = [
   { id: '/menu', label: 'Menu', icon: Utensils },
   { id: '/reservations', label: 'Reservations', icon: Calendar },
   { id: '/promotions', label: 'Promotions', icon: Megaphone },
+  { id: '/feedback', label: 'Feedback', icon: MessageSquare },
   { id: '/reports', label: 'Reports', icon: BarChart2 },
   { id: '/settings', label: 'Settings', icon: Settings },
 ]
