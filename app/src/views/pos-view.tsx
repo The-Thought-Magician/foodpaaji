@@ -45,6 +45,7 @@ const STATUS_COLOR: Record<string, string> = {
 export function PosView() {
   const [cart, setCart] = useState<CartItem[]>([])
   const [tableNumber, setTableNumber] = useState('')
+  const [tables, setTables] = useState<{ id: number; table_number: string; capacity: number }[]>([])
   const [orderNotes, setOrderNotes] = useState('')
   const [couponCode, setCouponCode] = useState('')
   const [coupon, setCoupon] = useState<CouponResult | null>(null)
@@ -76,6 +77,7 @@ export function PosView() {
     return () => clearInterval(t)
   }, [loadOrders])
 
+  useEffect(() => { invoke<{ success: boolean; data: typeof tables }>('get_tables', { restaurantId: 1 }).then(r => { if (r.success) setTables(r.data) }).catch(() => {}) }, [])
   const searchCustomers = async (q: string) => {
     setCustomerSearch(q)
     if (!q.trim()) { setCustomerResults([]); return }
@@ -92,13 +94,11 @@ export function PosView() {
   const couponDiscount = coupon?.valid ? (coupon.discount_amount ?? 0) : 0
   const promoDiscount = promo?.valid ? (promo.discount_amount ?? 0) : 0
   const taxable = subtotal - couponDiscount - promoDiscount
-
   const validatePromo = async () => { if (!promoCode.trim()) return; try { setPromo(await invoke<PromoResult>('validate_promo_code', { code: promoCode, orderAmount: subtotal })) } catch (e) { console.error(e) } }
   const serviceChargePct = getSettings().service_charge_percent
   const taxAmt = taxable * taxPercent / 100
   const serviceChargeAmt = taxable * serviceChargePct / 100
   const total = taxable + taxAmt + serviceChargeAmt
-
   const validateCoupon = async () => { if (!couponCode.trim()) return; try { setCoupon(await invoke<CouponResult>('validate_coupon', { code: couponCode, orderAmount: subtotal })) } catch (e) { console.error(e) } }
 
   const placeOrder = async () => {
@@ -166,7 +166,7 @@ export function PosView() {
           onSelect={c => { setSelectedCustomer(c); setCustomerSearch(''); setCustomerResults([]) }}
           onClear={() => { setSelectedCustomer(null); setCustomerSearch('') }}
         />
-        <Input placeholder="Table number (e.g. T1)" value={tableNumber} onChange={e => setTableNumber(e.target.value)} />
+        {tables.length > 0 ? <select className="w-full border rounded-md px-3 py-2 text-sm bg-background" value={tableNumber} onChange={e => setTableNumber(e.target.value)}><option value="">Takeaway / No table</option>{tables.map(t => <option key={t.id} value={t.table_number}>{t.table_number} (cap {t.capacity})</option>)}</select> : <Input placeholder="Table number (e.g. T1)" value={tableNumber} onChange={e => setTableNumber(e.target.value)} />}
         <Input placeholder="Order notes (e.g. no onion, extra spicy)" value={orderNotes} onChange={e => setOrderNotes(e.target.value)} />
 
         <div className="flex-1 overflow-y-auto space-y-2">
