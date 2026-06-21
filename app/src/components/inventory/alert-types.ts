@@ -3,6 +3,8 @@ export interface LowStockAlert {
   inventory_item_id: number
   item_name: string
   item_sku?: string
+  supplier_name?: string
+  supplier_phone?: string
   alert_level: string
   current_stock: number
   threshold_stock: number

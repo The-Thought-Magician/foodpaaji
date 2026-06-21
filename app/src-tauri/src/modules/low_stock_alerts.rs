@@ -29,6 +29,8 @@ pub struct AlertWithItem {
     pub inventory_item_id: i64,
     pub item_name: String,
     pub item_sku: Option<String>,
+    pub supplier_name: Option<String>,
+    pub supplier_phone: Option<String>,
     pub alert_level: String,
     pub current_stock: f64,
     pub threshold_stock: f64,
@@ -58,11 +60,13 @@ pub async fn get_low_stock_alerts(
     let offset = (page - 1) * limit;
 
     let mut query = "SELECT lsa.id, lsa.restaurant_id, lsa.inventory_item_id,
-                     ii.name as item_name, ii.sku as item_sku, lsa.alert_level,
-                     lsa.current_stock, lsa.threshold_stock, lsa.is_acknowledged,
-                     lsa.acknowledged_by, lsa.acknowledged_at, lsa.created_at
+                     ii.name as item_name, ii.sku as item_sku,
+                     s.name as supplier_name, s.phone as supplier_phone,
+                     lsa.alert_level, lsa.current_stock, lsa.threshold_stock,
+                     lsa.is_acknowledged, lsa.acknowledged_by, lsa.acknowledged_at, lsa.created_at
                      FROM low_stock_alerts lsa
                      JOIN inventory_items ii ON lsa.inventory_item_id = ii.id
+                     LEFT JOIN suppliers s ON ii.supplier_id = s.id
                      WHERE lsa.restaurant_id = ?".to_string();
 
     let mut count_query = "SELECT COUNT(*) FROM low_stock_alerts lsa

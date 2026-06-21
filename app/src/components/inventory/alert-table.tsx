@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { AlertTriangle, CheckCircle, Circle, Package } from 'lucide-react'
+import { AlertTriangle, CheckCircle, Circle, Package, Phone } from 'lucide-react'
 import { alertLevelColor, formatAlertDate, type LowStockAlert, type AlertFilters } from './alert-types'
 
 const AlertIcon = ({ level }: { level: string }) => {
@@ -73,6 +73,7 @@ export function AlertTable({ alerts, selected, totalRecords, filters, loading, o
                 <TableCell>
                   <div className="font-medium">{alert.item_name}</div>
                   {alert.item_sku && <div className="text-xs text-muted-foreground">SKU: {alert.item_sku}</div>}
+                  {alert.supplier_name && <div className="text-xs text-blue-600 flex items-center gap-1 mt-0.5"><Phone className="h-3 w-3" />{alert.supplier_name}{alert.supplier_phone ? ` · ${alert.supplier_phone}` : ''}</div>}
                 </TableCell>
                 <TableCell>
                   <Badge className={`flex items-center gap-1 w-fit ${alertLevelColor(alert.alert_level)}`}>
