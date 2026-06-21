@@ -188,9 +188,15 @@ export default function MenuItems({ restaurantId, categories, onItemsChange }: P
                   {item.is_spicy && <Badge variant="secondary" className="text-xs bg-red-100 text-red-800">🌶️ {item.spice_level}/5</Badge>}
                 </div>
                 <div className="flex gap-2">
-                  <Badge variant={item.is_available ? 'default' : 'secondary'}>
-                    {item.is_available ? 'Available' : 'Unavailable'}
-                  </Badge>
+                  <button
+                    className={`px-2 py-0.5 rounded-full text-xs font-medium border transition-colors ${item.is_available ? 'bg-green-100 text-green-800 border-green-200 hover:bg-green-200' : 'bg-rose-100 text-rose-700 border-rose-200 hover:bg-rose-200'}`}
+                    onClick={async () => {
+                      await invoke('update_menu_item', { id: item.id, request: { is_available: !item.is_available } }).catch(console.error)
+                      if (selectedCategory) loadItems(selectedCategory)
+                    }}
+                  >
+                    {item.is_available ? 'Available' : 'Sold Out'}
+                  </button>
                   <Badge variant={item.is_active ? 'default' : 'secondary'}>
                     {item.is_active ? 'Active' : 'Inactive'}
                   </Badge>
