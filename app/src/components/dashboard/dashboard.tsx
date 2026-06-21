@@ -43,6 +43,7 @@ export function Dashboard() {
   const [recentBills, setRecentBills] = useState<RecentBill[]>([])
   const [activeOrders, setActiveOrders] = useState<number>(0)
   const [announcements, setAnnouncements] = useState<Announcement[]>([])
+  const [weekRevenue, setWeekRevenue] = useState<{ date: string; revenue: number }[]>([])
 
   useEffect(() => {
     async function load() {
@@ -50,7 +51,7 @@ export function Dashboard() {
         const today = new Date().toISOString().split('T')[0]
         const [summary, bills, orders, customers, alerts, reservations, anns] = await Promise.all([
           invoke<{ success: boolean; data: { today_bills: number; today_revenue: number; today_collected: number } }>('get_billing_summary'),
-          invoke<{ success: boolean; data: RecentBill[] }>('get_bills', { status: null, limit: 5 }),
+          invoke<{ success: boolean; data: RecentBill[] }>('get_bills', { status: null, limit: 200 }),
           invoke<{ success: boolean; data: { id: number }[] }>('get_orders', { status: 'pending', limit: 50 }),
           invoke<{ success: boolean; data: { total_customers: number } }>('get_customer_stats'),
           invoke<{ success: boolean; data: { total_alerts: number } }>('get_alert_summary', { restaurantId: 1 }).catch(() => ({ success: false, data: { total_alerts: 0 } })),
@@ -68,7 +69,16 @@ export function Dashboard() {
           today_reservations: reservations.success ? reservations.data.length : 0,
         })
         setActiveOrders(orders.success ? orders.data.length : 0)
-        if (bills.success) setRecentBills(bills.data)
+        if (bills.success) {
+          const days = Array.from({ length: 7 }, (_, i) => {
+            const d = new Date(); d.setDate(d.getDate() - (6 - i))
+            return d.toISOString().split('T')[0]
+          })
+          const byDate = Object.fromEntries(days.map(d => [d, 0]))
+          bills.data.forEach(b => { const d = b.created_at.split('T')[0]; if (d in byDate) byDate[d] += b.total_amount })
+          setWeekRevenue(days.map(d => ({ date: d, revenue: byDate[d] })))
+          setRecentBills(bills.data.slice(0, 5))
+        }
         if (anns.success) setAnnouncements(anns.data)
       } catch (e) {
         console.error(e)
@@ -141,6 +151,27 @@ export function Dashboard() {
           <div key={i} className="bg-card rounded-2xl p-6 border border-border animate-pulse h-32" />
         ))}
       </div>
+
+      {weekRevenue.length > 0 && (() => {
+        const max = Math.max(...weekRevenue.map(d => d.revenue), 1)
+        const W = 48, H = 60, GAP = 8
+        return (
+          <div className="bg-card rounded-2xl border border-border p-6">
+            <h3 className="font-semibold text-lg mb-4">7-Day Revenue</h3>
+            <div className="flex items-end gap-2">
+              {weekRevenue.map((d, i) => (
+                <div key={i} className="flex-1 flex flex-col items-center gap-1">
+                  <span className="text-xs text-muted-foreground">₹{d.revenue >= 1000 ? `${(d.revenue/1000).toFixed(1)}k` : d.revenue.toFixed(0)}</span>
+                  <div className="w-full rounded-t-sm bg-primary/20 relative" style={{ height: `${H}px` }}>
+                    <div className="absolute bottom-0 left-0 right-0 rounded-t-sm gradient-spice transition-all" style={{ height: `${Math.max(4, (d.revenue / max) * H)}px` }} />
+                  </div>
+                  <span className="text-xs text-muted-foreground">{new Date(d.date + 'T00:00:00').toLocaleDateString('en-IN', { weekday: 'short' })}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )
+      })()}
 
       <div className="bg-card rounded-2xl border border-border overflow-hidden">
         <div className="p-6 border-b border-border flex items-center justify-between">
