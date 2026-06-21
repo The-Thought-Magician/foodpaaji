@@ -31,6 +31,7 @@ export function CustomerManagement() {
   const [customers, setCustomers] = useState<Customer[]>([])
   const [stats, setStats] = useState<CustomerStats>({ total_customers: 0, total_revenue: 0, avg_spend: 0, total_loyalty_points: 0 })
   const [search, setSearch] = useState('')
+  const [sortBy, setSortBy] = useState<'name' | 'total_spent' | 'visit_count' | 'loyalty_points'>('name')
   const [showForm, setShowForm] = useState(false)
   const [editCustomer, setEditCustomer] = useState<Customer | null>(null)
   const [form, setForm] = useState({ name: '', phone: '', email: '', address: '' })
@@ -111,6 +112,8 @@ export function CustomerManagement() {
     } catch (e) { console.error(e) }
   }
 
+  const sorted = [...customers].sort((a, b) => sortBy === 'name' ? a.name.localeCompare(b.name) : b[sortBy] - a[sortBy])
+
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-4 gap-4">
@@ -129,16 +132,23 @@ export function CustomerManagement() {
         ))}
       </div>
 
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-4 flex-wrap">
         <div className="relative flex-1 max-w-md">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input className="pl-10" placeholder="Search by name or phone..." value={search} onChange={e => setSearch(e.target.value)} />
+        </div>
+        <div className="flex gap-1">
+          {(['name', 'total_spent', 'visit_count', 'loyalty_points'] as const).map(k => (
+            <button key={k} onClick={() => setSortBy(k)} className={`text-xs px-2.5 py-1 rounded border transition-colors ${sortBy === k ? 'bg-primary text-primary-foreground border-primary' : 'border-border text-muted-foreground hover:text-foreground'}`}>
+              {k === 'name' ? 'Name' : k === 'total_spent' ? 'Spent' : k === 'visit_count' ? 'Visits' : 'Points'}
+            </button>
+          ))}
         </div>
         <Button onClick={openCreate} className="gradient-spice text-white"><Plus className="w-4 h-4 mr-2" />Add Customer</Button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {customers.map(c => (
+        {sorted.map(c => (
           <Card key={c.id} className="card-hover">
             <CardContent className="p-4">
               <div className="flex items-start justify-between">
@@ -168,7 +178,7 @@ export function CustomerManagement() {
             </CardContent>
           </Card>
         ))}
-        {customers.length === 0 && <p className="col-span-3 text-center text-muted-foreground py-12">No customers found</p>}
+        {sorted.length === 0 && <p className="col-span-3 text-center text-muted-foreground py-12">No customers found</p>}
       </div>
 
       <Dialog open={!!viewCustomer} onOpenChange={() => setViewCustomer(null)}>
