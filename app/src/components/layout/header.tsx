@@ -1,6 +1,7 @@
 'use client'
 
-import { Bell, Search, Moon, Sun, LogOut, User, ChevronDown, AlertTriangle, Megaphone } from 'lucide-react'
+import { Bell, Search, Moon, Sun, LogOut, User, ChevronDown, AlertTriangle, Megaphone, Languages } from 'lucide-react'
+import { useI18n } from '@/lib/i18n'
 import { Button } from '@/components/ui/button'
 import { useState, useEffect, useCallback } from 'react'
 import { usePathname } from 'next/navigation'
@@ -24,10 +25,20 @@ const pageTitles: Record<string, string> = {
 interface Alert { id: number; item_name: string; current_stock: number; unit: string }
 interface Announcement { id: number; title: string; message: string; created_at: string }
 
+const LOCALES = [
+  { code: 'en', label: 'English' },
+  { code: 'hi', label: 'हिन्दी' },
+  { code: 'bn', label: 'বাংলা' },
+  { code: 'ta', label: 'தமிழ்' },
+  { code: 'mr', label: 'मराठी' },
+]
+
 export function Header() {
   const pathname = usePathname()
+  const { locale, setLocale } = useI18n()
   const title = pageTitles[pathname] ?? 'FoodPaaji'
   const [dark, setDark] = useState(false)
+  const [showLang, setShowLang] = useState(false)
   const [showNotifications, setShowNotifications] = useState(false)
   const [showUserMenu, setShowUserMenu] = useState(false)
   const [alerts, setAlerts] = useState<Alert[]>([])
@@ -80,6 +91,21 @@ export function Header() {
           </div>
 
           <div className="flex items-center gap-2">
+            <div className="relative">
+              <Button variant="ghost" size="icon" onClick={() => setShowLang(!showLang)} className="relative">
+                <Languages className="w-5 h-5" />
+              </Button>
+              {showLang && (
+                <div className="absolute right-0 top-full mt-1 bg-background border rounded-lg shadow-lg py-1 z-50 min-w-[120px]">
+                  {LOCALES.map(l => (
+                    <button key={l.code} onClick={() => { setLocale(l.code); setShowLang(false) }}
+                      className={`w-full text-left px-3 py-1.5 text-sm hover:bg-muted ${locale === l.code ? 'font-bold text-primary' : ''}`}>
+                      {l.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
             <Button variant="ghost" size="icon" onClick={toggleDark} className="relative">
               {dark ? <Sun className="w-5 h-5 text-amber-500" /> : <Moon className="w-5 h-5 text-slate-600" />}
             </Button>

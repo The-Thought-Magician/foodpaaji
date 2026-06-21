@@ -23,24 +23,26 @@ import {
   MessageSquare,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useI18n } from '@/lib/i18n'
 
 const navItems = [
-  { id: '/', label: 'Dashboard', icon: LayoutDashboard },
-  { id: '/billing', label: 'Billing', icon: FileText },
-  { id: '/pos', label: 'Point of Sale', icon: Receipt },
-  { id: '/kitchen', label: 'Kitchen Display', icon: ChefHat },
-  { id: '/employees', label: 'Employees', icon: Users },
-  { id: '/customers', label: 'Customers', icon: UserCircle },
-  { id: '/inventory', label: 'Inventory', icon: Package },
-  { id: '/menu', label: 'Menu', icon: Utensils },
-  { id: '/reservations', label: 'Reservations', icon: Calendar },
-  { id: '/promotions', label: 'Promotions', icon: Megaphone },
-  { id: '/feedback', label: 'Feedback', icon: MessageSquare },
-  { id: '/reports', label: 'Reports', icon: BarChart2 },
-  { id: '/settings', label: 'Settings', icon: Settings },
+  { id: '/', label: 'Dashboard', i18nKey: 'nav.dashboard', icon: LayoutDashboard },
+  { id: '/billing', label: 'Billing', i18nKey: 'nav.billing', icon: FileText },
+  { id: '/pos', label: 'Point of Sale', i18nKey: 'nav.pos', icon: Receipt },
+  { id: '/kitchen', label: 'Kitchen Display', i18nKey: 'nav.kitchen', icon: ChefHat },
+  { id: '/employees', label: 'Employees', i18nKey: 'nav.employees', icon: Users },
+  { id: '/customers', label: 'Customers', i18nKey: 'nav.customers', icon: UserCircle },
+  { id: '/inventory', label: 'Inventory', i18nKey: 'nav.inventory', icon: Package },
+  { id: '/menu', label: 'Menu', i18nKey: 'nav.menu', icon: Utensils },
+  { id: '/reservations', label: 'Reservations', i18nKey: 'nav.reservations', icon: Calendar },
+  { id: '/promotions', label: 'Promotions', i18nKey: 'nav.promotions', icon: Megaphone },
+  { id: '/feedback', label: 'Feedback', i18nKey: 'nav.feedback', icon: MessageSquare },
+  { id: '/reports', label: 'Reports', i18nKey: 'nav.reports', icon: BarChart2 },
+  { id: '/settings', label: 'Settings', i18nKey: 'nav.settings', icon: Settings },
 ]
 
 export function Sidebar() {
+  const { t } = useI18n()
   const [collapsed, setCollapsed] = useState(false)
   const [lowStockCount, setLowStockCount] = useState(0)
   const [restaurantName, setRestaurantName] = useState('FoodPaaji')
@@ -123,7 +125,7 @@ export function Sidebar() {
               )}>
                 <Icon className={cn('w-4 h-4', isActive ? 'text-white' : '')} />
               </div>
-              {!collapsed && <span className="animate-fade-in flex-1">{item.label}</span>}
+              {!collapsed && <span className="animate-fade-in flex-1">{t(item.i18nKey, item.label)}</span>}
               {!collapsed && item.id === '/inventory' && lowStockCount > 0 && (
                 <span className="ml-auto text-xs bg-red-500 text-white rounded-full px-1.5 py-0.5 font-bold min-w-[18px] text-center">{lowStockCount}</span>
               )}
