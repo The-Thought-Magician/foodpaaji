@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { invoke } from '@tauri-apps/api/core'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -48,6 +48,25 @@ export function MenuItemFormDialog({ open, editingId, initialData, categories, r
   const [form, setForm] = useState<MenuItemFormData>(initialData)
   const [imageFile, setImageFile] = useState<File | null>(null)
   const [imagePreview, setImagePreview] = useState('')
+  const [existingImage, setExistingImage] = useState<string | null>(null)
+
+  useEffect(() => {
+    setForm(initialData)
+    setImageFile(null)
+    setImagePreview('')
+    setExistingImage(null)
+    if (open && editingId) {
+      invoke<{ success: boolean; data?: string }>('get_menu_item_by_id', { itemId: editingId, restaurantId })
+        .then(res => {
+          const path = (res as unknown as { data?: { image_path?: string } }).data?.image_path
+          if (!path) return
+          invoke<{ success: boolean; data?: string }>('get_menu_image', { imagePath: path })
+            .then(r => setExistingImage(r.success && r.data ? r.data : null))
+            .catch(() => {})
+        })
+        .catch(() => {})
+    }
+  }, [open, editingId, restaurantId, initialData])
 
   const update = <K extends keyof MenuItemFormData>(k: K, v: MenuItemFormData[K]) =>
     setForm(f => ({ ...f, [k]: v }))
@@ -153,6 +172,15 @@ export function MenuItemFormDialog({ open, editingId, initialData, categories, r
             <TabsContent value="details" className="space-y-4">
               <div>
                 <Label>Item Image</Label>
+                {existingImage && !imagePreview && (
+                  <div className="mb-2 relative w-full h-32 bg-muted rounded-lg overflow-hidden">
+                    <img src={existingImage} alt="Current" className="w-full h-full object-cover" />
+                    <Button size="sm" variant="destructive" className="absolute top-2 right-2 text-xs h-7"
+                      onClick={async () => { if (!editingId) return; await invoke('delete_menu_item_image', { menuItemId: editingId, restaurantId }).catch(console.error); setExistingImage(null) }}>
+                      Remove
+                    </Button>
+                  </div>
+                )}
                 <Input type="file" accept="image/*" onChange={onImageSelect} />
                 {imagePreview && (
                   <div className="mt-2 w-full h-32 bg-muted rounded-lg overflow-hidden">
