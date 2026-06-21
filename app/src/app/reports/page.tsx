@@ -5,8 +5,9 @@ import { SalesReport } from '@/views/sales-report'
 import { EodSummary } from '@/components/reports/eod-summary'
 import { GstReport } from '@/components/reports/gst-report'
 import { HourlySales } from '@/components/reports/hourly-sales'
+import { SalesExport } from '@/components/reports/sales-export'
 
-type Tab = 'sales' | 'eod' | 'gst' | 'hourly'
+type Tab = 'sales' | 'eod' | 'gst' | 'hourly' | 'export'
 
 export default function ReportsPage() {
   const [tab, setTab] = useState<Tab>('sales')
@@ -15,6 +16,7 @@ export default function ReportsPage() {
     { key: 'eod', label: 'End of Day' },
     { key: 'gst', label: 'GST Report' },
     { key: 'hourly', label: 'Peak Hours' },
+    { key: 'export', label: 'Export' },
   ]
   return (
     <div className="space-y-4">
@@ -30,6 +32,7 @@ export default function ReportsPage() {
       {tab === 'eod' && <EodSummary />}
       {tab === 'gst' && <GstReport />}
       {tab === 'hourly' && <HourlySales />}
+      {tab === 'export' && <SalesExport />}
     </div>
   )
 }
