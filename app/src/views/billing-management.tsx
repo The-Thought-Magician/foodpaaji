@@ -56,7 +56,7 @@ const STATUS_COLOR: Record<string, string> = {
 }
 export function BillingManagement() {
   const [bills, setBills] = useState<Bill[]>([])
-  const [summary, setSummary] = useState({ today_bills: 0, today_revenue: 0, today_collected: 0 })
+  const [summary, setSummary] = useState({ today_bills: 0, today_revenue: 0, today_collected: 0, cash_collected: 0, upi_collected: 0, card_collected: 0 })
   const [showNewBill, setShowNewBill] = useState(false)
   const [showPayment, setShowPayment] = useState<Bill | null>(null)
   const [filterStatus, setFilterStatus] = useState<string | null>(null)
@@ -168,6 +168,11 @@ export function BillingManagement() {
         ))}
       </div>
 
+      <div className="flex gap-3">
+        {([['Cash', summary.cash_collected], ['UPI', summary.upi_collected], ['Card', summary.card_collected]] as [string, number][]).map(([m, v]) => (
+          <div key={m} className="flex-1 border rounded-lg p-3 text-center"><p className="text-xs text-muted-foreground">{m} today</p><p className="font-bold">₹{v.toFixed(0)}</p></div>
+        ))}
+      </div>
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div className="flex gap-2 flex-wrap">
           {['all', 'open', 'paid', 'cancelled'].map(s => (

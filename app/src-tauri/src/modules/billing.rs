@@ -168,5 +168,13 @@ pub async fn get_billing_summary(pool: State<'_, SqlitePool>) -> Result<serde_js
         today
     ).fetch_one(pool.inner()).await.map_err(|e| e.to_string())?;
 
-    Ok(serde_json::json!({ "success": true, "data": { "today_bills": summary.total_bills, "today_revenue": summary.total_revenue, "today_collected": summary.collected } }))
+    let pmts = sqlx::query("SELECT method, COALESCE(SUM(amount), 0.0) as total FROM payments WHERE date(paid_at) = ? AND status = 'completed' GROUP BY method")
+        .bind(&today).fetch_all(pool.inner()).await.map_err(|e| e.to_string())?;
+    let (mut cash, mut upi, mut card) = (0.0f64, 0.0f64, 0.0f64);
+    for r in &pmts {
+        let m: String = r.try_get("method").unwrap_or_default();
+        let t: f64 = r.try_get("total").unwrap_or(0.0);
+        match m.as_str() { "cash" => cash = t, "upi" => upi = t, "card" => card = t, _ => {} }
+    }
+    Ok(serde_json::json!({ "success": true, "data": { "today_bills": summary.total_bills, "today_revenue": summary.total_revenue, "today_collected": summary.collected, "cash_collected": cash, "upi_collected": upi, "card_collected": card } }))
 }
