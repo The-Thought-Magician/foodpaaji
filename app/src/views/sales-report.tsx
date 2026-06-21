@@ -53,6 +53,10 @@ export function SalesReport() {
   const totalDiscount = filtered.reduce((s, b) => s + b.discount_amount, 0)
   const avgBill = filtered.length > 0 ? totalRev / filtered.length : 0
   const maxRev = Math.max(...days.map(d => d.revenue), 1)
+  const byHour = Array.from({ length: 24 }, (_, h) => ({ hour: h, bills: 0, revenue: 0 }))
+  filtered.forEach(b => { const h = new Date(b.created_at).getHours(); byHour[h].bills += 1; byHour[h].revenue += b.total_amount })
+  const peakHour = byHour.reduce((p, c) => c.bills > p.bills ? c : p, byHour[0])
+  const maxHourBills = Math.max(...byHour.map(h => h.bills), 1)
 
   const exportCSV = () => {
     const rows = ['Date,Bills,Revenue,Tax,Discount', ...days.map(d => `${d.date},${d.bills},${d.revenue.toFixed(2)},${d.tax.toFixed(2)},${d.discount.toFixed(2)}`)]
@@ -136,6 +140,25 @@ export function SalesReport() {
       {totalDiscount > 0 && (
         <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 text-sm text-amber-800">
           Total discounts given in period: <strong>{fmt(totalDiscount)}</strong>
+        </div>
+      )}
+
+      {filtered.length > 0 && (
+        <div className="bg-card rounded-2xl border border-border p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="font-semibold">Peak Hours</h3>
+            {peakHour.bills > 0 && <span className="text-sm text-muted-foreground">Busiest: <strong>{peakHour.hour}:00–{peakHour.hour + 1}:00</strong> ({peakHour.bills} bills)</span>}
+          </div>
+          <div className="flex items-end gap-0.5 h-16">
+            {byHour.map(h => (
+              <div key={h.hour} className="flex-1 flex flex-col items-center group relative" title={`${h.hour}:00 — ${h.bills} bills, ${fmt(h.revenue)}`}>
+                <div className="w-full bg-primary/10 rounded-t-sm relative" style={{ height: '56px' }}>
+                  <div className={`absolute bottom-0 left-0 right-0 rounded-t-sm transition-all ${h.hour === peakHour.hour && peakHour.bills > 0 ? 'bg-primary' : 'gradient-spice opacity-70'}`} style={{ height: `${Math.max(h.bills > 0 ? 3 : 0, (h.bills / maxHourBills) * 56)}px` }} />
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="flex justify-between mt-1 text-xs text-muted-foreground"><span>12am</span><span>6am</span><span>12pm</span><span>6pm</span><span>11pm</span></div>
         </div>
       )}
     </div>
