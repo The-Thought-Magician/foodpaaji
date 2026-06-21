@@ -92,7 +92,7 @@ export function BillingManagement() {
   useEffect(() => { loadBills(); loadSummary() }, [loadBills, loadSummary])
 
   const filteredBills = bills.filter(b => {
-    if (search && !b.bill_number.toLowerCase().includes(search.toLowerCase()) && !(b.table_number ?? '').toLowerCase().includes(search.toLowerCase())) return false
+    if (search && !b.bill_number.toLowerCase().includes(search.toLowerCase()) && !(b.table_number ?? '').toLowerCase().includes(search.toLowerCase()) && !(b.customer_name ?? '').toLowerCase().includes(search.toLowerCase())) return false
     if (dateFrom && b.created_at.slice(0, 10) < dateFrom) return false
     if (dateTo && b.created_at.slice(0, 10) > dateTo) return false
     return true
@@ -181,7 +181,7 @@ export function BillingManagement() {
               {s.charAt(0).toUpperCase() + s.slice(1)}
             </Button>
           ))}
-          <div className="relative"><Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" /><Input className="pl-8 h-8 w-44 text-sm" placeholder="Bill # or table…" value={search} onChange={e => setSearch(e.target.value)} /></div>
+          <div className="relative"><Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" /><Input className="pl-8 h-8 w-44 text-sm" placeholder="Bill #, table or customer…" value={search} onChange={e => setSearch(e.target.value)} /></div>
           <Input type="date" className="h-8 w-36 text-sm" value={dateFrom} onChange={e => setDateFrom(e.target.value)} title="From date" />
           <Input type="date" className="h-8 w-36 text-sm" value={dateTo} onChange={e => setDateTo(e.target.value)} title="To date" />
           {(dateFrom || dateTo) && <Button variant="ghost" size="sm" className="h-8 px-2 text-xs" onClick={() => { setDateFrom(''); setDateTo('') }}>Clear</Button>}
