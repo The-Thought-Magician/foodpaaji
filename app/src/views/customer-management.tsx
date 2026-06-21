@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Card, CardContent } from '@/components/ui/card'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
-import { Plus, Search, Star, TrendingUp, Users, Download, Merge } from 'lucide-react'
+import { Plus, Search, Star, TrendingUp, Users, Download, Merge, Award } from 'lucide-react'
 
 interface Customer {
   id: number
@@ -39,6 +39,13 @@ export function CustomerManagement() {
   const [form, setForm] = useState({ name: '', phone: '', email: '', address: '', notes: '' })
   const [segment, setSegment] = useState<'all' | 'vip' | 'loyal' | 'regular' | 'new' | 'at_risk'>('all')
   const [showAnalytics, setShowAnalytics] = useState(false)
+  const [showLoyalty, setShowLoyalty] = useState(false)
+  const [loyaltyData, setLoyaltyData] = useState<{
+    total_earned: number; total_redeemed: number; active_members: number; total_transactions: number
+    outstanding_points: number; members_with_points: number
+    top_earners: { id: number; name: string; loyalty_points: number; total_spent: number }[]
+    monthly_trend: { month: string; earned: number; redeemed: number }[]
+  } | null>(null)
   const [showMerge, setShowMerge] = useState(false)
   const [mergeTarget, setMergeTarget] = useState<Customer | null>(null)
   const [mergeSource, setMergeSource] = useState<Customer | null>(null)
@@ -48,6 +55,11 @@ export function CustomerManagement() {
     ltv_distribution: { zero: number; low_under_500: number; mid_500_2000: number; high_2000_10000: number; vip_over_10000: number }
     monthly_acquisition: { month: string; new_customers: number }[]
   } | null>(null)
+
+  const loadLoyaltyAnalytics = async () => {
+    const res = await invoke<{ success: boolean; data: typeof loyaltyData }>('get_loyalty_analytics', { days: 30 }).catch(() => null)
+    if (res?.success && res.data) setLoyaltyData(res.data)
+  }
 
   const loadAnalytics = async () => {
     const res = await invoke<{ success: boolean; data: typeof analytics }>('get_customer_analytics').catch(() => null)
@@ -194,10 +206,55 @@ export function CustomerManagement() {
         <Button size="sm" variant={showAnalytics ? 'default' : 'outline'} onClick={() => { setShowAnalytics(s => !s); if (!analytics) loadAnalytics() }}>
           <TrendingUp className="w-4 h-4 mr-1" />Analytics
         </Button>
+        <Button size="sm" variant={showLoyalty ? 'default' : 'outline'} onClick={() => { setShowLoyalty(s => !s); if (!loyaltyData) loadLoyaltyAnalytics() }}>
+          <Award className="w-4 h-4 mr-1" />Loyalty
+        </Button>
         <Button size="sm" variant="outline" onClick={() => setShowMerge(true)}>
           <Merge className="w-4 h-4 mr-1" />Merge Duplicates
         </Button>
       </div>
+
+      {showLoyalty && loyaltyData && (
+        <div className="space-y-3 p-4 border rounded-xl bg-muted/30">
+          <h4 className="font-semibold flex items-center gap-2"><Award className="w-4 h-4" />Loyalty Program (30 days)</h4>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            {[
+              ['Points Earned', loyaltyData.total_earned.toLocaleString()],
+              ['Points Redeemed', loyaltyData.total_redeemed.toLocaleString()],
+              ['Active Members', loyaltyData.active_members.toString()],
+              ['Outstanding', loyaltyData.outstanding_points.toLocaleString() + ' pts'],
+            ].map(([label, val]) => (
+              <div key={label} className="border rounded-lg p-3 bg-card">
+                <p className="text-xs text-muted-foreground">{label}</p>
+                <p className="text-lg font-bold">{val}</p>
+              </div>
+            ))}
+          </div>
+          {loyaltyData.top_earners.length > 0 && (
+            <div className="border rounded-lg p-3 bg-card">
+              <p className="text-sm font-medium mb-2">Top Point Holders</p>
+              {loyaltyData.top_earners.map(e => (
+                <div key={e.id} className="flex justify-between text-sm py-1">
+                  <span>{e.name}</span>
+                  <span className="font-medium">{e.loyalty_points.toLocaleString()} pts · ₹{e.total_spent.toFixed(0)}</span>
+                </div>
+              ))}
+            </div>
+          )}
+          {loyaltyData.monthly_trend.length > 0 && (
+            <div className="border rounded-lg p-3 bg-card">
+              <p className="text-sm font-medium mb-2">Monthly Trend</p>
+              {loyaltyData.monthly_trend.map(m => (
+                <div key={m.month} className="flex justify-between text-sm py-1">
+                  <span className="text-muted-foreground">{m.month}</span>
+                  <span className="text-green-600">+{m.earned}</span>
+                  <span className="text-red-500">-{m.redeemed}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {showAnalytics && analytics && (
         <div className="space-y-4 p-4 border rounded-xl bg-muted/30">

@@ -280,6 +280,70 @@ pub async fn get_customer_stats(pool: State<'_, SqlitePool>) -> Result<serde_jso
 }
 
 #[tauri::command]
+pub async fn get_loyalty_analytics(
+    days: Option<i64>,
+    pool: State<'_, SqlitePool>,
+) -> Result<serde_json::Value, String> {
+    use sqlx::Row as _;
+    let days = days.unwrap_or(30);
+    let date_filter = format!("-{}", days);
+
+    let summary = sqlx::query(
+        "SELECT
+           COALESCE(SUM(CASE WHEN type = 'earn' THEN points ELSE 0 END), 0) as total_earned,
+           COALESCE(SUM(CASE WHEN type = 'redeem' THEN points ELSE 0 END), 0) as total_redeemed,
+           COUNT(DISTINCT customer_id) as active_members,
+           COUNT(*) as total_transactions
+         FROM loyalty_transactions
+         WHERE created_at >= datetime('now', ?)"
+    ).bind(&date_filter).fetch_one(pool.inner()).await.map_err(|e| e.to_string())?;
+
+    let outstanding = sqlx::query(
+        "SELECT COALESCE(SUM(loyalty_points), 0) as outstanding_points,
+           COUNT(CASE WHEN loyalty_points > 0 THEN 1 END) as members_with_points
+         FROM customers WHERE is_active = 1"
+    ).fetch_one(pool.inner()).await.map_err(|e| e.to_string())?;
+
+    let top_earners = sqlx::query(
+        "SELECT c.id, c.name, c.loyalty_points, c.total_spent
+         FROM customers c WHERE c.is_active = 1 AND c.loyalty_points > 0
+         ORDER BY c.loyalty_points DESC LIMIT 5"
+    ).fetch_all(pool.inner()).await.map_err(|e| e.to_string())?;
+
+    let monthly = sqlx::query(
+        "SELECT strftime('%Y-%m', created_at) as month,
+           SUM(CASE WHEN type = 'earn' THEN points ELSE 0 END) as earned,
+           SUM(CASE WHEN type = 'redeem' THEN points ELSE 0 END) as redeemed
+         FROM loyalty_transactions
+         WHERE created_at >= datetime('now', '-6 months')
+         GROUP BY month ORDER BY month"
+    ).fetch_all(pool.inner()).await.map_err(|e| e.to_string())?;
+
+    Ok(serde_json::json!({
+        "success": true,
+        "data": {
+            "total_earned": summary.try_get::<i64, _>("total_earned").unwrap_or(0),
+            "total_redeemed": summary.try_get::<i64, _>("total_redeemed").unwrap_or(0),
+            "active_members": summary.try_get::<i64, _>("active_members").unwrap_or(0),
+            "total_transactions": summary.try_get::<i64, _>("total_transactions").unwrap_or(0),
+            "outstanding_points": outstanding.try_get::<i64, _>("outstanding_points").unwrap_or(0),
+            "members_with_points": outstanding.try_get::<i64, _>("members_with_points").unwrap_or(0),
+            "top_earners": top_earners.iter().map(|r| serde_json::json!({
+                "id": r.try_get::<i64, _>("id").unwrap_or(0),
+                "name": r.try_get::<String, _>("name").unwrap_or_default(),
+                "loyalty_points": r.try_get::<i64, _>("loyalty_points").unwrap_or(0),
+                "total_spent": r.try_get::<f64, _>("total_spent").unwrap_or(0.0),
+            })).collect::<Vec<_>>(),
+            "monthly_trend": monthly.iter().map(|r| serde_json::json!({
+                "month": r.try_get::<String, _>("month").unwrap_or_default(),
+                "earned": r.try_get::<i64, _>("earned").unwrap_or(0),
+                "redeemed": r.try_get::<i64, _>("redeemed").unwrap_or(0),
+            })).collect::<Vec<_>>(),
+        }
+    }))
+}
+
+#[tauri::command]
 pub async fn merge_customers(
     target_id: i64,
     source_id: i64,
