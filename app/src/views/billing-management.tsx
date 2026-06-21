@@ -101,19 +101,19 @@ export function BillingManagement() {
   const updateItem = (i: number, field: keyof BillItem, value: string | number) => { setItems(items.map((item, idx) => idx === i ? { ...item, [field]: value } : item)) }
   const removeItem = (i: number) => setItems(items.filter((_, idx) => idx !== i))
   const subtotal = items.reduce((s, i) => s + (i.unit_price * i.quantity) - i.discount_amount, 0)
-  const discountAmt = subtotal * discountPercent / 100; const taxAmt = (subtotal - discountAmt) * taxPercent / 100; const total = subtotal - discountAmt + taxAmt
+  const scPct = getSettings().service_charge_percent
+  const discountAmt = subtotal * discountPercent / 100; const taxable = subtotal - discountAmt; const taxAmt = taxable * taxPercent / 100; const scAmt = taxable * scPct / 100; const total = taxable + taxAmt + scAmt
 
   const createBill = async () => {
     try {
       await invoke('create_bill', {
-        request: { customer_id: billCustomer?.id ?? null, table_number: tableNumber || null, items, discount_percent: discountPercent, tax_percent: taxPercent, notes: null }
+        request: { customer_id: billCustomer?.id ?? null, table_number: tableNumber || null, items, discount_percent: discountPercent, tax_percent: taxPercent + scPct, notes: null }
       })
       setShowNewBill(false); setBillCustomer(null); setBillCustSearch(''); setBillCustResults([])
       setItems([{ item_name: '', quantity: 1, unit_price: 0, discount_amount: 0 }]); setTableNumber('')
       loadBills(); loadSummary()
     } catch (e) { console.error(e) }
   }
-
   const updateBillStatus = async (billId: number, status: string) => {
     try {
       await invoke('update_bill_status', { billId, status })
@@ -153,7 +153,6 @@ export function BillingManagement() {
       }
     } catch (e) { console.error(e) }
   }
-
   const exportCSV = () => {
     const hdr = 'Bill#,Table,Subtotal,Discount,Tax,Total,Status,Date'
     const rows = filteredBills.map(b => `"${b.bill_number}","${b.table_number ?? 'Takeaway'}",${b.subtotal.toFixed(2)},${b.discount_amount.toFixed(2)},${b.tax_amount.toFixed(2)},${b.total_amount.toFixed(2)},"${b.status}","${new Date(b.created_at).toLocaleString()}"`)
@@ -247,6 +246,7 @@ export function BillingManagement() {
               <div className="flex justify-between"><span>Subtotal</span><span>₹{subtotal.toFixed(2)}</span></div>
               <div className="flex justify-between"><span>Discount</span><span>-₹{discountAmt.toFixed(2)}</span></div>
               <div className="flex justify-between"><span>Tax ({taxPercent}%)</span><span>₹{taxAmt.toFixed(2)}</span></div>
+              {scAmt > 0 && <div className="flex justify-between"><span>Service Charge ({scPct}%)</span><span>₹{scAmt.toFixed(2)}</span></div>}
               <div className="flex justify-between font-bold border-t pt-1"><span>Total</span><span>₹{total.toFixed(2)}</span></div>
             </div>
             <Button className="w-full gradient-spice text-white" onClick={createBill}>Create Bill</Button>

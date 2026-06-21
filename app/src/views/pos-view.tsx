@@ -94,8 +94,10 @@ export function PosView() {
   const taxable = subtotal - couponDiscount - promoDiscount
 
   const validatePromo = async () => { if (!promoCode.trim()) return; try { setPromo(await invoke<PromoResult>('validate_promo_code', { code: promoCode, orderAmount: subtotal })) } catch (e) { console.error(e) } }
+  const serviceChargePct = getSettings().service_charge_percent
   const taxAmt = taxable * taxPercent / 100
-  const total = taxable + taxAmt
+  const serviceChargeAmt = taxable * serviceChargePct / 100
+  const total = taxable + taxAmt + serviceChargeAmt
 
   const validateCoupon = async () => { if (!couponCode.trim()) return; try { setCoupon(await invoke<CouponResult>('validate_coupon', { code: couponCode, orderAmount: subtotal })) } catch (e) { console.error(e) } }
 
@@ -123,7 +125,7 @@ export function PosView() {
     try {
       const [details, res] = await Promise.all([
         invoke<{ success: boolean; data: { items: { item_name: string; quantity: number; unit_price: number; menu_item_id?: number; notes?: string }[] } | null }>('get_order_details', { orderId: showConvert.id }),
-        invoke<{ success: boolean; bill_id: number; total_amount: number }>('convert_order_to_bill', { orderId: showConvert.id, discountPercent, taxPercent }),
+        invoke<{ success: boolean; bill_id: number; total_amount: number }>('convert_order_to_bill', { orderId: showConvert.id, discountPercent, taxPercent: taxPercent + serviceChargePct }),
       ])
       if (res.success) {
         await invoke('record_payment', { billId: res.bill_id, amount: res.total_amount, method: paymentMethod, upiReference: null, upiApp: null }).catch(console.error)
@@ -213,6 +215,7 @@ export function PosView() {
             {couponDiscount > 0 && <div className="flex justify-between text-green-600"><span>Coupon</span><span>-₹{couponDiscount.toFixed(2)}</span></div>}
             {promoDiscount > 0 && <div className="flex justify-between text-green-600"><span>Promo</span><span>-₹{promoDiscount.toFixed(2)}</span></div>}
             <div className="flex justify-between"><span>Tax ({taxPercent}%)</span><span>₹{taxAmt.toFixed(2)}</span></div>
+            {serviceChargeAmt > 0 && <div className="flex justify-between"><span>Service Charge ({serviceChargePct}%)</span><span>₹{serviceChargeAmt.toFixed(2)}</span></div>}
             <div className="flex justify-between font-bold border-t pt-1"><span>Total</span><span>₹{total.toFixed(2)}</span></div>
           </div>
           <Button className="w-full gradient-spice text-white" onClick={placeOrder} disabled={cart.length === 0}>Place Order</Button>
