@@ -38,7 +38,7 @@ pub async fn get_menu_categories(
     db: State<'_, DbPool>,
 ) -> Result<ApiResponse<Vec<MenuCategory>>, String> {
     let categories = sqlx::query_as::<_, MenuCategory>(
-        "SELECT * FROM menu_categories WHERE restaurant_id = ? ORDER BY sort_order, name"
+        "SELECT mc.*, COUNT(mi.id) as item_count FROM menu_categories mc LEFT JOIN menu_items mi ON mi.category_id = mc.id WHERE mc.restaurant_id = ? GROUP BY mc.id ORDER BY mc.sort_order, mc.name"
     )
     .bind(restaurant_id).fetch_all(&*db).await
     .map_err(|e| format!("Failed to fetch categories: {}", e))?;

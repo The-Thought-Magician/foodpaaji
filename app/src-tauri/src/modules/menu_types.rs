@@ -14,6 +14,8 @@ pub struct MenuCategory {
     pub display_in_menu: bool,
     pub created_at: Option<String>,
     pub updated_at: Option<String>,
+    #[sqlx(default)]
+    pub item_count: Option<i64>,
 }
 
 #[derive(Debug, Serialize, Deserialize, sqlx::FromRow)]
