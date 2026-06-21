@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
-import { Plus, Minus, Trash2, ShoppingCart, Receipt, Tag } from 'lucide-react'
+import { Plus, Minus, Trash2, ShoppingCart, Receipt, Tag, Clock } from 'lucide-react'
 import { MenuPicker } from '@/components/pos/menu-picker'
 import { CustomerPicker, type Customer } from '@/components/pos/customer-picker'
 import { getSettings } from '@/lib/settings'
@@ -44,6 +44,8 @@ interface PromoResult {
   discount_amount?: number
   message?: string
 }
+
+const elapsed = (iso: string) => { const m = Math.floor((Date.now() - new Date(iso).getTime()) / 60000); return m < 1 ? 'just now' : m < 60 ? `${m}m ago` : `${Math.floor(m / 60)}h ${m % 60}m ago` }
 
 const STATUS_COLOR: Record<string, string> = {
   pending: 'bg-yellow-100 text-yellow-700',
@@ -125,7 +127,6 @@ export function PosView() {
   }
 
   const updateStatus = async (orderId: number, status: string) => { try { await invoke('update_order_status', { orderId, status }); loadOrders() } catch (e) { console.error(e) } }
-
   const convertToBill = async () => {
     if (!showConvert) return
     try {
@@ -236,7 +237,7 @@ export function PosView() {
                 <div className="flex items-center justify-between mb-2">
                   <div>
                     <p className="font-medium">{order.order_number}</p>
-                    <p className="text-sm text-muted-foreground">{order.table_number ? `Table ${order.table_number}` : 'Takeaway'}</p>
+                    <p className="text-sm text-muted-foreground">{order.table_number ? `Table ${order.table_number}` : 'Takeaway'} · <Clock className="inline w-3 h-3 mb-0.5" /> {elapsed(order.created_at)}</p>
                   </div>
                   <Badge className={STATUS_COLOR[order.status] || ''}>{order.status}</Badge>
                 </div>
