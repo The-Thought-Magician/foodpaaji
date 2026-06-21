@@ -9,9 +9,10 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Calendar, Plus, Clock, Users, QrCode, CheckCircle, XCircle, Search, Download } from 'lucide-react'
+import { Calendar, Plus, Clock, Users, QrCode, CheckCircle, XCircle, Search, Download, BarChart2 } from 'lucide-react'
 import { TableQrManager } from '@/components/reservations/table-qr'
 import { WalkinQueue } from '@/components/reservations/walkin-queue'
+import { TableUtilizationAnalytics } from '@/components/reservations/table-utilization'
 
 interface Reservation {
   id: number
@@ -50,7 +51,7 @@ export function ReservationManagement() {
   const [tables, setTables] = useState<Table[]>([])
   const [date, setDate] = useState(new Date().toISOString().split('T')[0])
   const [search, setSearch] = useState('')
-  const [activeTab, setActiveTab] = useState<'reservations' | 'walkin' | 'qr' | 'availability'>('reservations')
+  const [activeTab, setActiveTab] = useState<'reservations' | 'walkin' | 'qr' | 'availability' | 'analytics'>('reservations')
   const [availDate, setAvailDate] = useState(new Date().toISOString().split('T')[0])
   const [availTime, setAvailTime] = useState('19:00')
   const [availTables, setAvailTables] = useState<{ id: number; table_number: string; capacity: number; location?: string; available: boolean }[]>([])
@@ -154,10 +155,14 @@ export function ReservationManagement() {
         <button onClick={() => setActiveTab('availability')} className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors ${activeTab === 'availability' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'}`}>
           <CheckCircle className="w-4 h-4" />Availability
         </button>
+        <button onClick={() => setActiveTab('analytics')} className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors ${activeTab === 'analytics' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'}`}>
+          <BarChart2 className="w-4 h-4" />Analytics
+        </button>
       </div>
 
       {activeTab === 'walkin' && <WalkinQueue />}
       {activeTab === 'qr' && <TableQrManager />}
+      {activeTab === 'analytics' && <TableUtilizationAnalytics />}
 
       {activeTab === 'availability' && (
         <div className="space-y-4">

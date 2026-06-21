@@ -47,6 +47,7 @@ use modules::menu_allergens::{get_menu_item_allergens, add_allergen, remove_alle
 use modules::menu_variants::{get_menu_item_variants, create_menu_item_variant, delete_menu_item_variant, get_menu_item_modifiers, create_menu_item_modifier, delete_menu_item_modifier, add_modifier_option, delete_modifier_option};
 use modules::menu_availability::{get_item_availability, add_availability_slot, remove_availability_slot};
 use modules::walkin_queue::{get_walkin_queue, add_to_walkin_queue, seat_walkin_guest, update_walkin_status};
+use modules::table_analytics::get_table_utilization;
 use tauri::Manager;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -219,6 +220,7 @@ pub fn run() {
       add_to_walkin_queue,
       seat_walkin_guest,
       update_walkin_status,
+      get_table_utilization,
     ])
     .setup(|app| {
       let level = if cfg!(debug_assertions) { log::LevelFilter::Debug } else { log::LevelFilter::Info };
