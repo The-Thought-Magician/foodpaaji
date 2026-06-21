@@ -23,6 +23,7 @@ export function ItemModal({ item, categories, onClose, onSave }: ItemModalProps)
     is_spicy: item?.is_spicy ?? false,
     preparation_time: item?.preparation_time ?? 15,
     is_available: item?.is_available ?? true,
+    kitchen_station: (item as (typeof item & { kitchen_station?: string }) | null)?.kitchen_station ?? '',
   })
 
   return (
@@ -61,11 +62,26 @@ export function ItemModal({ item, categories, onClose, onSave }: ItemModalProps)
                 className="w-full px-4 py-2.5 bg-card border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20" />
             </div>
           </div>
-          <div>
-            <label className="block text-sm font-medium mb-2">Prep Time (min)</label>
-            <input type="number" value={form.preparation_time}
-              onChange={e => setForm(f => ({ ...f, preparation_time: parseInt(e.target.value) || 0 }))}
-              className="w-full px-4 py-2.5 bg-card border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20" />
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium mb-2">Prep Time (min)</label>
+              <input type="number" value={form.preparation_time}
+                onChange={e => setForm(f => ({ ...f, preparation_time: parseInt(e.target.value) || 0 }))}
+                className="w-full px-4 py-2.5 bg-card border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-2">Kitchen Station</label>
+              <select value={form.kitchen_station} onChange={e => setForm(f => ({ ...f, kitchen_station: e.target.value }))}
+                className="w-full px-4 py-2.5 bg-card border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20">
+                <option value="">Any / Not set</option>
+                <option value="hot">Hot Kitchen</option>
+                <option value="cold">Cold / Salads</option>
+                <option value="grill">Grill / Tandoor</option>
+                <option value="fry">Fry Station</option>
+                <option value="dessert">Dessert / Bakery</option>
+                <option value="bar">Bar / Beverages</option>
+              </select>
+            </div>
           </div>
           <div className="flex items-center gap-4">
             <label className="flex items-center gap-2 cursor-pointer">

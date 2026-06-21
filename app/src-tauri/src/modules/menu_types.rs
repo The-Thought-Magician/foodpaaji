@@ -42,6 +42,7 @@ pub struct MenuItem {
     pub is_active: bool,
     pub is_featured: bool,
     pub sort_order: i32,
+    pub kitchen_station: Option<String>,
     pub created_at: Option<String>,
     pub updated_at: Option<String>,
 }
@@ -90,6 +91,7 @@ pub struct CreateMenuItemRequest {
     pub is_active: Option<bool>,
     pub is_featured: Option<bool>,
     pub sort_order: Option<i32>,
+    pub kitchen_station: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -113,6 +115,7 @@ pub struct UpdateMenuItemRequest {
     pub is_active: Option<bool>,
     pub is_featured: Option<bool>,
     pub sort_order: Option<i32>,
+    pub kitchen_station: Option<String>,
 }
 
 pub fn generate_slug(name: &str) -> String {

@@ -20,8 +20,8 @@ pub async fn create_menu_item(
     let result = sqlx::query(
         "INSERT INTO menu_items (restaurant_id, category_id, name, description, short_description,
          price, preparation_time, calories, image_path, slug, sku, is_vegetarian, is_vegan,
-         is_gluten_free, is_spicy, spice_level, is_available, is_active, is_featured, sort_order)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+         is_gluten_free, is_spicy, spice_level, is_available, is_active, is_featured, sort_order, kitchen_station)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
     )
     .bind(request.restaurant_id).bind(request.category_id).bind(&request.name)
     .bind(&request.description).bind(&request.short_description).bind(request.price)
@@ -31,7 +31,7 @@ pub async fn create_menu_item(
     .bind(request.is_gluten_free.unwrap_or(false)).bind(request.is_spicy.unwrap_or(false))
     .bind(request.spice_level.unwrap_or(0)).bind(request.is_available.unwrap_or(true))
     .bind(request.is_active.unwrap_or(true)).bind(request.is_featured.unwrap_or(false))
-    .bind(request.sort_order.unwrap_or(0))
+    .bind(request.sort_order.unwrap_or(0)).bind(&request.kitchen_station)
     .execute(&*db).await
     .map_err(|e| format!("Failed to create menu item: {}", e))?;
 
@@ -107,6 +107,11 @@ pub async fn update_menu_item(
     if let Some(v) = request.preparation_time {
         sqlx::query("UPDATE menu_items SET preparation_time = ? WHERE id = ?")
             .bind(v).bind(id).execute(&*db).await.map_err(|e| format!("Failed to update: {}", e))?;
+    }
+    if let Some(ref v) = request.kitchen_station {
+        let val = if v.is_empty() { None::<&str> } else { Some(v.as_str()) };
+        sqlx::query("UPDATE menu_items SET kitchen_station = ? WHERE id = ?")
+            .bind(val).bind(id).execute(&*db).await.map_err(|e| format!("Failed to update: {}", e))?;
     }
     get_menu_item_by_id(id, db).await
 }

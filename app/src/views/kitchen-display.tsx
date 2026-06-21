@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { AlertTriangle, ChefHat, Clock, RefreshCw } from 'lucide-react'
 
-interface OrderItem { item_name: string; quantity: number; notes?: string }
+interface OrderItem { item_name: string; quantity: number; notes?: string; kitchen_station?: string }
 interface KitchenOrder {
   id: number
   order_number: string
@@ -52,6 +52,7 @@ export function KitchenDisplay() {
   const [orders, setOrders] = useState<KitchenOrder[]>([])
   const [loading, setLoading] = useState(false)
   const [filter, setFilter] = useState<'all' | 'pending' | 'preparing' | 'ready'>('all')
+  const [stationFilter, setStationFilter] = useState<string>('all')
   const [kitchenStats, setKitchenStats] = useState<KitchenStats | null>(null)
 
   const load = useCallback(async () => {
@@ -89,7 +90,13 @@ export function KitchenDisplay() {
     setOrders(prev => prev.map(o => o.id === order.id ? { ...o, status: next } : o))
   }
 
-  const filtered = filter === 'all' ? orders : orders.filter(o => o.status === filter)
+  const filtered = orders
+    .filter(o => filter === 'all' || o.status === filter)
+    .filter(o => stationFilter === 'all' || (o.items ?? []).some(i => (i.kitchen_station ?? '') === stationFilter || (!i.kitchen_station && stationFilter === 'none')))
+    .map(o => ({
+      ...o,
+      items: stationFilter === 'all' ? o.items : (o.items ?? []).filter(i => (i.kitchen_station ?? '') === stationFilter || (!i.kitchen_station && stationFilter === 'none')),
+    }))
   const counts = { pending: orders.filter(o => o.status === 'pending').length, preparing: orders.filter(o => o.status === 'preparing').length, ready: orders.filter(o => o.status === 'ready').length }
 
   return (
@@ -120,12 +127,29 @@ export function KitchenDisplay() {
         </div>
       )}
 
-      <div className="flex gap-2">
+      <div className="flex gap-2 flex-wrap">
         {(['all', 'pending', 'preparing', 'ready'] as const).map(s => (
           <button key={s} onClick={() => setFilter(s)}
             className={`px-3 py-1.5 rounded-lg text-sm font-medium border transition-colors ${filter === s ? 'bg-primary text-primary-foreground border-transparent' : 'border-border hover:bg-muted'}`}>
             {s.charAt(0).toUpperCase() + s.slice(1)}
             {s !== 'all' && counts[s] > 0 && <span className="ml-1.5 text-xs bg-white/30 rounded-full px-1.5">{counts[s]}</span>}
+          </button>
+        ))}
+      </div>
+
+      <div className="flex gap-2 flex-wrap">
+        {[
+          { key: 'all', label: 'All Stations' },
+          { key: 'hot', label: 'Hot Kitchen' },
+          { key: 'cold', label: 'Cold / Salads' },
+          { key: 'grill', label: 'Grill / Tandoor' },
+          { key: 'fry', label: 'Fry Station' },
+          { key: 'dessert', label: 'Dessert' },
+          { key: 'bar', label: 'Bar' },
+        ].map(s => (
+          <button key={s.key} onClick={() => setStationFilter(s.key)}
+            className={`px-3 py-1 rounded-lg text-xs font-medium border transition-colors ${stationFilter === s.key ? 'bg-orange-500 text-white border-transparent' : 'border-border hover:bg-muted'}`}>
+            {s.label}
           </button>
         ))}
       </div>
@@ -159,9 +183,14 @@ export function KitchenDisplay() {
             {order.notes && <p className="text-xs bg-white/50 rounded p-1.5 italic">{order.notes}</p>}
             <div className="space-y-1">
               {(order.items ?? []).map((item, i) => (
-                <div key={i} className="flex justify-between text-sm">
-                  <span className="font-medium">{item.quantity}× {item.item_name}</span>
-                  {item.notes && <span className="text-xs opacity-60 truncate ml-2">{item.notes}</span>}
+                <div key={i} className="text-sm">
+                  <div className="flex justify-between">
+                    <span className="font-medium">{item.quantity}× {item.item_name}</span>
+                    {item.kitchen_station && stationFilter === 'all' && (
+                      <span className="text-xs bg-orange-100 text-orange-700 rounded px-1.5 ml-1">{item.kitchen_station}</span>
+                    )}
+                  </div>
+                  {item.notes && <span className="text-xs opacity-60">{item.notes}</span>}
                 </div>
               ))}
             </div>
