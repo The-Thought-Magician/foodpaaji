@@ -11,6 +11,7 @@ import { Label } from '@/components/ui/label'
 import { Plus, Minus, Trash2, ShoppingCart, Receipt, Tag, Clock } from 'lucide-react'
 import { MenuPicker } from '@/components/pos/menu-picker'
 import { CustomerPicker, type Customer } from '@/components/pos/customer-picker'
+import { TableStatusBoard } from '@/components/pos/table-status-board'
 import { getSettings } from '@/lib/settings'
 import { UpiQr } from '@/components/ui/upi-qr'
 
@@ -41,7 +42,6 @@ const STATUS_COLOR: Record<string, string> = {
   served: 'bg-gray-100 text-gray-700',
   cancelled: 'bg-red-100 text-red-700',
 }
-
 export function PosView() {
   const [cart, setCart] = useState<CartItem[]>([])
   const [tableNumber, setTableNumber] = useState('')
@@ -63,7 +63,7 @@ export function PosView() {
   const [discountPercent, setDiscountPercent] = useState(0)
   const [paymentMethod, setPaymentMethod] = useState<'cash' | 'upi' | 'card'>('cash')
   const [redeemPoints, setRedeemPoints] = useState(false)
-  const [showAllOrders, setShowAllOrders] = useState(false)
+  const [showAllOrders, setShowAllOrders] = useState<boolean | 'tables'>(false)
   const loadOrders = useCallback(async () => {
     try {
       const res = await invoke<{ success: boolean; data: Order[] }>('get_orders', { status: null, limit: 20 })
@@ -76,7 +76,6 @@ export function PosView() {
     const t = setInterval(loadOrders, 30000)
     return () => clearInterval(t)
   }, [loadOrders])
-
   useEffect(() => { invoke<{ success: boolean; data: typeof tables }>('get_tables', { restaurantId: 1 }).then(r => { if (r.success) setTables(r.data) }).catch(() => {}) }, [])
   const searchCustomers = async (q: string) => {
     setCustomerSearch(q)
@@ -222,8 +221,9 @@ export function PosView() {
       </div>
 
       <div className="flex flex-col space-y-4 overflow-hidden">
-        <div className="flex items-center justify-between"><h3 className="font-semibold">{showAllOrders ? 'All Orders' : 'Active Orders'}</h3><button className="text-xs text-muted-foreground hover:text-foreground" onClick={() => setShowAllOrders(v => !v)}>{showAllOrders ? 'Active only' : 'Show all'}</button></div>
-        <div className="flex-1 overflow-y-auto space-y-2">
+        <div className="flex items-center justify-between"><h3 className="font-semibold">{showAllOrders === 'tables' ? 'Table Status' : showAllOrders ? 'All Orders' : 'Active Orders'}</h3><div className="flex gap-2 text-xs"><button className={`${showAllOrders === 'tables' ? 'text-primary font-medium' : 'text-muted-foreground'} hover:text-foreground`} onClick={() => setShowAllOrders('tables')}>Tables</button><button className={`${showAllOrders !== 'tables' ? 'text-primary font-medium' : 'text-muted-foreground'} hover:text-foreground`} onClick={() => setShowAllOrders(v => v === 'tables' ? false : !v)}>{showAllOrders === true ? 'Active only' : 'Show all'}</button></div></div>
+        {showAllOrders === 'tables' && <div className="flex-1 overflow-y-auto"><TableStatusBoard /></div>}
+        <div className={`flex-1 overflow-y-auto space-y-2 ${showAllOrders === 'tables' ? 'hidden' : ''}`}>
           {(showAllOrders ? orders : orders.filter(o => o.status !== 'served' && o.status !== 'cancelled')).map(order => (
             <Card key={order.id} className="card-hover">
               <CardContent className="p-4">
