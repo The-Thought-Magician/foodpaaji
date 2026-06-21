@@ -28,5 +28,6 @@ export function MenuImage({ imagePath, alt, className = 'w-full h-32 object-cove
     )
   }
 
+  // eslint-disable-next-line @next/next/no-img-element
   return <img src={src} alt={alt} className={className} />
 }

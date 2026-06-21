@@ -114,6 +114,8 @@ export default function PricingManagement({ restaurantId, categories, onPricesCh
 
       <PricingCalculatorDialog
         open={showCalc} onClose={() => setShowCalc(false)} menuItems={menuItems}
+        restaurantId={restaurantId}
+        onApplied={() => { onPricesChange(); loadAnalytics() }}
       />
       <PricingBulkDialog
         open={showBulk} onClose={() => setShowBulk(false)}

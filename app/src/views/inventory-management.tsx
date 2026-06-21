@@ -58,7 +58,6 @@ export function InventoryManagement() {
     if (search) result = result.filter(i => i.name.toLowerCase().includes(search.toLowerCase()) || (i.sku ?? '').toLowerCase().includes(search.toLowerCase()))
     if (filterStatus !== 'all') result = result.filter(i => getStatus(i) === filterStatus)
     return result.sort((a, b) => a.name.localeCompare(b.name))
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [items, search, filterStatus])
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / ITEMS_PER_PAGE))

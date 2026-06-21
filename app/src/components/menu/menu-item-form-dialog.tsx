@@ -174,6 +174,7 @@ export function MenuItemFormDialog({ open, editingId, initialData, categories, r
                 <Label>Item Image</Label>
                 {existingImage && !imagePreview && (
                   <div className="mb-2 relative w-full h-32 bg-muted rounded-lg overflow-hidden">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={existingImage} alt="Current" className="w-full h-full object-cover" />
                     <Button size="sm" variant="destructive" className="absolute top-2 right-2 text-xs h-7"
                       onClick={async () => { if (!editingId) return; await invoke('delete_menu_item_image', { menuItemId: editingId, restaurantId }).catch(console.error); setExistingImage(null) }}>
@@ -184,6 +185,7 @@ export function MenuItemFormDialog({ open, editingId, initialData, categories, r
                 <Input type="file" accept="image/*" onChange={onImageSelect} />
                 {imagePreview && (
                   <div className="mt-2 w-full h-32 bg-muted rounded-lg overflow-hidden">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={imagePreview} alt="Preview" className="w-full h-full object-cover" />
                   </div>
                 )}

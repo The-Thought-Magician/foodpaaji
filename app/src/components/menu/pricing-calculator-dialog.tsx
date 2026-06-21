@@ -15,10 +15,13 @@ interface Props {
   open: boolean
   onClose: () => void
   menuItems: MenuItem[]
+  restaurantId?: number
+  onApplied?: () => void
 }
 
-export function PricingCalculatorDialog({ open, onClose, menuItems }: Props) {
+export function PricingCalculatorDialog({ open, onClose, menuItems, restaurantId, onApplied }: Props) {
   const [loading, setLoading] = useState(false)
+  const [applying, setApplying] = useState(false)
   const [result, setResult] = useState<PriceCalculation | null>(null)
   const [form, setForm] = useState({
     menu_item_id: 0,
@@ -30,6 +33,25 @@ export function PricingCalculatorDialog({ open, onClose, menuItems }: Props) {
 
   const update = <K extends keyof typeof form>(k: K, v: typeof form[K]) =>
     setForm(f => ({ ...f, [k]: v }))
+
+  const applyPrice = async () => {
+    if (!result || !restaurantId) return
+    setApplying(true)
+    try {
+      await invoke('update_menu_item_price', {
+        request: {
+          menu_item_id: form.menu_item_id,
+          restaurant_id: restaurantId,
+          new_price: result.suggested_price,
+          reason: `Applied via ${form.strategy} calculator`,
+        },
+      })
+      onApplied?.()
+      setResult(null)
+      onClose()
+    } catch (e) { console.error(e) }
+    finally { setApplying(false) }
+  }
 
   const calculate = async () => {
     setLoading(true)
@@ -103,6 +125,11 @@ export function PricingCalculatorDialog({ open, onClose, menuItems }: Props) {
                 <span className="font-medium text-green-600">{formatCurrency(result.suggested_price)}</span>
                 <span>Profit Margin</span><span>{result.profit_margin.toFixed(1)}%</span>
               </div>
+              {restaurantId && (
+                <Button onClick={applyPrice} disabled={applying} className="w-full mt-2" size="sm">
+                  {applying ? 'Applying...' : `Apply ₹${result.suggested_price.toFixed(2)}`}
+                </Button>
+              )}
             </div>
           )}
         </div>

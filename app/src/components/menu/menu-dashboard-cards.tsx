@@ -74,6 +74,7 @@ export function FeaturedItemRow({ item }: { item: MenuItem }) {
     <div className="flex items-center gap-4 p-3 rounded-xl hover:bg-muted/50 transition-colors cursor-pointer">
       <div className="w-14 h-14 rounded-xl bg-muted flex items-center justify-center overflow-hidden">
         {item.image_url ? (
+          // eslint-disable-next-line @next/next/no-img-element
           <img src={item.image_url} alt={item.name} className="w-full h-full object-cover" />
         ) : (
           <Utensils className="w-6 h-6 text-muted-foreground" />

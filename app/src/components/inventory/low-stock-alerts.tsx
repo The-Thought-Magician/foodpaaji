@@ -78,7 +78,7 @@ export default function LowStockAlerts() {
   }
 
   const selectOne = (id: number, checked: boolean) => {
-    setSelected(s => { const n = new Set(s); checked ? n.add(id) : n.delete(id); return n })
+    setSelected(s => { const n = new Set(s); if (checked) n.add(id); else n.delete(id); return n })
   }
 
   const selectAll = (checked: boolean) => {

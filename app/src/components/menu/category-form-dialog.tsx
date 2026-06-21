@@ -109,6 +109,7 @@ export default function CategoryFormDialog({ open, editing, categories, restaura
             </div>
             {imagePreview && (
               <div className="mt-2 w-full h-32 bg-muted rounded-lg overflow-hidden">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={imagePreview} alt="Preview" className="w-full h-full object-cover" />
               </div>
             )}

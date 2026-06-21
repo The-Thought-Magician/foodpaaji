@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { invoke } from '@tauri-apps/api/core'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -33,7 +33,7 @@ export default function InventorySearch() {
       .catch(console.error)
   }, [])
 
-  const search = async (f: SearchFilters = filters) => {
+  const search = useCallback(async (f: SearchFilters = filters) => {
     setLoading(true)
     try {
       const res = await invoke<{ success: boolean; data?: { items: SearchInventoryItem[]; total: number } }>(
@@ -43,9 +43,9 @@ export default function InventorySearch() {
       else { setItems([]); setTotalRecords(0) }
     } catch (e) { console.error(e); setItems([]); setTotalRecords(0) }
     finally { setLoading(false) }
-  }
+  }, [filters])
 
-  useEffect(() => { search() }, [filters])
+  useEffect(() => { search() }, [filters, search])
 
   const setFilter = (key: keyof SearchFilters, value: string | number | boolean | undefined) => {
     setFilters(prev => ({ ...prev, [key]: value, page: key !== 'page' ? 1 : (value as number) }))

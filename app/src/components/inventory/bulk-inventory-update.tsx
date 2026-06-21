@@ -70,7 +70,7 @@ export default function BulkInventoryUpdate() {
   )
 
   const toggleItem = (id: number, checked: boolean) => {
-    setSelected(s => { const n = new Set(s); checked ? n.add(id) : n.delete(id); return n })
+    setSelected(s => { const n = new Set(s); if (checked) n.add(id); else n.delete(id); return n })
   }
 
   const toggleAll = (checked: boolean) => {

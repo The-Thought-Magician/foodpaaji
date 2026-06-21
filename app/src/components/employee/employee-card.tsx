@@ -39,6 +39,7 @@ export default function EmployeeCard({ employee, onEdit, onDelete, onView }: Pro
         <div className="flex items-center gap-3">
           <div className={`w-12 h-12 ${config.color} rounded-xl overflow-hidden flex items-center justify-center text-white font-bold shadow-md`}>
             {avatarSrc
+              // eslint-disable-next-line @next/next/no-img-element
               ? <img src={avatarSrc} alt={employee.name} className="w-full h-full object-cover" />
               : initials}
           </div>

@@ -82,14 +82,14 @@ export function BillingManagement() {
     } catch (e) { console.error(e) }
   }, [filterStatus])
 
-  const loadSummary = async () => {
+  const loadSummary = useCallback(async () => {
     try {
       const res = await invoke<{ success: boolean; data: typeof summary }>('get_billing_summary')
       if (res.success) setSummary(res.data)
     } catch (e) { console.error(e) }
-  }
+  }, [])
 
-  useEffect(() => { loadBills(); loadSummary() }, [loadBills])
+  useEffect(() => { loadBills(); loadSummary() }, [loadBills, loadSummary])
 
   const addItem = () => setItems([...items, { item_name: '', quantity: 1, unit_price: 0, discount_amount: 0 }])
   const updateItem = (i: number, field: keyof BillItem, value: string | number) => {

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { invoke } from '@tauri-apps/api/core'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -20,16 +20,16 @@ export default function MenuCategories({ restaurantId, onCategoriesChange }: Pro
   const [showForm, setShowForm] = useState(false)
   const [editing, setEditing] = useState<MenuCategory | null>(null)
 
-  const load = async () => {
+  const load = useCallback(async () => {
     setLoading(true)
     try {
       const res = await invoke<{ success: boolean; data?: MenuCategory[] }>('get_menu_categories', { restaurantId })
       if (res.success && res.data) setCategories(res.data)
     } catch (e) { console.error(e) }
     finally { setLoading(false) }
-  }
+  }, [restaurantId])
 
-  useEffect(() => { load() }, [restaurantId])
+  useEffect(() => { load() }, [load])
 
   const handleImageUpload = async (categoryId?: number, file?: File | null) => {
     if (!file || !categoryId) return

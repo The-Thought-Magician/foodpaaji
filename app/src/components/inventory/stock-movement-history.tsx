@@ -39,7 +39,7 @@ export default function StockMovementHistory() {
       .catch(console.error)
   }, [])
 
-  useEffect(() => { loadMovements(filters) }, [filters])
+  useEffect(() => { loadMovements(filters) }, [filters, loadMovements])
 
   const setFilter = (key: keyof MovementFilters, value: string | number | undefined) => {
     setFilters(prev => ({ ...prev, [key]: value, page: key !== 'page' ? 1 : (value as number) }))
