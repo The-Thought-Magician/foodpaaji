@@ -59,6 +59,8 @@ export function BillingManagement() {
   const [showPayment, setShowPayment] = useState<Bill | null>(null)
   const [filterStatus, setFilterStatus] = useState<string | null>(null)
   const [search, setSearch] = useState('')
+  const [dateFrom, setDateFrom] = useState('')
+  const [dateTo, setDateTo] = useState('')
   const [items, setItems] = useState<BillItem[]>([{ item_name: '', quantity: 1, unit_price: 0, discount_amount: 0 }])
   const [tableNumber, setTableNumber] = useState('')
   const [discountPercent, setDiscountPercent] = useState(0)
@@ -76,7 +78,7 @@ export function BillingManagement() {
   }
   const loadBills = useCallback(async () => {
     try {
-      const res = await invoke<{ success: boolean; data: Bill[] }>('get_bills', { status: filterStatus, limit: 50 })
+      const res = await invoke<{ success: boolean; data: Bill[] }>('get_bills', { status: filterStatus, limit: 500 })
       if (res.success) setBills(res.data)
     } catch (e) { console.error(e) }
   }, [filterStatus])
@@ -89,7 +91,12 @@ export function BillingManagement() {
   }, [])
   useEffect(() => { loadBills(); loadSummary() }, [loadBills, loadSummary])
 
-  const filteredBills = search ? bills.filter(b => b.bill_number.toLowerCase().includes(search.toLowerCase()) || (b.table_number ?? '').toLowerCase().includes(search.toLowerCase())) : bills
+  const filteredBills = bills.filter(b => {
+    if (search && !b.bill_number.toLowerCase().includes(search.toLowerCase()) && !(b.table_number ?? '').toLowerCase().includes(search.toLowerCase())) return false
+    if (dateFrom && b.created_at.slice(0, 10) < dateFrom) return false
+    if (dateTo && b.created_at.slice(0, 10) > dateTo) return false
+    return true
+  })
   const addItem = () => setItems([...items, { item_name: '', quantity: 1, unit_price: 0, discount_amount: 0 }])
   const updateItem = (i: number, field: keyof BillItem, value: string | number) => { setItems(items.map((item, idx) => idx === i ? { ...item, [field]: value } : item)) }
   const removeItem = (i: number) => setItems(items.filter((_, idx) => idx !== i))
@@ -160,18 +167,8 @@ export function BillingManagement() {
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {[
-          { label: "Today's Bills", value: summary.today_bills, icon: FileText, format: (v: number) => v.toString() },
-          { label: "Today's Revenue", value: summary.today_revenue, icon: IndianRupee, format: (v: number) => `₹${v.toFixed(0)}` },
-          { label: "Collected", value: summary.today_collected, icon: TrendingUp, format: (v: number) => `₹${v.toFixed(0)}` },
-          { label: "Outstanding", value: summary.today_revenue - summary.today_collected, icon: Receipt, format: (v: number) => `₹${v.toFixed(0)}` },
-        ].map(s => (
-          <Card key={s.label} className="stat-card">
-            <CardContent className="p-4 flex items-center gap-3">
-              <div className="p-2 gradient-spice rounded-lg"><s.icon className="w-5 h-5 text-white" /></div>
-              <div><p className="text-sm text-muted-foreground">{s.label}</p><p className="text-xl font-bold">{s.format(s.value)}</p></div>
-            </CardContent>
-          </Card>
+        {([["Today's Bills", summary.today_bills, FileText, (v: number) => v.toString()], ["Today's Revenue", summary.today_revenue, IndianRupee, (v: number) => `₹${v.toFixed(0)}`], ["Collected", summary.today_collected, TrendingUp, (v: number) => `₹${v.toFixed(0)}`], ["Outstanding", summary.today_revenue - summary.today_collected, Receipt, (v: number) => `₹${v.toFixed(0)}`]] as [string, number, React.ElementType, (v: number) => string][]).map(([label, value, Icon, fmt]) => (
+          <Card key={label} className="stat-card"><CardContent className="p-4 flex items-center gap-3"><div className="p-2 gradient-spice rounded-lg"><Icon className="w-5 h-5 text-white" /></div><div><p className="text-sm text-muted-foreground">{label}</p><p className="text-xl font-bold">{fmt(value)}</p></div></CardContent></Card>
         ))}
       </div>
 
@@ -184,6 +181,9 @@ export function BillingManagement() {
             </Button>
           ))}
           <div className="relative"><Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" /><Input className="pl-8 h-8 w-44 text-sm" placeholder="Bill # or table…" value={search} onChange={e => setSearch(e.target.value)} /></div>
+          <Input type="date" className="h-8 w-36 text-sm" value={dateFrom} onChange={e => setDateFrom(e.target.value)} title="From date" />
+          <Input type="date" className="h-8 w-36 text-sm" value={dateTo} onChange={e => setDateTo(e.target.value)} title="To date" />
+          {(dateFrom || dateTo) && <Button variant="ghost" size="sm" className="h-8 px-2 text-xs" onClick={() => { setDateFrom(''); setDateTo('') }}>Clear</Button>}
         </div>
         <div className="flex gap-2">
           <Button variant="outline" size="sm" onClick={exportCSV} disabled={filteredBills.length === 0}><Download className="w-4 h-4 mr-1" />CSV</Button>
