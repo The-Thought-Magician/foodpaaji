@@ -16,6 +16,7 @@ import { getSettings } from '@/lib/settings'
 interface Bill {
   id: number
   bill_number: string
+  customer_id?: number | null
   table_number?: string
   subtotal: number
   discount_amount: number
@@ -142,7 +143,13 @@ export function BillingManagement() {
         setPaymentHistory(updated)
         const totalPaid = updated.reduce((s, p) => s + p.amount, 0)
         const remaining = Math.max(0, showPayment.total_amount - totalPaid)
-        if (remaining <= 0 || res.bill_paid) { setShowPayment(null); loadBills(); loadSummary() }
+        if (remaining <= 0 || res.bill_paid) {
+          if (showPayment.customer_id) {
+            const pts = Math.floor(showPayment.total_amount / 10)
+            if (pts > 0) invoke('add_loyalty_points', { customerId: showPayment.customer_id, points: pts, billAmount: showPayment.total_amount }).catch(console.error)
+          }
+          setShowPayment(null); loadBills(); loadSummary()
+        }
         else { setPayAmount(remaining.toFixed(2)); setUpiRef('') }
       }
     } catch (e) { console.error(e) }
