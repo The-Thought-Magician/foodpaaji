@@ -133,3 +133,40 @@ pub async fn get_low_stock_report(
         Err(e) => Ok(ApiResponse { success: false, data: None, message: None, error: Some(format!("Database error: {}", e)) }),
     }
 }
+
+#[derive(Debug, Serialize, Deserialize, sqlx::FromRow)]
+pub struct PurchaseOrderSuggestion {
+    pub supplier_id: Option<i64>,
+    pub supplier_name: Option<String>,
+    pub item_id: i64,
+    pub item_name: String,
+    pub sku: Option<String>,
+    pub unit_name: Option<String>,
+    pub current_stock: f64,
+    pub reorder_point: f64,
+    pub maximum_stock: f64,
+    pub suggested_qty: f64,
+    pub cost_price: f64,
+    pub estimated_cost: f64,
+}
+
+#[tauri::command]
+pub async fn get_purchase_order_suggestions(
+    restaurant_id: i64,
+    db: State<'_, DbPool>,
+) -> Result<ApiResponse<Vec<PurchaseOrderSuggestion>>, String> {
+    let query = "SELECT ii.id as item_id, ii.name as item_name, ii.sku, ii.unit_name,
+               ii.supplier_id, s.name as supplier_name,
+               ii.current_stock, ii.reorder_point, ii.maximum_stock,
+               ii.cost_price,
+               CASE WHEN ii.maximum_stock > ii.current_stock THEN ii.maximum_stock - ii.current_stock ELSE ii.reorder_point * 2 - ii.current_stock END as suggested_qty,
+               ii.cost_price * (CASE WHEN ii.maximum_stock > ii.current_stock THEN ii.maximum_stock - ii.current_stock ELSE ii.reorder_point * 2 - ii.current_stock END) as estimated_cost
+        FROM inventory_items ii
+        LEFT JOIN suppliers s ON ii.supplier_id = s.id
+        WHERE ii.restaurant_id = ? AND ii.is_active = 1 AND ii.current_stock <= ii.reorder_point
+        ORDER BY s.name NULLS LAST, ii.name";
+    match sqlx::query_as::<_, PurchaseOrderSuggestion>(query).bind(restaurant_id).fetch_all(&*db).await {
+        Ok(data) => Ok(ApiResponse { success: true, data: Some(data), message: None, error: None }),
+        Err(e) => Ok(ApiResponse { success: false, data: None, message: None, error: Some(format!("Database error: {}", e)) }),
+    }
+}

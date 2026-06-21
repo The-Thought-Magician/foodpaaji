@@ -21,7 +21,7 @@ use modules::unit_conversions::{get_unit_conversions, create_unit_conversion};
 use modules::unit_conversion_tools::{convert_units, get_available_units, setup_default_conversions};
 use modules::inventory_valuation::calculate_inventory_valuation;
 use modules::inventory_valuation_methods::compare_valuation_methods;
-use modules::inventory_reports::{get_stock_summary_report, get_movement_report, get_low_stock_report};
+use modules::inventory_reports::{get_stock_summary_report, get_movement_report, get_low_stock_report, get_purchase_order_suggestions};
 use modules::inventory_analytics::{get_inventory_analytics, get_top_moving_items_report, get_slow_moving_items_report};
 use modules::auto_stock_deduction::process_order_completion;
 use modules::menu_recipes::{validate_stock_availability, create_menu_recipe, get_menu_recipe};
@@ -98,6 +98,7 @@ pub fn run() {
       get_stock_summary_report,
       get_movement_report,
       get_low_stock_report,
+      get_purchase_order_suggestions,
       get_inventory_analytics,
       get_top_moving_items_report,
       get_slow_moving_items_report,
