@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { invoke } from '@tauri-apps/api/core'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
@@ -28,31 +28,39 @@ interface MenuPickerProps {
 export function MenuPicker({ onAdd }: MenuPickerProps) {
   const [categories, setCategories] = useState<Category[]>([])
   const [items, setItems] = useState<MenuItem[]>([])
+  const [allItems, setAllItems] = useState<MenuItem[]>([])
   const [activeCat, setActiveCat] = useState<number | null>(null)
   const [search, setSearch] = useState('')
 
   useEffect(() => {
     invoke<{ success: boolean; data: Category[] }>('get_menu_categories', { restaurantId: 1 })
-      .then(r => {
+      .then(async r => {
         if (r.success && r.data.length > 0) {
           const active = r.data.filter(c => c.is_active)
           setCategories(active)
           if (active.length > 0) setActiveCat(active[0].id)
+          const results = await Promise.all(active.map(c =>
+            invoke<{ success: boolean; data: MenuItem[] }>('get_menu_items_by_category', { restaurantId: 1, categoryId: c.id })
+              .then(res => res.success ? res.data.filter(i => i.is_available) : [])
+              .catch(() => [])
+          ))
+          setAllItems(results.flat())
         }
       })
       .catch(console.error)
   }, [])
 
-  useEffect(() => {
-    if (!activeCat) return
-    invoke<{ success: boolean; data: MenuItem[] }>('get_menu_items_by_category', { restaurantId: 1, categoryId: activeCat })
+  const loadCategory = useCallback((catId: number) => {
+    invoke<{ success: boolean; data: MenuItem[] }>('get_menu_items_by_category', { restaurantId: 1, categoryId: catId })
       .then(r => { if (r.success) setItems(r.data.filter(i => i.is_available)) })
       .catch(console.error)
-  }, [activeCat])
+  }, [])
 
-  const filtered = items.filter(i =>
-    !search || i.name.toLowerCase().includes(search.toLowerCase())
-  )
+  useEffect(() => { if (activeCat) loadCategory(activeCat) }, [activeCat, loadCategory])
+
+  const filtered = search
+    ? allItems.filter(i => i.name.toLowerCase().includes(search.toLowerCase()))
+    : items
 
   return (
     <div className="flex flex-col gap-3 h-full">
