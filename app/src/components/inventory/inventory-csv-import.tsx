@@ -39,9 +39,9 @@ export default function InventoryCsvImport() {
     const out: ImportResult[] = []
     for (const row of rows) {
       try {
-        await invoke('create_inventory_item', { request: { restaurant_id: RESTAURANT_ID, name: row.name, unit_type: row.unit_type, base_unit: row.base_unit, minimum_stock: row.minimum_stock, cost_price: row.cost_price, selling_price: row.selling_price, category_id: null, supplier_id: null } })
-        if (row.current_stock > 0) {
-          await invoke('adjust_stock_level', { restaurantId: RESTAURANT_ID, itemName: row.name, quantity: row.current_stock, reason: 'CSV import' }).catch(() => null)
+        const res = await invoke<{ success: boolean; data?: { id: number } }>('create_inventory_item', { request: { restaurant_id: RESTAURANT_ID, name: row.name, unit_type: row.unit_type, base_unit: row.base_unit, minimum_stock: row.minimum_stock, cost_price: row.cost_price, selling_price: row.selling_price, category_id: null, supplier_id: null } })
+        if (row.current_stock > 0 && res.data?.id) {
+          await invoke('adjust_stock_level', { request: { restaurant_id: RESTAURANT_ID, inventory_item_id: res.data.id, new_stock_level: row.current_stock, reason: 'CSV import', user_id: 1 } }).catch(() => null)
         }
         out.push({ name: row.name, ok: true })
       } catch (err) {

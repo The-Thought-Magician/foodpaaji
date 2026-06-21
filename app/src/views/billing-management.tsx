@@ -67,7 +67,7 @@ export function BillingManagement() {
   const [payAmount, setPayAmount] = useState(''); const [payMethod, setPayMethod] = useState('cash')
   const [billCustomer, setBillCustomer] = useState<{ id: number; name: string } | null>(null)
   const [billCustSearch, setBillCustSearch] = useState(''); const [billCustResults, setBillCustResults] = useState<{ id: number; name: string; phone?: string }[]>([])
-  const [upiRef, setUpiRef] = useState('')
+  const [upiRef, setUpiRef] = useState(''); const [billNotes, setBillNotes] = useState('')
   const [showDetails, setShowDetails] = useState<null | { bill: Bill; items: BillDetailItem[]; payments: BillPayment[] }>(null)
   const [paymentHistory, setPaymentHistory] = useState<BillPayment[]>([])
   const viewDetails = async (bill: Bill) => {
@@ -107,10 +107,10 @@ export function BillingManagement() {
   const createBill = async () => {
     try {
       await invoke('create_bill', {
-        request: { customer_id: billCustomer?.id ?? null, table_number: tableNumber || null, items, discount_percent: discountPercent, tax_percent: taxPercent + scPct, notes: null }
+        request: { customer_id: billCustomer?.id ?? null, table_number: tableNumber || null, items, discount_percent: discountPercent, tax_percent: taxPercent + scPct, notes: billNotes || null }
       })
       setShowNewBill(false); setBillCustomer(null); setBillCustSearch(''); setBillCustResults([])
-      setItems([{ item_name: '', quantity: 1, unit_price: 0, discount_amount: 0 }]); setTableNumber('')
+      setItems([{ item_name: '', quantity: 1, unit_price: 0, discount_amount: 0 }]); setTableNumber(''); setBillNotes('')
       loadBills(); loadSummary()
     } catch (e) { console.error(e) }
   }
@@ -249,7 +249,7 @@ export function BillingManagement() {
               {scAmt > 0 && <div className="flex justify-between"><span>Service Charge ({scPct}%)</span><span>₹{scAmt.toFixed(2)}</span></div>}
               <div className="flex justify-between font-bold border-t pt-1"><span>Total</span><span>₹{total.toFixed(2)}</span></div>
             </div>
-            <Button className="w-full gradient-spice text-white" onClick={createBill}>Create Bill</Button>
+            <div><Label>Notes (optional)</Label><textarea value={billNotes} onChange={e => setBillNotes(e.target.value)} placeholder="Special instructions, dietary notes…" className="w-full mt-1 px-3 py-2 text-sm border border-border rounded-lg bg-background resize-none h-16 focus:outline-none focus:ring-2 focus:ring-primary/20" /></div><Button className="w-full gradient-spice text-white" onClick={createBill}>Create Bill</Button>
           </div>
         </DialogContent>
       </Dialog>
