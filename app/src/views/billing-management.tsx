@@ -164,8 +164,7 @@ export function BillingManagement() {
     <div className="space-y-6">
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {([["Today's Bills", summary.today_bills, FileText, (v: number) => v.toString()], ["Today's Revenue", summary.today_revenue, IndianRupee, (v: number) => `₹${v.toFixed(0)}`], ["Collected", summary.today_collected, TrendingUp, (v: number) => `₹${v.toFixed(0)}`], ["Outstanding", summary.today_revenue - summary.today_collected, Receipt, (v: number) => `₹${v.toFixed(0)}`]] as [string, number, React.ElementType, (v: number) => string][]).map(([label, value, Icon, fmt]) => (
-          <Card key={label} className="stat-card"><CardContent className="p-4 flex items-center gap-3"><div className="p-2 gradient-spice rounded-lg"><Icon className="w-5 h-5 text-white" /></div><div><p className="text-sm text-muted-foreground">{label}</p><p className="text-xl font-bold">{fmt(value)}</p></div></CardContent></Card>
-        ))}
+          <Card key={label} className="stat-card"><CardContent className="p-4 flex items-center gap-3"><div className="p-2 gradient-spice rounded-lg"><Icon className="w-5 h-5 text-white" /></div><div><p className="text-sm text-muted-foreground">{label}</p><p className="text-xl font-bold">{fmt(value)}</p></div></CardContent></Card>))}
       </div>
 
       <div className="flex gap-3">
@@ -221,7 +220,6 @@ export function BillingManagement() {
         ))}
         {bills.length === 0 && <p className="text-center text-muted-foreground py-12">No bills found</p>}
       </div>
-
       <Dialog open={showNewBill} onOpenChange={setShowNewBill}>
         <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
           <DialogHeader><DialogTitle>New Bill</DialogTitle></DialogHeader>
@@ -290,7 +288,10 @@ export function BillingManagement() {
               <div className="flex justify-between font-bold border-t pt-2"><span>Total</span><span>₹{showDetails?.bill.total_amount.toFixed(2)}</span></div>
             </div>
             {showDetails?.payments && showDetails.payments.length > 0 && <div><p className="text-sm font-medium mb-1">Payments</p>{showDetails.payments.map((p, i) => <div key={i} className="flex justify-between text-sm text-muted-foreground"><span>{p.method.toUpperCase()} · {new Date(p.paid_at).toLocaleString()}</span><span>₹{p.amount.toFixed(2)}</span></div>)}</div>}
-            <Button variant="outline" className="w-full" onClick={async () => { if (!showDetails) return; const res = await invoke<{ success: boolean; data: { content: string } }>('get_receipt', { billId: showDetails.bill.id }).catch(() => null); if (res?.success) { const w = window.open('', '_blank'); if (w) { w.document.write(`<pre style="font-family:monospace">${res.data.content}</pre>`); w.print() } } }}><Receipt className="w-4 h-4 mr-2" />Reprint Receipt</Button>
+            <div className="flex gap-2">
+              <Button variant="outline" className="flex-1" onClick={async () => { if (!showDetails) return; const res = await invoke<{ success: boolean; data: { content: string } }>('get_receipt', { billId: showDetails.bill.id }).catch(() => null); if (res?.success) { const w = window.open('', '_blank'); if (w) { w.document.write(`<pre style="font-family:monospace">${res.data.content}</pre>`); w.print() } } }}><Receipt className="w-4 h-4 mr-2" />Reprint</Button>
+              {showDetails?.bill.status === 'paid' && <Button variant="outline" className="flex-1 text-yellow-600 border-yellow-300 hover:bg-yellow-50" onClick={() => { if (!showDetails || !confirm('Mark this bill as refunded?')) return; updateBillStatus(showDetails.bill.id, 'refunded'); setShowDetails(null) }}>Mark Refunded</Button>}
+            </div>
           </div>
         </DialogContent>
       </Dialog>
