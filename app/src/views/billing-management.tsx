@@ -64,6 +64,8 @@ export function BillingManagement() {
   const [tableNumber, setTableNumber] = useState(''); const [discountPercent, setDiscountPercent] = useState(0)
   const [taxPercent, setTaxPercent] = useState(() => getSettings().default_tax_percent)
   const [payAmount, setPayAmount] = useState(''); const [payMethod, setPayMethod] = useState('cash')
+  const [billCustomer, setBillCustomer] = useState<{ id: number; name: string } | null>(null)
+  const [billCustSearch, setBillCustSearch] = useState(''); const [billCustResults, setBillCustResults] = useState<{ id: number; name: string; phone?: string }[]>([])
   const [upiRef, setUpiRef] = useState('')
   const [showDetails, setShowDetails] = useState<null | { bill: Bill; items: BillDetailItem[]; payments: BillPayment[] }>(null)
   const [paymentHistory, setPaymentHistory] = useState<BillPayment[]>([])
@@ -97,20 +99,16 @@ export function BillingManagement() {
   const addItem = () => setItems([...items, { item_name: '', quantity: 1, unit_price: 0, discount_amount: 0 }])
   const updateItem = (i: number, field: keyof BillItem, value: string | number) => { setItems(items.map((item, idx) => idx === i ? { ...item, [field]: value } : item)) }
   const removeItem = (i: number) => setItems(items.filter((_, idx) => idx !== i))
-
   const subtotal = items.reduce((s, i) => s + (i.unit_price * i.quantity) - i.discount_amount, 0)
-  const discountAmt = subtotal * discountPercent / 100
-  const taxAmt = (subtotal - discountAmt) * taxPercent / 100
-  const total = subtotal - discountAmt + taxAmt
+  const discountAmt = subtotal * discountPercent / 100; const taxAmt = (subtotal - discountAmt) * taxPercent / 100; const total = subtotal - discountAmt + taxAmt
 
   const createBill = async () => {
     try {
       await invoke('create_bill', {
-        request: { customer_id: null, table_number: tableNumber || null, items, discount_percent: discountPercent, tax_percent: taxPercent, notes: null }
+        request: { customer_id: billCustomer?.id ?? null, table_number: tableNumber || null, items, discount_percent: discountPercent, tax_percent: taxPercent, notes: null }
       })
-      setShowNewBill(false)
-      setItems([{ item_name: '', quantity: 1, unit_price: 0, discount_amount: 0 }])
-      setTableNumber('')
+      setShowNewBill(false); setBillCustomer(null); setBillCustSearch(''); setBillCustResults([])
+      setItems([{ item_name: '', quantity: 1, unit_price: 0, discount_amount: 0 }]); setTableNumber('')
       loadBills(); loadSummary()
     } catch (e) { console.error(e) }
   }
@@ -222,6 +220,11 @@ export function BillingManagement() {
         <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
           <DialogHeader><DialogTitle>New Bill</DialogTitle></DialogHeader>
           <div className="space-y-4">
+            <div className="relative"><Label>Customer (optional)</Label>
+              {billCustomer ? <div className="flex items-center gap-2 mt-1 p-2 bg-muted rounded-lg text-sm"><span className="flex-1 font-medium">{billCustomer.name}</span><button onClick={() => { setBillCustomer(null); setBillCustSearch('') }} className="text-muted-foreground hover:text-foreground">✕</button></div>
+              : <><Input value={billCustSearch} onChange={async e => { setBillCustSearch(e.target.value); if (e.target.value.length > 1) { const r = await invoke<{ success: boolean; data: typeof billCustResults }>('get_customers', { search: e.target.value, limit: 5 }).catch(() => null); if (r?.success) setBillCustResults(r.data) } else setBillCustResults([]) }} placeholder="Search customer name or phone" className="mt-1" />
+              {billCustResults.length > 0 && <div className="absolute z-10 w-full bg-popover border border-border rounded-lg shadow-lg mt-1">{billCustResults.map(c => <button key={c.id} onClick={() => { setBillCustomer(c); setBillCustSearch(''); setBillCustResults([]) }} className="w-full text-left px-3 py-2 text-sm hover:bg-muted">{c.name}{c.phone ? ` · ${c.phone}` : ''}</button>)}</div>}</>}
+            </div>
             <div><Label>Table Number</Label><Input value={tableNumber} onChange={e => setTableNumber(e.target.value)} placeholder="e.g. T1" /></div>
             <div className="space-y-2">
               <Label>Items</Label>
