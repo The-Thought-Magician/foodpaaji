@@ -39,21 +39,33 @@ pub async fn get_customers(pool: State<'_, SqlitePool>, search: Option<String>, 
 
 #[tauri::command]
 pub async fn get_customer(pool: State<'_, SqlitePool>, customer_id: i64) -> Result<serde_json::Value, String> {
-    let row = sqlx::query!("SELECT id, name, phone, email, address, loyalty_points, total_spent, visit_count, created_at FROM customers WHERE id = ?", customer_id)
-        .fetch_optional(pool.inner()).await.map_err(|e| e.to_string())?;
+    let row = sqlx::query("SELECT id, name, phone, email, address, notes, loyalty_points, total_spent, visit_count, created_at FROM customers WHERE id = ?")
+        .bind(customer_id).fetch_optional(pool.inner()).await.map_err(|e| e.to_string())?;
     match row {
         None => Err("Customer not found".to_string()),
-        Some(r) => Ok(serde_json::json!({ "success": true, "data": { "id": r.id, "name": r.name, "phone": r.phone, "email": r.email, "address": r.address, "loyalty_points": r.loyalty_points, "total_spent": r.total_spent, "visit_count": r.visit_count, "created_at": r.created_at } }))
+        Some(r) => {
+            use sqlx::Row;
+            Ok(serde_json::json!({ "success": true, "data": {
+                "id": r.try_get::<i64,_>("id").unwrap_or(0),
+                "name": r.try_get::<String,_>("name").unwrap_or_default(),
+                "phone": r.try_get::<Option<String>,_>("phone").unwrap_or(None),
+                "email": r.try_get::<Option<String>,_>("email").unwrap_or(None),
+                "address": r.try_get::<Option<String>,_>("address").unwrap_or(None),
+                "notes": r.try_get::<Option<String>,_>("notes").unwrap_or(None),
+                "loyalty_points": r.try_get::<i64,_>("loyalty_points").unwrap_or(0),
+                "total_spent": r.try_get::<f64,_>("total_spent").unwrap_or(0.0),
+                "visit_count": r.try_get::<i64,_>("visit_count").unwrap_or(0),
+                "created_at": r.try_get::<String,_>("created_at").unwrap_or_default()
+            }}))
+        }
     }
 }
 
 #[tauri::command]
-pub async fn update_customer(pool: State<'_, SqlitePool>, customer_id: i64, name: String, phone: Option<String>, email: Option<String>, address: Option<String>) -> Result<serde_json::Value, String> {
-    sqlx::query!(
-        "UPDATE customers SET name = ?, phone = ?, email = ?, address = ?, updated_at = datetime('now') WHERE id = ?",
-        name, phone, email, address, customer_id
-    )
-    .execute(pool.inner()).await.map_err(|e| e.to_string())?;
+pub async fn update_customer(pool: State<'_, SqlitePool>, customer_id: i64, name: String, phone: Option<String>, email: Option<String>, address: Option<String>, notes: Option<String>) -> Result<serde_json::Value, String> {
+    sqlx::query("UPDATE customers SET name = ?, phone = ?, email = ?, address = ?, notes = ?, updated_at = datetime('now') WHERE id = ?")
+        .bind(&name).bind(&phone).bind(&email).bind(&address).bind(&notes).bind(customer_id)
+        .execute(pool.inner()).await.map_err(|e| e.to_string())?;
     Ok(serde_json::json!({ "success": true }))
 }
 

@@ -34,7 +34,7 @@ export function CustomerManagement() {
   const [sortBy, setSortBy] = useState<'name' | 'total_spent' | 'visit_count' | 'loyalty_points'>('name')
   const [showForm, setShowForm] = useState(false)
   const [editCustomer, setEditCustomer] = useState<Customer | null>(null)
-  const [form, setForm] = useState({ name: '', phone: '', email: '', address: '' })
+  const [form, setForm] = useState({ name: '', phone: '', email: '', address: '', notes: '' })
   const [segment, setSegment] = useState<'all' | 'vip' | 'regular' | 'new' | 'loyal'>('all')
 
   const getSegment = (c: Customer) => {
@@ -62,13 +62,20 @@ export function CustomerManagement() {
 
   useEffect(() => { loadCustomers(); loadStats() }, [loadCustomers])
 
-  const openCreate = () => { setEditCustomer(null); setForm({ name: '', phone: '', email: '', address: '' }); setShowForm(true) }
-  const openEdit = (c: Customer) => { setEditCustomer(c); setForm({ name: c.name, phone: c.phone || '', email: c.email || '', address: '' }); setShowForm(true) }
+  const openCreate = () => { setEditCustomer(null); setForm({ name: '', phone: '', email: '', address: '', notes: '' }); setShowForm(true) }
+  const openEdit = async (c: Customer) => {
+    setEditCustomer(c)
+    setForm({ name: c.name, phone: c.phone || '', email: c.email || '', address: '', notes: '' })
+    setShowForm(true)
+    invoke<{ success: boolean; data: Customer & { address?: string; notes?: string } }>('get_customer', { customerId: c.id })
+      .then(r => { if (r.success) setForm(f => ({ ...f, address: r.data.address ?? '', notes: r.data.notes ?? '' })) })
+      .catch(() => {})
+  }
 
   const save = async () => {
     try {
       if (editCustomer) {
-        await invoke('update_customer', { customerId: editCustomer.id, name: form.name, phone: form.phone || null, email: form.email || null, address: form.address || null })
+        await invoke('update_customer', { customerId: editCustomer.id, name: form.name, phone: form.phone || null, email: form.email || null, address: form.address || null, notes: form.notes || null })
       } else {
         await invoke('create_customer', { request: { name: form.name, phone: form.phone || null, email: form.email || null, address: form.address || null } })
       }
@@ -84,13 +91,13 @@ export function CustomerManagement() {
     } catch (e) { console.error(e) }
   }
 
-  const [viewCustomer, setViewCustomer] = useState<Customer & { address?: string } | null>(null)
+  const [viewCustomer, setViewCustomer] = useState<Customer & { address?: string; notes?: string } | null>(null)
   const [customerBills, setCustomerBills] = useState<{ id: number; bill_number: string; total_amount: number; status: string; created_at: string; customer_id?: number }[]>([])
 
   const viewProfile = async (id: number) => {
     try {
       const [cr, br] = await Promise.all([
-        invoke<{ success: boolean; data: Customer & { address?: string } }>('get_customer', { customerId: id }),
+        invoke<{ success: boolean; data: Customer & { address?: string; notes?: string } }>('get_customer', { customerId: id }),
         invoke<{ success: boolean; data: { id: number; bill_number: string; total_amount: number; status: string; created_at: string; customer_id?: number }[] }>('get_bills', { status: null, customerId: id, limit: 20 }),
       ])
       if (cr.success && cr.data) setViewCustomer(cr.data)
@@ -214,6 +221,7 @@ export function CustomerManagement() {
               </div>
               {viewCustomer.email && <p><span className="text-muted-foreground">Email:</span> {viewCustomer.email}</p>}
               {viewCustomer.address && <p><span className="text-muted-foreground">Address:</span> {viewCustomer.address}</p>}
+              {viewCustomer.notes && <p className="text-sm bg-amber-50 border border-amber-200 rounded-lg px-3 py-2"><span className="font-medium text-amber-800">Notes: </span><span className="text-amber-700">{viewCustomer.notes}</span></p>}
               {viewCustomer.created_at && <p className="text-xs text-muted-foreground">Member since {new Date(viewCustomer.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</p>}
               {customerBills.length > 0 && (
                 <div className="pt-2 border-t">
@@ -263,6 +271,7 @@ export function CustomerManagement() {
             <div><Label>Phone</Label><Input value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} /></div>
             <div><Label>Email</Label><Input value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} /></div>
             <div><Label>Address</Label><Input value={form.address} onChange={e => setForm({ ...form, address: e.target.value })} /></div>
+            <div><Label>Notes / Preferences</Label><textarea value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} placeholder="e.g. allergic to peanuts, prefers window seat" className="w-full mt-1 px-3 py-2 text-sm border border-border rounded-lg bg-background resize-none h-16 focus:outline-none focus:ring-2 focus:ring-primary/20" /></div>
             <Button className="w-full gradient-spice text-white" onClick={save}>Save Customer</Button>
           </div>
         </DialogContent>
