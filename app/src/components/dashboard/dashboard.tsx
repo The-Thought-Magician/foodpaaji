@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { invoke } from '@tauri-apps/api/core'
-import { Users, Receipt, Package, ArrowUpRight, Clock, CalendarCheck, X, Megaphone, IndianRupee } from 'lucide-react'
+import { Users, Receipt, Package, ArrowUpRight, Clock, CalendarCheck, X, Megaphone, IndianRupee, UserCheck } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
 
@@ -24,6 +24,17 @@ interface Announcement {
   title: string
   body: string
   priority: string
+}
+
+interface Reservation {
+  id: number
+  customer_name: string
+  customer_phone?: string
+  table_number?: string
+  party_size: number
+  time: string
+  status: string
+  special_requests?: string
 }
 
 interface RecentBill {
@@ -48,6 +59,7 @@ export function Dashboard() {
   const [announcements, setAnnouncements] = useState<Announcement[]>([])
   const [weekRevenue, setWeekRevenue] = useState<{ date: string; revenue: number }[]>([])
   const [topItems, setTopItems] = useState<{ item_name: string; order_count: number; total_revenue: number }[]>([])
+  const [upcomingReservations, setUpcomingReservations] = useState<Reservation[]>([])
 
   useEffect(() => {
     async function load() {
@@ -59,7 +71,7 @@ export function Dashboard() {
           invoke<{ success: boolean; data: { id: number }[] }>('get_orders', { status: 'pending', limit: 50 }),
           invoke<{ success: boolean; data: { total_customers: number } }>('get_customer_stats'),
           invoke<{ success: boolean; data: { total_alerts: number } }>('get_alert_summary', { restaurantId: 1 }).catch(() => ({ success: false, data: { total_alerts: 0 } })),
-          invoke<{ success: boolean; data: { id: number }[] }>('get_reservations', { date: today, status: null }).catch(() => ({ success: false, data: [] })),
+          invoke<{ success: boolean; data: Reservation[] }>('get_reservations', { date: today, status: null }).catch(() => ({ success: false, data: [] })),
           invoke<{ success: boolean; data: Announcement[] }>('get_announcements', { activeOnly: true }).catch(() => ({ success: false, data: [] })),
         ])
 
@@ -75,6 +87,15 @@ export function Dashboard() {
           low_stock_count: alerts.success ? alerts.data.total_alerts : 0,
           today_reservations: reservations.success ? reservations.data.length : 0,
         })
+        if (reservations.success) {
+          const now = new Date().toTimeString().slice(0, 5)
+          setUpcomingReservations(
+            reservations.data
+              .filter(r => r.status !== 'cancelled' && r.status !== 'no_show' && r.time >= now)
+              .sort((a, b) => a.time.localeCompare(b.time))
+              .slice(0, 5)
+          )
+        }
         setActiveOrders(orders.success ? orders.data.length : 0)
         if (bills.success) {
           const days = Array.from({ length: 7 }, (_, i) => {
@@ -168,6 +189,34 @@ export function Dashboard() {
               <div key={m.label} className="text-center p-4 rounded-xl bg-muted/50">
                 <p className={`text-xl font-bold ${m.color}`}>₹{m.value.toFixed(0)}</p>
                 <p className="text-sm text-muted-foreground mt-1">{m.label}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {upcomingReservations.length > 0 && (
+        <div className="bg-card rounded-2xl border border-border overflow-hidden">
+          <div className="p-6 border-b border-border flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <UserCheck className="w-5 h-5 text-teal-600" />
+              <h3 className="font-semibold text-lg">Upcoming Reservations</h3>
+            </div>
+            <Link href="/reservations"><Button variant="outline" size="sm"><ArrowUpRight className="w-4 h-4 mr-1" />View All</Button></Link>
+          </div>
+          <div className="divide-y divide-border">
+            {upcomingReservations.map(r => (
+              <div key={r.id} className="flex items-center justify-between p-4 hover:bg-muted/50 transition-colors">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-teal-50 flex items-center justify-center shrink-0">
+                    <span className="text-xs font-bold text-teal-700">{r.time.slice(0, 5)}</span>
+                  </div>
+                  <div>
+                    <p className="font-medium text-sm">{r.customer_name}</p>
+                    <p className="text-xs text-muted-foreground">{r.party_size} guests{r.table_number ? ` · Table ${r.table_number}` : ''}{r.special_requests ? ` · ${r.special_requests}` : ''}</p>
+                  </div>
+                </div>
+                <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${r.status === 'confirmed' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>{r.status}</span>
               </div>
             ))}
           </div>
