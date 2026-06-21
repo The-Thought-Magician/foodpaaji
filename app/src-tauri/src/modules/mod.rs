@@ -59,6 +59,7 @@ pub mod inventory_export;
 pub mod staff_performance;
 pub mod sales_export;
 pub mod menu_performance;
+pub mod menu_export;
 pub mod bill_refunds;
 pub mod customer_addresses;
 pub mod scheduled_promotions;

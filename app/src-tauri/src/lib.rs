@@ -62,6 +62,7 @@ use modules::inventory_export::export_inventory_csv;
 use modules::staff_performance::get_staff_performance;
 use modules::sales_export::export_sales_csv;
 use modules::menu_performance::get_menu_performance;
+use modules::menu_export::export_menu_html;
 use modules::bill_refunds::{cancel_bill, partial_refund, get_bill_refunds};
 use modules::customer_addresses::{get_customer_addresses, add_customer_address, delete_customer_address, set_default_address};
 use modules::scheduled_promotions::{get_scheduled_promotions, create_scheduled_promotion, toggle_scheduled_promotion, delete_scheduled_promotion, get_active_promotions_now};
@@ -271,6 +272,7 @@ pub fn run() {
       get_staff_performance,
       export_sales_csv,
       get_menu_performance,
+      export_menu_html,
       cancel_bill,
       partial_refund,
       get_bill_refunds,

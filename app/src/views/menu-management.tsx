@@ -11,6 +11,7 @@ import RecipeManagement from '@/components/menu/recipe-management'
 import MenuItems from '@/components/menu/menu-items'
 import { ComboDeals } from '@/components/menu/combo-deals'
 import { MenuPerformance } from '@/components/menu/menu-performance'
+import { MenuPrint } from '@/components/menu/menu-print'
 
 const RESTAURANT_ID = 1
 
@@ -42,6 +43,7 @@ export function MenuManagement() {
   return (
     <div className="animate-fade-in">
       <div className="flex items-center gap-2 mb-6">
+        <MenuPrint />
         {TABS.map(t => (
           <button key={t.key} onClick={() => setActiveTab(t.key)}
             className={cn('px-4 py-2 rounded-lg text-sm font-medium transition-all',
