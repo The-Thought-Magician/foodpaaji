@@ -73,6 +73,13 @@ export default function MenuItems({ restaurantId, categories, onItemsChange }: P
 
   useEffect(() => { if (selectedCategory) loadItems(selectedCategory) }, [selectedCategory, loadItems])
 
+  const bulkSetAvailability = async (available: boolean) => {
+    if (!filtered.length) return
+    await Promise.all(filtered.map(item => invoke('update_menu_item', { id: item.id, request: { is_available: available } }).catch(console.error)))
+    if (selectedCategory) loadItems(selectedCategory)
+    onItemsChange()
+  }
+
   const handleDelete = async (id: number) => {
     if (!window.confirm('Delete this menu item?')) return
     try {
@@ -97,9 +104,13 @@ export default function MenuItems({ restaurantId, categories, onItemsChange }: P
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold">Menu Items</h2>
-        <Button onClick={() => { setEditingItem(null); setShowForm(true) }} disabled={!selectedCategory}>
-          <Plus className="h-4 w-4 mr-2" />Add Menu Item
-        </Button>
+        <div className="flex gap-2">
+          {filtered.length > 0 && <>
+            <Button variant="outline" size="sm" onClick={() => bulkSetAvailability(true)}>All Available</Button>
+            <Button variant="outline" size="sm" onClick={() => bulkSetAvailability(false)}>All Sold Out</Button>
+          </>}
+          <Button onClick={() => { setEditingItem(null); setShowForm(true) }} disabled={!selectedCategory}><Plus className="h-4 w-4 mr-2" />Add Menu Item</Button>
+        </div>
       </div>
 
       <div className="flex gap-4 items-end">
