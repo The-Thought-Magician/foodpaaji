@@ -42,7 +42,10 @@ interface LowStockReport {
   supplier_name?: string
 }
 
-type ReportType = 'stock' | 'movement' | 'lowstock'
+interface TopMovingItem { item_id: number; item_name: string; total_quantity_out: number; total_value_out: number; movement_frequency: number; rank: number }
+interface SlowMovingItem { item_id: number; item_name: string; current_stock: number; days_since_last_movement?: number; total_value: number; last_movement_date?: string }
+
+type ReportType = 'stock' | 'movement' | 'lowstock' | 'top' | 'slow'
 
 export default function InventoryReports() {
   const [reportType, setReportType] = useState<ReportType>('lowstock')
@@ -51,6 +54,8 @@ export default function InventoryReports() {
   const [stockRows, setStockRows] = useState<StockSummaryReport[]>([])
   const [movementRows, setMovementRows] = useState<MovementReport[]>([])
   const [lowStockRows, setLowStockRows] = useState<LowStockReport[]>([])
+  const [topRows, setTopRows] = useState<TopMovingItem[]>([])
+  const [slowRows, setSlowRows] = useState<SlowMovingItem[]>([])
   const [loading, setLoading] = useState(false)
 
   const run = useCallback(async () => {
@@ -66,11 +71,17 @@ export default function InventoryReports() {
           request: { restaurant_id: RESTAURANT_ID, start_date: startDate || null, end_date: endDate || null, category_id: null, supplier_id: null }
         })
         if (res.success) setMovementRows(res.data ?? [])
-      } else {
-        const res = await invoke<{ success: boolean; data: LowStockReport[] }>('get_low_stock_report', {
-          restaurantId: RESTAURANT_ID
-        })
+      } else if (reportType === 'lowstock') {
+        const res = await invoke<{ success: boolean; data: LowStockReport[] }>('get_low_stock_report', { restaurantId: RESTAURANT_ID })
         if (res.success) setLowStockRows(res.data ?? [])
+      } else if (reportType === 'top') {
+        const res = await invoke<{ success: boolean; data: TopMovingItem[] }>('get_top_moving_items_report', {
+          request: { restaurant_id: RESTAURANT_ID, start_date: startDate || null, end_date: endDate || null }, limit: 20
+        })
+        if (res.success) setTopRows(res.data ?? [])
+      } else {
+        const res = await invoke<{ success: boolean; data: SlowMovingItem[] }>('get_slow_moving_items_report', { restaurantId: RESTAURANT_ID, daysThreshold: 30 })
+        if (res.success) setSlowRows(res.data ?? [])
       }
     } catch (e) { console.error(e) }
     setLoading(false)
@@ -84,6 +95,10 @@ export default function InventoryReports() {
       csv = 'Item,Type,Total Quantity,Total Value,Count\n' + movementRows.map(r => `"${r.item_name}","${r.movement_type}",${r.total_quantity},${r.total_value.toFixed(2)},${r.movement_count}`).join('\n')
     } else if (reportType === 'lowstock' && lowStockRows.length) {
       csv = 'Item,SKU,Current Stock,Reorder Point,Shortage,Supplier\n' + lowStockRows.map(r => `"${r.item_name}","${r.sku ?? ''}",${r.current_stock},${r.reorder_point},${r.shortage},"${r.supplier_name ?? ''}"`).join('\n')
+    } else if (reportType === 'top' && topRows.length) {
+      csv = 'Rank,Item,Qty Out,Value Out,Frequency\n' + topRows.map(r => `${r.rank},"${r.item_name}",${r.total_quantity_out},${r.total_value_out.toFixed(2)},${r.movement_frequency}`).join('\n')
+    } else if (reportType === 'slow' && slowRows.length) {
+      csv = 'Item,Stock,Days Since Movement,Total Value,Last Movement\n' + slowRows.map(r => `"${r.item_name}",${r.current_stock},${r.days_since_last_movement ?? 'Never'},${r.total_value.toFixed(2)},"${r.last_movement_date ?? ''}"`).join('\n')
     }
     if (!csv) return
     const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(new Blob([csv], { type: 'text/csv' })), download: `inventory-${reportType}-${new Date().toISOString().split('T')[0]}.csv` })
@@ -94,6 +109,8 @@ export default function InventoryReports() {
     { key: 'lowstock', label: 'Low Stock', icon: <AlertTriangle className="w-4 h-4" /> },
     { key: 'stock', label: 'Stock Summary', icon: <FileText className="w-4 h-4" /> },
     { key: 'movement', label: 'Movement', icon: <TrendingUp className="w-4 h-4" /> },
+    { key: 'top', label: 'Top Moving', icon: <TrendingUp className="w-4 h-4" /> },
+    { key: 'slow', label: 'Slow Moving', icon: <AlertTriangle className="w-4 h-4" /> },
   ]
 
   return (
@@ -229,6 +246,42 @@ export default function InventoryReports() {
               )}
           </CardContent>
         </Card>
+      )}
+
+      {reportType === 'top' && (
+        <Card><CardContent className="p-0">
+          {topRows.length === 0 ? <p className="text-center text-muted-foreground py-10 text-sm">Run report to see top moving items</p> : (
+            <table className="w-full text-sm"><thead className="border-b"><tr className="text-left text-muted-foreground">
+              <th className="px-4 py-3 font-medium">#</th><th className="px-4 py-3 font-medium">Item</th><th className="px-4 py-3 font-medium">Qty Out</th><th className="px-4 py-3 font-medium">Value Out</th><th className="px-4 py-3 font-medium">Frequency</th>
+            </tr></thead><tbody>
+              {topRows.map(r => (<tr key={r.item_id} className="border-b last:border-0 hover:bg-muted/30">
+                <td className="px-4 py-3 text-muted-foreground">{r.rank}</td>
+                <td className="px-4 py-3 font-medium">{r.item_name}</td>
+                <td className="px-4 py-3">{r.total_quantity_out.toFixed(1)}</td>
+                <td className="px-4 py-3">₹{r.total_value_out.toFixed(0)}</td>
+                <td className="px-4 py-3 text-muted-foreground">{r.movement_frequency}x</td>
+              </tr>))}
+            </tbody></table>
+          )}
+        </CardContent></Card>
+      )}
+
+      {reportType === 'slow' && (
+        <Card><CardContent className="p-0">
+          {slowRows.length === 0 ? <p className="text-center text-muted-foreground py-10 text-sm">Run report to see slow moving items</p> : (
+            <table className="w-full text-sm"><thead className="border-b"><tr className="text-left text-muted-foreground">
+              <th className="px-4 py-3 font-medium">Item</th><th className="px-4 py-3 font-medium">Stock</th><th className="px-4 py-3 font-medium">Days Idle</th><th className="px-4 py-3 font-medium">Value</th><th className="px-4 py-3 font-medium">Last Movement</th>
+            </tr></thead><tbody>
+              {slowRows.map(r => (<tr key={r.item_id} className="border-b last:border-0 hover:bg-muted/30">
+                <td className="px-4 py-3 font-medium">{r.item_name}</td>
+                <td className="px-4 py-3">{r.current_stock.toFixed(1)}</td>
+                <td className="px-4 py-3"><span className={`font-medium ${(r.days_since_last_movement ?? 999) > 60 ? 'text-red-600' : 'text-amber-600'}`}>{r.days_since_last_movement ?? 'Never'}</span></td>
+                <td className="px-4 py-3">₹{r.total_value.toFixed(0)}</td>
+                <td className="px-4 py-3 text-muted-foreground text-xs">{r.last_movement_date ?? '—'}</td>
+              </tr>))}
+            </tbody></table>
+          )}
+        </CardContent></Card>
       )}
     </div>
   )
