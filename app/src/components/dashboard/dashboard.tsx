@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { invoke } from '@tauri-apps/api/core'
-import { Users, Receipt, Package, ArrowUpRight, Clock, CalendarCheck, X, Megaphone } from 'lucide-react'
+import { Users, Receipt, Package, ArrowUpRight, Clock, CalendarCheck, X, Megaphone, IndianRupee } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
 
@@ -89,7 +89,8 @@ export function Dashboard() {
   }
 
   const stats = data ? [
-    { title: "Today's Revenue", value: `₹${data.today_revenue.toFixed(0)}`, icon: Receipt, gradient: 'gradient-spice' },
+    { title: "Today's Billed", value: `₹${data.today_revenue.toFixed(0)}`, icon: Receipt, gradient: 'gradient-spice' },
+    { title: "Today's Collected", value: `₹${data.today_collected.toFixed(0)}`, icon: IndianRupee, gradient: 'bg-gradient-to-br from-green-500 to-green-600' },
     { title: 'Active Orders', value: String(activeOrders), icon: Clock, gradient: 'gradient-accent' },
     { title: 'Total Customers', value: String(data.total_customers), icon: Users, gradient: 'bg-gradient-to-br from-purple-500 to-purple-600' },
     { title: 'Low Stock Items', value: String(data.low_stock_count), icon: Package, gradient: 'bg-gradient-to-br from-rose-500 to-rose-600' },
