@@ -35,6 +35,16 @@ export function CustomerManagement() {
   const [showForm, setShowForm] = useState(false)
   const [editCustomer, setEditCustomer] = useState<Customer | null>(null)
   const [form, setForm] = useState({ name: '', phone: '', email: '', address: '' })
+  const [segment, setSegment] = useState<'all' | 'vip' | 'regular' | 'new' | 'loyal'>('all')
+
+  const getSegment = (c: Customer) => {
+    if (c.total_spent >= 5000) return 'vip'
+    if (c.visit_count >= 5) return 'regular'
+    if (c.loyalty_points >= 100) return 'loyal'
+    return 'new'
+  }
+  const SEGMENT_LABEL: Record<string, string> = { vip: 'VIP', regular: 'Regular', loyal: 'Loyal', new: 'New' }
+  const SEGMENT_COLOR: Record<string, string> = { vip: 'bg-amber-100 text-amber-800', regular: 'bg-blue-100 text-blue-800', loyal: 'bg-purple-100 text-purple-800', new: 'bg-green-100 text-green-800' }
 
   const loadCustomers = useCallback(async () => {
     try {
@@ -118,7 +128,7 @@ export function CustomerManagement() {
     const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(new Blob([[hdr, ...rows].join('\n')], { type: 'text/csv' })), download: `customers-${new Date().toISOString().split('T')[0]}.csv` })
     a.click()
   }
-  const sorted = [...customers].sort((a, b) => sortBy === 'name' ? a.name.localeCompare(b.name) : b[sortBy] - a[sortBy])
+  const sorted = [...customers].filter(c => segment === 'all' || getSegment(c) === segment).sort((a, b) => sortBy === 'name' ? a.name.localeCompare(b.name) : b[sortBy] - a[sortBy])
 
   return (
     <div className="space-y-6">
@@ -150,6 +160,11 @@ export function CustomerManagement() {
             </button>
           ))}
         </div>
+        <div className="flex gap-1">
+          {(['all', 'vip', 'regular', 'loyal', 'new'] as const).map(s => (
+            <button key={s} onClick={() => setSegment(s)} className={`text-xs px-2.5 py-1 rounded border transition-colors ${segment === s ? 'bg-primary text-primary-foreground border-primary' : 'border-border text-muted-foreground hover:text-foreground'}`}>{s === 'all' ? 'All' : SEGMENT_LABEL[s]}</button>
+          ))}
+        </div>
         <Button variant="outline" onClick={exportCSV} disabled={customers.length === 0}><Download className="w-4 h-4 mr-2" />CSV</Button>
         <Button onClick={openCreate} className="gradient-spice text-white"><Plus className="w-4 h-4 mr-2" />Add Customer</Button>
       </div>
@@ -168,7 +183,7 @@ export function CustomerManagement() {
                     <p className="text-sm text-muted-foreground">{c.phone || 'No phone'}</p>
                   </div>
                 </div>
-                <UserCircle className="w-5 h-5 text-muted-foreground" />
+                <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${SEGMENT_COLOR[getSegment(c)]}`}>{SEGMENT_LABEL[getSegment(c)]}</span>
               </div>
               <div className="mt-3 grid grid-cols-3 gap-2 text-sm text-center">
                 <div className="bg-muted rounded p-2"><p className="font-bold">{c.visit_count}</p><p className="text-muted-foreground">Visits</p></div>
