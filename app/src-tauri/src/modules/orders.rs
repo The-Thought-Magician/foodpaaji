@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use sqlx::SqlitePool;
+use sqlx::{SqlitePool, Row};
 use tauri::State;
 use chrono::Local;
 
@@ -126,15 +126,12 @@ pub async fn convert_order_to_bill(
     discount_percent: f64,
     tax_percent: f64,
 ) -> Result<serde_json::Value, String> {
-    let order = sqlx::query!(
-        "SELECT customer_id, table_number FROM orders WHERE id = ?",
-        order_id
-    )
-    .fetch_optional(pool.inner()).await.map_err(|e| e.to_string())?;
-
-    let Some(order) = order else {
-        return Err("Order not found".to_string());
-    };
+    let order_row = sqlx::query("SELECT customer_id, table_number, notes FROM orders WHERE id = ?")
+        .bind(order_id).fetch_optional(pool.inner()).await.map_err(|e| e.to_string())?;
+    let Some(order_row) = order_row else { return Err("Order not found".to_string()); };
+    let order_customer_id: Option<i64> = order_row.try_get("customer_id").ok();
+    let order_table: Option<String> = order_row.try_get("table_number").ok().flatten();
+    let order_notes: Option<String> = order_row.try_get("notes").ok().flatten();
 
     let items = sqlx::query!(
         "SELECT item_name, quantity, unit_price, menu_item_id FROM order_items WHERE order_id = ?",
@@ -152,8 +149,8 @@ pub async fn convert_order_to_bill(
     let bill_number = format!("BILL-{}", now.format("%Y%m%d%H%M%S"));
 
     let bill_id = sqlx::query!(
-        "INSERT INTO bills (bill_number, customer_id, table_number, subtotal, discount_amount, discount_percent, tax_amount, tax_percent, total_amount) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-        bill_number, order.customer_id, order.table_number, subtotal, discount_amount, discount_percent, tax_amount, tax_percent, total_amount
+        "INSERT INTO bills (bill_number, customer_id, table_number, subtotal, discount_amount, discount_percent, tax_amount, tax_percent, total_amount, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        bill_number, order_customer_id, order_table, subtotal, discount_amount, discount_percent, tax_amount, tax_percent, total_amount, order_notes
     )
     .execute(pool.inner()).await.map_err(|e| e.to_string())?
     .last_insert_rowid();
