@@ -39,3 +39,4 @@ pub mod receipts;
 pub mod coupons;
 pub mod feedback;
 pub mod staff_shifts;
+pub mod waste_tracking;

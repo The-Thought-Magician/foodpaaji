@@ -42,6 +42,7 @@ use modules::receipts::{generate_receipt, mark_receipt_printed, get_receipt};
 use modules::coupons::{create_coupon, validate_coupon, apply_coupon, get_coupons, toggle_coupon};
 use modules::feedback::{create_feedback, get_customer_feedback, get_feedback_summary};
 use modules::staff_shifts::{create_shift, get_shifts, delete_shift, update_shift_status};
+use modules::waste_tracking::{create_waste_entry, get_waste_entries, get_waste_summary};
 use tauri::Manager;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -190,6 +191,9 @@ pub fn run() {
       get_shifts,
       delete_shift,
       update_shift_status,
+      create_waste_entry,
+      get_waste_entries,
+      get_waste_summary,
     ])
     .setup(|app| {
       let level = if cfg!(debug_assertions) { log::LevelFilter::Debug } else { log::LevelFilter::Info };
