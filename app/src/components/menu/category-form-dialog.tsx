@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { invoke } from '@tauri-apps/api/core'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -45,13 +46,21 @@ export default function CategoryFormDialog({ open, editing, categories, restaura
   const [formData, setFormData] = useState<CategoryFormData>(defaults(restaurantId))
   const [selectedImage, setSelectedImage] = useState<File | null>(null)
   const [imagePreview, setImagePreview] = useState('')
+  const [existingImage, setExistingImage] = useState<string | null>(null)
 
   useEffect(() => {
     if (editing) {
       setFormData({ name: editing.name, description: editing.description, parent_id: editing.parent_id,
         sort_order: editing.sort_order, is_active: editing.is_active, display_in_menu: editing.display_in_menu })
+      setExistingImage(null)
+      if (editing.image_path) {
+        invoke<{ success: boolean; data?: string }>('get_menu_image', { imagePath: editing.image_path })
+          .then(r => setExistingImage(r.success && r.data ? r.data : null))
+          .catch(() => {})
+      }
     } else {
       setFormData(defaults(restaurantId))
+      setExistingImage(null)
     }
     setSelectedImage(null)
     setImagePreview('')
@@ -103,6 +112,18 @@ export default function CategoryFormDialog({ open, editing, categories, restaura
           </div>
           <div>
             <Label>Category Image</Label>
+            {existingImage && !imagePreview && (
+              <div className="mb-2 relative w-full h-32 bg-muted rounded-lg overflow-hidden">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={existingImage} alt="Current" className="w-full h-full object-cover" />
+                <Button size="sm" variant="destructive" className="absolute top-2 right-2 text-xs h-7"
+                  onClick={async () => {
+                    if (!editing?.id) return
+                    await invoke('delete_menu_category_image', { categoryId: editing.id, restaurantId }).catch(console.error)
+                    setExistingImage(null)
+                  }}>Remove</Button>
+              </div>
+            )}
             <div className="flex items-center gap-2">
               <Input type="file" accept="image/*" onChange={handleImageSelect} />
               <Button type="button" variant="outline" size="sm"><Upload className="h-4 w-4" /></Button>
