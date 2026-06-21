@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { Plus, ArrowRight, CheckCircle, Package } from 'lucide-react'
+import { Plus, ArrowRight, CheckCircle, Package, Download } from 'lucide-react'
 
 const RESTAURANT_ID = 1
 const USER_ID = 1
@@ -90,6 +90,13 @@ export default function InventoryTransfers() {
     } catch (e) { console.error(e) }
   }
 
+  const exportCSV = () => {
+    if (!transfers.length) return
+    const rows = ['Transfer#,From,To,Status,Items,Value,Notes', ...transfers.map(t => `"${t.transfer_number}","${t.from_location}","${t.to_location}","${t.status}",${t.total_items},${t.total_value.toFixed(2)},"${t.notes ?? ''}"`) ]
+    const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(new Blob([rows.join('\n')], { type: 'text/csv' })), download: `transfers-${new Date().toISOString().split('T')[0]}.csv` })
+    a.click()
+  }
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between flex-wrap gap-2">
@@ -102,9 +109,10 @@ export default function InventoryTransfers() {
             </button>
           ))}
         </div>
-        <Button size="sm" className="gradient-spice text-white" onClick={() => setShowCreate(true)}>
-          <Plus className="w-4 h-4 mr-1" />New Transfer
-        </Button>
+        <div className="flex gap-2">
+          <Button size="sm" variant="outline" onClick={exportCSV} disabled={!transfers.length}><Download className="w-4 h-4 mr-1" />Export</Button>
+          <Button size="sm" className="gradient-spice text-white" onClick={() => setShowCreate(true)}><Plus className="w-4 h-4 mr-1" />New Transfer</Button>
+        </div>
       </div>
 
       <div className="space-y-2">
