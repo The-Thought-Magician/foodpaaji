@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { CheckCircle, Trash2, RefreshCw, Filter, Search } from 'lucide-react'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { AlertTable } from './alert-table'
 import type { LowStockAlert, AlertSummary, AlertFilters } from './alert-types'
 
@@ -29,6 +30,8 @@ export default function LowStockAlerts() {
   const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(false)
   const [search, setSearch] = useState('')
+  const [restock, setRestock] = useState<{ itemId: number; name: string } | null>(null)
+  const [restockQty, setRestockQty] = useState('10')
 
   const loadAlerts = useCallback(async () => {
     setLoading(true)
@@ -67,6 +70,16 @@ export default function LowStockAlerts() {
     try {
       await invoke('bulk_acknowledge_alerts', { request: { restaurant_id: RESTAURANT_ID, user_id: 1, alert_ids: Array.from(selected) } })
       setSelected(new Set()); loadAlerts(); loadSummary()
+    } catch (e) { console.error(e) }
+  }
+
+  const doRestock = async () => {
+    if (!restock) return
+    const qty = parseFloat(restockQty)
+    if (qty <= 0) return
+    try {
+      await invoke('adjust_stock_level', { request: { restaurant_id: RESTAURANT_ID, inventory_item_id: restock.itemId, new_quantity: qty, reason: 'Restock from low-stock alert', adjusted_by: 1 } })
+      setRestock(null); loadAlerts(); loadSummary()
     } catch (e) { console.error(e) }
   }
 
@@ -184,10 +197,20 @@ export default function LowStockAlerts() {
             filters={filters} loading={loading}
             onSelectOne={selectOne} onSelectAll={selectAll}
             onAcknowledge={acknowledge}
+            onRestock={(itemId, name) => { setRestock({ itemId, name }); setRestockQty('10') }}
             onPageChange={p => setFilters(f => ({ ...f, page: p }))}
           />
         </CardContent>
       </Card>
+      <Dialog open={!!restock} onOpenChange={() => setRestock(null)}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader><DialogTitle>Restock — {restock?.name}</DialogTitle></DialogHeader>
+          <div className="space-y-4">
+            <div><Label>Add Quantity</Label><Input type="number" min="0.01" step="0.01" value={restockQty} onChange={e => setRestockQty(e.target.value)} /></div>
+            <Button className="w-full gradient-spice text-white" onClick={doRestock}>Confirm Restock</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

@@ -22,10 +22,11 @@ interface Props {
   onSelectOne: (id: number, checked: boolean) => void
   onSelectAll: (checked: boolean) => void
   onAcknowledge: (id: number) => void
+  onRestock: (inventoryItemId: number, itemName: string) => void
   onPageChange: (page: number) => void
 }
 
-export function AlertTable({ alerts, selected, totalRecords, filters, loading, onSelectOne, onSelectAll, onAcknowledge, onPageChange }: Props) {
+export function AlertTable({ alerts, selected, totalRecords, filters, loading, onSelectOne, onSelectAll, onAcknowledge, onRestock, onPageChange }: Props) {
   const totalPages = Math.ceil(totalRecords / filters.limit)
   const unackCount = alerts.filter(a => !a.is_acknowledged).length
 
@@ -92,11 +93,16 @@ export function AlertTable({ alerts, selected, totalRecords, filters, loading, o
                   }
                 </TableCell>
                 <TableCell>
-                  {!alert.is_acknowledged && (
-                    <Button size="sm" variant="outline" onClick={() => onAcknowledge(alert.id)}>
-                      <CheckCircle className="h-4 w-4 mr-1" />Acknowledge
+                  <div className="flex gap-1">
+                    {!alert.is_acknowledged && (
+                      <Button size="sm" variant="outline" onClick={() => onAcknowledge(alert.id)}>
+                        <CheckCircle className="h-4 w-4 mr-1" />Ack
+                      </Button>
+                    )}
+                    <Button size="sm" variant="outline" className="text-green-700 border-green-300 hover:bg-green-50" onClick={() => onRestock(alert.inventory_item_id, alert.item_name)}>
+                      <Package className="h-4 w-4 mr-1" />Restock
                     </Button>
-                  )}
+                  </div>
                 </TableCell>
               </TableRow>
             )) : (
