@@ -15,9 +15,10 @@ interface Props {
   category: CategoryData
   onEdit: () => void
   onDelete: () => void
+  onToggleActive: () => void
 }
 
-export function CategoryCard({ category, onEdit, onDelete }: Props) {
+export function CategoryCard({ category, onEdit, onDelete, onToggleActive }: Props) {
   const itemCount = category.item_count ?? 0
   return (
     <div className="card-hover bg-card rounded-2xl p-5 border border-border">
@@ -46,13 +47,13 @@ export function CategoryCard({ category, onEdit, onDelete }: Props) {
       </div>
 
       <div className="mt-4 flex items-center justify-between">
-        <span className={`px-2.5 py-1 rounded-full text-xs font-medium border ${
+        <button onClick={onToggleActive} className={`px-2.5 py-1 rounded-full text-xs font-medium border transition-colors ${
           category.is_active
-            ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20'
-            : 'bg-rose-500/10 text-rose-600 border-rose-500/20'
+            ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20 hover:bg-emerald-500/20'
+            : 'bg-rose-500/10 text-rose-600 border-rose-500/20 hover:bg-rose-500/20'
         }`}>
           {category.is_active ? 'Active' : 'Inactive'}
-        </span>
+        </button>
         <span className="text-xs text-muted-foreground">Order: {category.sort_order}</span>
       </div>
     </div>
