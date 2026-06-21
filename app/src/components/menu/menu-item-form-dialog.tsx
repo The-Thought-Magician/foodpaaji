@@ -44,17 +44,28 @@ interface Props {
   onSaved: () => void
 }
 
+interface Allergen { id: number; allergen_name: string; severity: string; notes?: string }
+interface NutritionInfo { serving_size?: string; calories: number; protein: number; carbohydrates: number; fat: number; fiber: number; sugar: number; sodium: number }
+const ALLERGEN_PRESETS = ['Gluten', 'Dairy', 'Nuts', 'Peanuts', 'Eggs', 'Soy', 'Fish', 'Shellfish', 'Sesame']
+const SEVERITY_OPTS = [['LOW', 'Low'], ['MEDIUM', 'Medium'], ['HIGH', 'High'], ['SEVERE', 'Severe']]
+const NUTRITION_DEFAULTS: NutritionInfo = { serving_size: '', calories: 0, protein: 0, carbohydrates: 0, fat: 0, fiber: 0, sugar: 0, sodium: 0 }
+
 export function MenuItemFormDialog({ open, editingId, initialData, categories, restaurantId, onClose, onSaved }: Props) {
   const [form, setForm] = useState<MenuItemFormData>(initialData)
   const [imageFile, setImageFile] = useState<File | null>(null)
   const [imagePreview, setImagePreview] = useState('')
   const [existingImage, setExistingImage] = useState<string | null>(null)
+  const [allergens, setAllergens] = useState<Allergen[]>([])
+  const [nutrition, setNutrition] = useState<NutritionInfo>(NUTRITION_DEFAULTS)
+  const [newAllergen, setNewAllergen] = useState({ name: '', severity: 'MEDIUM' })
 
   useEffect(() => {
     setForm(initialData)
     setImageFile(null)
     setImagePreview('')
     setExistingImage(null)
+    setAllergens([])
+    setNutrition(NUTRITION_DEFAULTS)
     if (open && editingId) {
       invoke<{ success: boolean; data?: string }>('get_menu_item_by_id', { itemId: editingId, restaurantId })
         .then(res => {
@@ -65,6 +76,10 @@ export function MenuItemFormDialog({ open, editingId, initialData, categories, r
             .catch(() => {})
         })
         .catch(() => {})
+      invoke<{ success: boolean; data?: Allergen[] }>('get_menu_item_allergens', { menuItemId: editingId })
+        .then(r => { if (r.success && r.data) setAllergens(r.data) }).catch(() => {})
+      invoke<{ success: boolean; data?: NutritionInfo | null }>('get_nutrition_info', { menuItemId: editingId })
+        .then(r => { if (r.success && r.data) setNutrition(r.data) }).catch(() => {})
     }
   }, [open, editingId, restaurantId, initialData])
 
@@ -123,10 +138,11 @@ export function MenuItemFormDialog({ open, editingId, initialData, categories, r
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <Tabs defaultValue="basic" className="space-y-4">
-            <TabsList className="grid w-full grid-cols-3">
+            <TabsList className={`grid w-full ${editingId ? 'grid-cols-4' : 'grid-cols-3'}`}>
               <TabsTrigger value="basic">Basic Info</TabsTrigger>
               <TabsTrigger value="details">Details</TabsTrigger>
               <TabsTrigger value="settings">Settings</TabsTrigger>
+              {editingId && <TabsTrigger value="health">Health</TabsTrigger>}
             </TabsList>
 
             <TabsContent value="basic" className="space-y-4">
@@ -240,6 +256,72 @@ export function MenuItemFormDialog({ open, editingId, initialData, categories, r
                 ))}
               </div>
             </TabsContent>
+
+            {editingId && (
+              <TabsContent value="health" className="space-y-6">
+                <div>
+                  <h3 className="font-medium mb-3">Allergens</h3>
+                  <div className="flex flex-wrap gap-2 mb-3">
+                    {ALLERGEN_PRESETS.map(preset => (
+                      <button key={preset} type="button"
+                        className="text-xs px-2 py-1 rounded border hover:bg-muted"
+                        onClick={() => setNewAllergen(a => ({ ...a, name: preset }))}>
+                        {preset}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="flex gap-2 mb-3">
+                    <Input placeholder="Allergen name" value={newAllergen.name}
+                      onChange={e => setNewAllergen(a => ({ ...a, name: e.target.value }))} />
+                    <Select value={newAllergen.severity} onValueChange={v => setNewAllergen(a => ({ ...a, severity: v ?? 'MEDIUM' }))}>
+                      <SelectTrigger className="w-32"><SelectValue /></SelectTrigger>
+                      <SelectContent>{SEVERITY_OPTS.map(([v, l]) => <SelectItem key={v} value={v}>{l}</SelectItem>)}</SelectContent>
+                    </Select>
+                    <Button type="button" size="sm" onClick={async () => {
+                      if (!newAllergen.name.trim()) return
+                      const res = await invoke<{ success: boolean; data?: Allergen }>('add_allergen', {
+                        menuItemId: editingId, request: { allergen_name: newAllergen.name.trim(), severity: newAllergen.severity }
+                      }).catch(() => null)
+                      if (res?.success && res.data) { setAllergens(a => [...a, res.data!]); setNewAllergen({ name: '', severity: 'MEDIUM' }) }
+                    }}>Add</Button>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {allergens.map(a => (
+                      <span key={a.id} className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium
+                        ${a.severity === 'SEVERE' ? 'bg-red-100 text-red-800' : a.severity === 'HIGH' ? 'bg-orange-100 text-orange-800' : a.severity === 'LOW' ? 'bg-yellow-50 text-yellow-700' : 'bg-orange-50 text-orange-700'}`}>
+                        {a.allergen_name} · {a.severity.toLowerCase()}
+                        <button type="button" className="ml-1 hover:text-destructive" onClick={async () => {
+                          await invoke('remove_allergen', { allergenId: a.id }).catch(() => {})
+                          setAllergens(prev => prev.filter(x => x.id !== a.id))
+                        }}>×</button>
+                      </span>
+                    ))}
+                    {allergens.length === 0 && <p className="text-xs text-muted-foreground">No allergens added</p>}
+                  </div>
+                </div>
+
+                <div>
+                  <h3 className="font-medium mb-3">Nutrition Info (per serving)</h3>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="col-span-2">
+                      <Label className="text-xs">Serving Size</Label>
+                      <Input placeholder="e.g. 200g" value={nutrition.serving_size ?? ''}
+                        onChange={e => setNutrition(n => ({ ...n, serving_size: e.target.value }))} />
+                    </div>
+                    {(['calories', 'protein', 'carbohydrates', 'fat', 'fiber', 'sugar', 'sodium'] as const).map(field => (
+                      <div key={field}>
+                        <Label className="text-xs capitalize">{field} {field === 'calories' ? '(kcal)' : field === 'sodium' ? '(mg)' : '(g)'}</Label>
+                        <Input type="number" min="0" step="0.1" value={nutrition[field]}
+                          onChange={e => setNutrition(n => ({ ...n, [field]: parseFloat(e.target.value) || 0 }))} />
+                      </div>
+                    ))}
+                  </div>
+                  <Button type="button" size="sm" className="mt-3" onClick={async () => {
+                    await invoke('upsert_nutrition_info', { menuItemId: editingId, request: nutrition }).catch(console.error)
+                  }}>Save Nutrition</Button>
+                </div>
+              </TabsContent>
+            )}
           </Tabs>
 
           <div className="flex gap-2 pt-4">

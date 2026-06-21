@@ -43,6 +43,7 @@ use modules::coupons::{create_coupon, validate_coupon, apply_coupon, get_coupons
 use modules::feedback::{create_feedback, get_customer_feedback, get_feedback_summary};
 use modules::staff_shifts::{create_shift, get_shifts, delete_shift, update_shift_status};
 use modules::waste_tracking::{create_waste_entry, get_waste_entries, get_waste_summary};
+use modules::menu_allergens::{get_menu_item_allergens, add_allergen, remove_allergen, get_nutrition_info, upsert_nutrition_info};
 use tauri::Manager;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -194,6 +195,11 @@ pub fn run() {
       create_waste_entry,
       get_waste_entries,
       get_waste_summary,
+      get_menu_item_allergens,
+      add_allergen,
+      remove_allergen,
+      get_nutrition_info,
+      upsert_nutrition_info,
     ])
     .setup(|app| {
       let level = if cfg!(debug_assertions) { log::LevelFilter::Debug } else { log::LevelFilter::Info };
