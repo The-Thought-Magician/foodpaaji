@@ -17,11 +17,12 @@ import BulkInventoryUpdate from '@/components/inventory/bulk-inventory-update'
 import StockMovementHistory from '@/components/inventory/stock-movement-history'
 import UnitConversions from '@/components/inventory/unit-conversions'
 import InventorySearch from '@/components/inventory/inventory-search'
+import InventoryCsvImport from '@/components/inventory/inventory-csv-import'
 import { DeleteInventoryDialog, RestockDialog, EditInventoryDialog, AdjustStockDialog } from '@/components/inventory/inventory-dialogs'
 
 const RESTAURANT_ID = 1
 const ITEMS_PER_PAGE = 12
-type Tab = 'items' | 'waste' | 'analytics' | 'transfers' | 'reports' | 'valuation' | 'alerts' | 'suppliers' | 'bulk' | 'movements' | 'units' | 'search'
+type Tab = 'items' | 'waste' | 'analytics' | 'transfers' | 'reports' | 'valuation' | 'alerts' | 'suppliers' | 'bulk' | 'movements' | 'units' | 'search' | 'import'
 
 export function InventoryManagement() {
   const [items, setItems] = useState<InventoryItem[]>([])
@@ -152,6 +153,11 @@ export function InventoryManagement() {
             tab === 'search' ? 'bg-background shadow text-foreground' : 'text-muted-foreground hover:text-foreground')}>
           Search
         </button>
+        <button onClick={() => setTab('import')}
+          className={cn('px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2',
+            tab === 'import' ? 'bg-background shadow text-foreground' : 'text-muted-foreground hover:text-foreground')}>
+          Import
+        </button>
       </div>
 
       {tab === 'waste' && <WasteTracking />}
@@ -165,6 +171,7 @@ export function InventoryManagement() {
       {tab === 'movements' && <StockMovementHistory />}
       {tab === 'units' && <UnitConversions />}
       {tab === 'search' && <InventorySearch />}
+      {tab === 'import' && <InventoryCsvImport />}
 
       {tab === 'items' && (
         <>

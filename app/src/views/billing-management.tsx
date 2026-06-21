@@ -279,7 +279,7 @@ export function BillingManagement() {
       </Dialog>
       <Dialog open={!!showDetails} onOpenChange={() => setShowDetails(null)}>
         <DialogContent className="max-w-lg">
-          <DialogHeader><DialogTitle>{showDetails?.bill.bill_number} — Details</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{showDetails?.bill.bill_number}{showDetails?.bill.customer_name ? ` · ${showDetails.bill.customer_name}` : ''}{showDetails?.bill.table_number ? ` · T${showDetails.bill.table_number}` : ''}</DialogTitle><p className="text-sm text-muted-foreground">{showDetails?.bill.created_at ? new Date(showDetails.bill.created_at).toLocaleString() : ''}</p></DialogHeader>
           <div className="space-y-4">
             <div className="space-y-1">
               {showDetails?.items.map((it, i) => <div key={i} className="flex justify-between text-sm"><span>{it.item_name} × {it.quantity}</span><span>₹{it.total_price.toFixed(2)}</span></div>)}
