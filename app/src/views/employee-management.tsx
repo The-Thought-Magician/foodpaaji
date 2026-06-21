@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo, useCallback } from 'react'
 import { invoke } from '@tauri-apps/api/core'
 import { Button } from '@/components/ui/button'
-import { Users, Plus, Search, X, Download } from 'lucide-react'
+import { Users, Plus, Search, X, Download, ShieldCheck } from 'lucide-react'
 import type { Employee } from '@/types/employee'
 import type { ApiResponse } from '@/types/api'
 import { cn } from '@/lib/utils'
@@ -43,7 +43,8 @@ export function EmployeeManagement() {
   const [dashboardEmployee, setDashboardEmployee] = useState<Employee | null>(null)
   const [changePwdEmployee, setChangePwdEmployee] = useState<Employee | null>(null)
   const [showLogin, setShowLogin] = useState(false)
-  const [activeTab, setActiveTab] = useState<'list' | 'attendance'>('list')
+  const [activeTab, setActiveTab] = useState<'list' | 'attendance' | 'duty'>('list')
+  const [onDuty, setOnDuty] = useState<{ employee_id: number; name: string; role: string; clock_in: string; minutes_on_duty: number }[]>([])
 
   const loadEmployees = useCallback(() => {
     invoke<ApiResponse<UserDto[]>>('get_employees', { restaurant_id: RESTAURANT_ID })
@@ -130,9 +131,33 @@ export function EmployeeManagement() {
       <div className="flex gap-1 border-b border-border pb-0">
         <button onClick={() => setActiveTab('list')} className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${activeTab === 'list' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'}`}>Staff</button>
         <button onClick={() => setActiveTab('attendance')} className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${activeTab === 'attendance' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'}`}>Attendance Report</button>
+        <button onClick={() => { setActiveTab('duty'); invoke<{ success: boolean; data: typeof onDuty }>('get_on_duty_staff', { restaurantId: RESTAURANT_ID }).then(r => { if (r.success) setOnDuty(r.data) }).catch(() => {}) }} className={`flex items-center gap-1.5 px-4 py-2 text-sm font-medium border-b-2 transition-colors ${activeTab === 'duty' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'}`}><ShieldCheck className="w-3.5 h-3.5" />On Duty</button>
       </div>
 
       {activeTab === 'attendance' && <AttendanceReport />}
+      {activeTab === 'duty' && (
+        <div className="space-y-3">
+          <p className="text-sm text-muted-foreground">{onDuty.length} staff currently on duty</p>
+          {onDuty.length === 0 ? (
+            <div className="text-center py-12 text-muted-foreground"><ShieldCheck className="w-10 h-10 mx-auto mb-2 opacity-30" /><p>No staff clocked in right now</p></div>
+          ) : onDuty.map(s => {
+            const hrs = Math.floor(s.minutes_on_duty / 60)
+            const mins = s.minutes_on_duty % 60
+            return (
+              <div key={s.employee_id} className="flex items-center justify-between bg-card border rounded-xl px-4 py-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-full bg-green-100 flex items-center justify-center"><ShieldCheck className="w-4 h-4 text-green-600" /></div>
+                  <div><p className="font-medium text-sm">{s.name}</p><p className="text-xs text-muted-foreground capitalize">{s.role.toLowerCase()}</p></div>
+                </div>
+                <div className="text-right">
+                  <p className="text-sm font-semibold text-green-700">{hrs > 0 ? `${hrs}h ${mins}m` : `${mins}m`}</p>
+                  <p className="text-xs text-muted-foreground">since {new Date(s.clock_in).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}</p>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      )}
 
       {activeTab === 'list' && <div className="space-y-6">
       <div className="flex flex-col lg:flex-row gap-4">

@@ -133,3 +133,32 @@ pub async fn clock_out(
         }
     }
 }
+
+#[tauri::command]
+pub async fn get_on_duty_staff(pool: State<'_, sqlx::SqlitePool>, restaurant_id: i64) -> Result<serde_json::Value, String> {
+    let rows = sqlx::query(
+        "SELECT a.employee_id, u.first_name, u.last_name, u.role, a.clock_in
+         FROM attendance a
+         JOIN users u ON a.employee_id = u.id
+         WHERE a.date = date('now') AND a.clock_in IS NOT NULL AND a.clock_out IS NULL
+           AND u.restaurant_id = ?
+         ORDER BY a.clock_in ASC"
+    )
+    .bind(restaurant_id)
+    .fetch_all(pool.inner()).await.map_err(|e| e.to_string())?;
+
+    let data: Vec<serde_json::Value> = rows.into_iter().map(|r| {
+        use sqlx::Row;
+        let clock_in: String = r.try_get("clock_in").unwrap_or_default();
+        let mins = (chrono::Local::now().naive_local() - chrono::NaiveDateTime::parse_from_str(&clock_in, "%Y-%m-%d %H:%M:%S").unwrap_or_default()).num_minutes();
+        serde_json::json!({
+            "employee_id": r.try_get::<i64,_>("employee_id").unwrap_or(0),
+            "name": format!("{} {}", r.try_get::<String,_>("first_name").unwrap_or_default(), r.try_get::<String,_>("last_name").unwrap_or_default()).trim().to_string(),
+            "role": r.try_get::<String,_>("role").unwrap_or_default(),
+            "clock_in": clock_in,
+            "minutes_on_duty": mins,
+        })
+    }).collect();
+
+    Ok(serde_json::json!({ "success": true, "data": data }))
+}

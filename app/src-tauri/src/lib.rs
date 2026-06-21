@@ -6,7 +6,7 @@ use database::init_database;
 use modules::employee::{get_employees, create_employee, search_employees, update_employee};
 use modules::employee_auth::{authenticate_employee, update_employee_password};
 use modules::employee_images::{upload_employee_image, get_employee_image, delete_employee};
-use modules::attendance::{clock_in, clock_out};
+use modules::attendance::{clock_in, clock_out, get_on_duty_staff};
 use modules::attendance_breaks::{start_break, end_break, get_attendance_report};
 use modules::util::{backup_database, restore_database, seed_sample_data};
 use modules::auth::{generate_jwt, verify_jwt};
@@ -57,6 +57,7 @@ pub fn run() {
       delete_employee,
       clock_in,
       clock_out,
+      get_on_duty_staff,
       start_break,
       end_break,
       get_attendance_report,
