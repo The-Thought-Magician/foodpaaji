@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo, useCallback } from 'react'
 import { invoke } from '@tauri-apps/api/core'
 import { Button } from '@/components/ui/button'
-import { Users, Plus, Search, X } from 'lucide-react'
+import { Users, Plus, Search, X, Download } from 'lucide-react'
 import type { Employee } from '@/types/employee'
 import type { ApiResponse } from '@/types/api'
 import { cn } from '@/lib/utils'
@@ -117,10 +117,13 @@ export function EmployeeManagement() {
           <p className="text-muted-foreground">Manage your restaurant staff and their roles</p>
         </div>
         <div className="flex gap-2">
+          <Button variant="outline" size="sm" disabled={!filtered.length} onClick={() => {
+            const rows = ['Name,Email,Phone,Role,Salary,Status,Joining Date', ...filtered.map(e => `"${e.name}","${e.email}","${e.phone ?? ''}","${e.role}",${e.salary ?? ''},"${e.status}","${e.joiningDate ?? ''}"`)]
+            const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(new Blob([rows.join('\n')], { type: 'text/csv' })), download: `employees-${new Date().toISOString().split('T')[0]}.csv` })
+            a.click()
+          }}><Download className="w-4 h-4 mr-1" />Export</Button>
           <Button variant="outline" onClick={() => setShowLogin(true)}>Employee Login</Button>
-          <Button onClick={() => setShowAddForm(true)} className="gradient-spice text-white shadow-lg">
-            <Plus className="w-4 h-4 mr-2" />Add Employee
-          </Button>
+          <Button onClick={() => setShowAddForm(true)} className="gradient-spice text-white shadow-lg"><Plus className="w-4 h-4 mr-2" />Add Employee</Button>
         </div>
       </div>
 
