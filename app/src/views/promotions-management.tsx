@@ -10,9 +10,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Plus, Tag, Megaphone, ToggleLeft, ToggleRight, Ticket, Target } from 'lucide-react'
+import { Plus, Tag, Megaphone, ToggleLeft, ToggleRight, Ticket, Target, Clock } from 'lucide-react'
 import { CouponManagement } from '@/components/promotions/coupon-management'
 import { CampaignManagement } from '@/components/promotions/campaign-management'
+import { ScheduledPromotions } from '@/components/promotions/scheduled-promotions'
 
 interface Promotion {
   id: number
@@ -140,6 +141,7 @@ export function PromotionsManagement() {
         <TabsTrigger value="announcements"><Megaphone className="w-4 h-4 mr-2" />Announcements</TabsTrigger>
         <TabsTrigger value="coupons"><Ticket className="w-4 h-4 mr-2" />Coupons</TabsTrigger>
         <TabsTrigger value="campaigns"><Target className="w-4 h-4 mr-2" />Campaigns</TabsTrigger>
+        <TabsTrigger value="scheduled"><Clock className="w-4 h-4 mr-2" />Scheduled</TabsTrigger>
       </TabsList>
 
       <TabsContent value="promotions" className="space-y-4 mt-4">
@@ -224,6 +226,10 @@ export function PromotionsManagement() {
 
       <TabsContent value="campaigns" className="mt-4">
         <CampaignManagement />
+      </TabsContent>
+
+      <TabsContent value="scheduled" className="mt-4">
+        <ScheduledPromotions />
       </TabsContent>
 
       <TabsContent value="coupons" className="mt-4">
