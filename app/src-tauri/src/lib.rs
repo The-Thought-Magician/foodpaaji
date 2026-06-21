@@ -37,7 +37,7 @@ use modules::billing::{create_bill, get_bills, get_bill_details, update_bill_sta
 use modules::customers::{create_customer, get_customers, get_customer, update_customer, delete_customer, add_loyalty_points, redeem_loyalty_points, get_customer_stats};
 use modules::reservations::{get_tables, create_table, create_reservation, get_reservations, update_reservation_status, update_reservation, get_table_availability};
 use modules::promotions::{create_promotion, get_promotions, validate_promo_code, apply_promo, toggle_promotion, create_announcement, get_announcements, dismiss_announcement};
-use modules::orders::{create_order, get_orders, get_order_details, update_order_status, convert_order_to_bill};
+use modules::orders::{create_order, get_orders, get_order_details, update_order_status, convert_order_to_bill, get_kitchen_stats};
 use modules::receipts::{generate_receipt, mark_receipt_printed, get_receipt};
 use modules::coupons::{create_coupon, validate_coupon, apply_coupon, get_coupons, toggle_coupon};
 use modules::feedback::{create_feedback, get_customer_feedback, get_feedback_summary};
@@ -165,6 +165,7 @@ pub fn run() {
       get_order_details,
       update_order_status,
       convert_order_to_bill,
+      get_kitchen_stats,
       generate_receipt,
       mark_receipt_printed,
       get_receipt,

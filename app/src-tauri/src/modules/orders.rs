@@ -111,11 +111,13 @@ pub async fn get_order_details(pool: State<'_, SqlitePool>, order_id: i64) -> Re
 
 #[tauri::command]
 pub async fn update_order_status(pool: State<'_, SqlitePool>, order_id: i64, status: String) -> Result<serde_json::Value, String> {
-    sqlx::query!(
-        "UPDATE orders SET status = ?, updated_at = datetime('now') WHERE id = ?",
-        status, order_id
-    )
-    .execute(pool.inner()).await.map_err(|e| e.to_string())?;
+    let sql = match status.as_str() {
+        "preparing" => "UPDATE orders SET status = ?, started_at = datetime('now'), updated_at = datetime('now') WHERE id = ?",
+        "ready" => "UPDATE orders SET status = ?, ready_at = datetime('now'), updated_at = datetime('now') WHERE id = ?",
+        _ => "UPDATE orders SET status = ?, updated_at = datetime('now') WHERE id = ?",
+    };
+    sqlx::query(sql).bind(&status).bind(order_id)
+        .execute(pool.inner()).await.map_err(|e| e.to_string())?;
     Ok(serde_json::json!({ "success": true }))
 }
 
@@ -173,4 +175,31 @@ pub async fn convert_order_to_bill(
     Ok(serde_json::json!({
         "success": true, "bill_id": bill_id, "bill_number": bill_number, "total_amount": total_amount
     }))
+}
+
+#[tauri::command]
+pub async fn get_kitchen_stats(pool: State<'_, SqlitePool>) -> Result<serde_json::Value, String> {
+    let row = sqlx::query(
+        "SELECT
+           COUNT(*) as total_today,
+           SUM(CASE WHEN status IN ('ready','served') AND started_at IS NOT NULL AND ready_at IS NOT NULL
+               THEN (JULIANDAY(ready_at) - JULIANDAY(started_at)) * 1440 ELSE NULL END) as total_prep_min,
+           COUNT(CASE WHEN status IN ('ready','served') AND started_at IS NOT NULL AND ready_at IS NOT NULL
+               THEN 1 END) as completed_with_times,
+           AVG(CASE WHEN status IN ('ready','served') AND started_at IS NOT NULL AND ready_at IS NOT NULL
+               THEN (JULIANDAY(ready_at) - JULIANDAY(started_at)) * 1440 END) as avg_prep_min,
+           COUNT(CASE WHEN status = 'pending' THEN 1 END) as pending_count,
+           COUNT(CASE WHEN status = 'preparing' THEN 1 END) as preparing_count
+         FROM orders WHERE date(created_at) = date('now')"
+    )
+    .fetch_one(pool.inner()).await.map_err(|e| e.to_string())?;
+
+    let data = serde_json::json!({
+        "total_today": row.try_get::<i64, _>("total_today").unwrap_or(0),
+        "avg_prep_min": row.try_get::<f64, _>("avg_prep_min").unwrap_or(0.0),
+        "completed_with_times": row.try_get::<i64, _>("completed_with_times").unwrap_or(0),
+        "pending_count": row.try_get::<i64, _>("pending_count").unwrap_or(0),
+        "preparing_count": row.try_get::<i64, _>("preparing_count").unwrap_or(0),
+    });
+    Ok(serde_json::json!({ "success": true, "data": data }))
 }

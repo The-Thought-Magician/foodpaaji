@@ -46,10 +46,13 @@ const urgency = (status: string, iso: string): 'critical' | 'warning' | 'normal'
   return 'normal'
 }
 
+interface KitchenStats { total_today: number; avg_prep_min: number; completed_with_times: number; pending_count: number; preparing_count: number }
+
 export function KitchenDisplay() {
   const [orders, setOrders] = useState<KitchenOrder[]>([])
   const [loading, setLoading] = useState(false)
   const [filter, setFilter] = useState<'all' | 'pending' | 'preparing' | 'ready'>('all')
+  const [kitchenStats, setKitchenStats] = useState<KitchenStats | null>(null)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -68,7 +71,16 @@ export function KitchenDisplay() {
     finally { setLoading(false) }
   }, [])
 
-  useEffect(() => { load(); const id = setInterval(load, 15000); return () => clearInterval(id) }, [load])
+  const loadStats = useCallback(async () => {
+    const res = await invoke<{ success: boolean; data: KitchenStats }>('get_kitchen_stats').catch(() => null)
+    if (res?.success) setKitchenStats(res.data)
+  }, [])
+
+  useEffect(() => {
+    load(); loadStats()
+    const id = setInterval(() => { load(); loadStats() }, 15000)
+    return () => clearInterval(id)
+  }, [load, loadStats])
 
   const advance = async (order: KitchenOrder) => {
     const next = STATUS_NEXT[order.status]
@@ -91,6 +103,22 @@ export function KitchenDisplay() {
           <RefreshCw className={`w-4 h-4 mr-1 ${loading ? 'animate-spin' : ''}`} />Refresh
         </Button>
       </div>
+
+      {kitchenStats && (
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          {[
+            { label: 'Orders Today', value: String(kitchenStats.total_today) },
+            { label: 'Avg Prep Time', value: kitchenStats.avg_prep_min > 0 ? `${kitchenStats.avg_prep_min.toFixed(1)}m` : '—' },
+            { label: 'Pending', value: String(kitchenStats.pending_count) },
+            { label: 'In Progress', value: String(kitchenStats.preparing_count) },
+          ].map(s => (
+            <div key={s.label} className="bg-card border rounded-xl px-4 py-3 text-center">
+              <p className="text-xl font-bold">{s.value}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">{s.label}</p>
+            </div>
+          ))}
+        </div>
+      )}
 
       <div className="flex gap-2">
         {(['all', 'pending', 'preparing', 'ready'] as const).map(s => (
