@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Plus, Tag, ToggleLeft, ToggleRight } from 'lucide-react'
+import { Plus, Tag, ToggleLeft, ToggleRight, Search } from 'lucide-react'
 
 interface Coupon {
   id: number
@@ -27,6 +27,8 @@ interface Coupon {
 export function CouponManagement() {
   const [coupons, setCoupons] = useState<Coupon[]>([])
   const [showForm, setShowForm] = useState(false)
+  const [search, setSearch] = useState('')
+  const [activeOnly, setActiveOnly] = useState(false)
   const [form, setForm] = useState({
     code: '', description: '', discount_type: 'percent',
     discount_value: '10', min_order_amount: '0', max_uses: '', valid_until: '',
@@ -69,15 +71,17 @@ export function CouponManagement() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2"><Tag className="w-4 h-4" /><h3 className="font-semibold">Coupons</h3></div>
-        <Button size="sm" className="gradient-spice text-white" onClick={() => setShowForm(true)}>
-          <Plus className="w-4 h-4 mr-1" />New Coupon
-        </Button>
+      <div className="flex items-center justify-between gap-2 flex-wrap">
+        <div className="flex items-center gap-2">
+          <Tag className="w-4 h-4" /><h3 className="font-semibold">Coupons</h3>
+          <div className="relative"><Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" /><Input className="pl-8 h-7 w-36 text-xs" placeholder="Search code…" value={search} onChange={e => setSearch(e.target.value)} /></div>
+          <button onClick={() => setActiveOnly(v => !v)} className={`text-xs px-2 py-1 rounded border transition-colors ${activeOnly ? 'bg-primary text-primary-foreground border-primary' : 'border-border text-muted-foreground hover:text-foreground'}`}>Active only</button>
+        </div>
+        <Button size="sm" className="gradient-spice text-white" onClick={() => setShowForm(true)}><Plus className="w-4 h-4 mr-1" />New Coupon</Button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        {coupons.map(c => (
+        {coupons.filter(c => (!search || c.code.toLowerCase().includes(search.toLowerCase()) || (c.description ?? '').toLowerCase().includes(search.toLowerCase())) && (!activeOnly || c.is_active)).map(c => (
           <Card key={c.id} className={`card-hover ${!c.is_active ? 'opacity-60' : ''}`}>
             <CardContent className="p-4">
               <div className="flex items-start justify-between">
