@@ -3,7 +3,8 @@
 import { useState, useEffect } from 'react'
 import { invoke } from '@tauri-apps/api/core'
 import { Card, CardContent } from '@/components/ui/card'
-import { BarChart3, TrendingUp, TrendingDown, Package, AlertTriangle } from 'lucide-react'
+import { BarChart3, TrendingUp, TrendingDown, Package, AlertTriangle, Download } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 
 const RESTAURANT_ID = 1
 
@@ -58,8 +59,16 @@ export default function InventoryAnalytics() {
     { label: 'Out of Stock', value: analytics.out_of_stock_items, icon: AlertTriangle, color: 'text-red-600' },
   ] : []
 
+  const exportCSV = () => {
+    const top = ['Top Moving Items', 'Item,Qty Out,Value Out', ...topItems.map(i => `"${i.item_name}",${i.total_quantity_out.toFixed(1)},${i.total_value_out.toFixed(2)}`)]
+    const slow = ['', 'Slow Moving Items', 'Item,Current Stock,Days Idle', ...slowItems.map(i => `"${i.item_name}",${i.current_stock.toFixed(1)},${i.days_since_last_movement ?? ''}`)]
+    const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(new Blob([[...top, ...slow].join('\n')], { type: 'text/csv' })), download: `inventory-analytics-${new Date().toISOString().split('T')[0]}.csv` })
+    a.click()
+  }
+
   return (
     <div className="space-y-6">
+      <div className="flex justify-end"><Button variant="outline" size="sm" onClick={exportCSV} disabled={!topItems.length && !slowItems.length}><Download className="w-4 h-4 mr-1" />Export</Button></div>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {stats.map(s => (
           <Card key={s.label}>
