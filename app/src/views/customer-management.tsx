@@ -93,15 +93,18 @@ export function CustomerManagement() {
 
   const [viewCustomer, setViewCustomer] = useState<Customer & { address?: string; notes?: string } | null>(null)
   const [customerBills, setCustomerBills] = useState<{ id: number; bill_number: string; total_amount: number; status: string; created_at: string; customer_id?: number }[]>([])
+  const [customerFeedback, setCustomerFeedback] = useState<{ id: number; rating: number; comment?: string; created_at: string; bill_number?: string }[]>([])
 
   const viewProfile = async (id: number) => {
     try {
-      const [cr, br] = await Promise.all([
+      const [cr, br, fr] = await Promise.all([
         invoke<{ success: boolean; data: Customer & { address?: string; notes?: string } }>('get_customer', { customerId: id }),
         invoke<{ success: boolean; data: { id: number; bill_number: string; total_amount: number; status: string; created_at: string; customer_id?: number }[] }>('get_bills', { status: null, customerId: id, limit: 20 }),
+        invoke<{ success: boolean; data: { id: number; rating: number; comment?: string; created_at: string; bill_number?: string }[] }>('get_customer_feedback', { customerId: id }).catch(() => ({ success: false, data: [] })),
       ])
       if (cr.success && cr.data) setViewCustomer(cr.data)
       if (br.success) setCustomerBills(br.data ?? [])
+      if (fr.success) setCustomerFeedback(fr.data ?? [])
     } catch (e) { console.error(e) }
   }
 
@@ -242,6 +245,23 @@ export function CustomerManagement() {
                 <div className="bg-muted rounded p-3"><p className="font-bold text-lg">₹{viewCustomer.total_spent.toFixed(0)}</p><p className="text-muted-foreground text-xs">Spent</p></div>
                 <div className="bg-muted rounded p-3"><p className="font-bold text-lg">{viewCustomer.loyalty_points}</p><p className="text-muted-foreground text-xs">Points</p></div>
               </div>
+              {customerFeedback.length > 0 && (
+                <div className="pt-2 border-t">
+                  <p className="text-xs font-medium text-muted-foreground mb-2">Feedback</p>
+                  <div className="space-y-2">
+                    {customerFeedback.map(f => (
+                      <div key={f.id} className="bg-muted/50 rounded-lg px-3 py-2">
+                        <div className="flex items-center gap-1">
+                          {[1, 2, 3, 4, 5].map(n => <Star key={n} className={`w-3 h-3 ${n <= f.rating ? 'fill-amber-400 text-amber-400' : 'text-muted-foreground'}`} />)}
+                          {f.bill_number && <span className="text-xs text-muted-foreground ml-1">· {f.bill_number}</span>}
+                        </div>
+                        {f.comment && <p className="text-xs mt-1 text-foreground">{f.comment}</p>}
+                        <p className="text-xs text-muted-foreground mt-0.5">{new Date(f.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </DialogContent>

@@ -9,7 +9,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { FileText, Plus, IndianRupee, Receipt, TrendingUp, Eye, Download, Search } from 'lucide-react'
+import { FileText, Plus, IndianRupee, Receipt, TrendingUp, Eye, Download, Search, Star } from 'lucide-react'
 import { UpiQr } from '@/components/ui/upi-qr'
 import { getSettings } from '@/lib/settings'
 import { BillItemRow } from '@/components/billing/bill-item-row'
@@ -70,6 +70,9 @@ export function BillingManagement() {
   const [upiRef, setUpiRef] = useState(''); const [billNotes, setBillNotes] = useState(''); const [redeemPts, setRedeemPts] = useState(0); const [custPoints, setCustPoints] = useState(0)
   const [showDetails, setShowDetails] = useState<null | { bill: Bill; items: BillDetailItem[]; payments: BillPayment[] }>(null)
   const [paymentHistory, setPaymentHistory] = useState<BillPayment[]>([])
+  const [feedbackBill, setFeedbackBill] = useState<Bill | null>(null)
+  const [feedbackRating, setFeedbackRating] = useState(0)
+  const [feedbackComment, setFeedbackComment] = useState('')
   const viewDetails = async (bill: Bill) => {
     try {
       const res = await invoke<{ success: boolean; data: { items: BillDetailItem[]; payments: BillPayment[] } }>('get_bill_details', { billId: bill.id })
@@ -150,6 +153,7 @@ export function BillingManagement() {
             if (pts > 0) invoke('add_loyalty_points', { customerId: showPayment.customer_id, points: pts, billAmount: showPayment.total_amount }).catch(console.error)
           }
           setShowPayment(null); loadBills(); loadSummary()
+          if (showPayment.customer_id) { setFeedbackBill(showPayment); setFeedbackRating(0); setFeedbackComment('') }
         }
         else { setPayAmount(remaining.toFixed(2)); setUpiRef('') }
       }
@@ -292,6 +296,37 @@ export function BillingManagement() {
             <div className="flex gap-2">
               <Button variant="outline" className="flex-1" onClick={async () => { if (!showDetails) return; const res = await invoke<{ success: boolean; data: { content: string } }>('get_receipt', { billId: showDetails.bill.id }).catch(() => null); if (res?.success) { const w = window.open('', '_blank'); if (w) { w.document.write(`<pre style="font-family:monospace">${res.data.content}</pre>`); w.print() } } }}><Receipt className="w-4 h-4 mr-2" />Reprint</Button>
               {showDetails?.bill.status === 'paid' && <Button variant="outline" className="flex-1 text-yellow-600 border-yellow-300 hover:bg-yellow-50" onClick={() => { if (!showDetails || !confirm('Mark this bill as refunded?')) return; updateBillStatus(showDetails.bill.id, 'refunded'); setShowDetails(null) }}>Mark Refunded</Button>}
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!feedbackBill} onOpenChange={() => setFeedbackBill(null)}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader><DialogTitle>Rate the Visit</DialogTitle></DialogHeader>
+          <div className="space-y-4 py-2">
+            <p className="text-sm text-muted-foreground">{feedbackBill?.customer_name} · {feedbackBill?.bill_number}</p>
+            <div className="flex gap-2 justify-center">
+              {[1, 2, 3, 4, 5].map(n => (
+                <button key={n} onClick={() => setFeedbackRating(n)} className="focus:outline-none">
+                  <Star className={`w-8 h-8 transition-colors ${n <= feedbackRating ? 'fill-amber-400 text-amber-400' : 'text-muted-foreground'}`} />
+                </button>
+              ))}
+            </div>
+            <textarea
+              className="w-full border rounded-lg px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/20"
+              rows={3}
+              placeholder="Comments (optional)"
+              value={feedbackComment}
+              onChange={e => setFeedbackComment(e.target.value)}
+            />
+            <div className="flex gap-2">
+              <Button variant="outline" className="flex-1" onClick={() => setFeedbackBill(null)}>Skip</Button>
+              <Button className="flex-1 gradient-spice text-white" disabled={feedbackRating === 0} onClick={async () => {
+                if (!feedbackBill?.customer_id || feedbackRating === 0) return
+                await invoke('create_feedback', { customerId: feedbackBill.customer_id, billId: feedbackBill.id, rating: feedbackRating, comment: feedbackComment || null }).catch(console.error)
+                setFeedbackBill(null)
+              }}>Submit</Button>
             </div>
           </div>
         </DialogContent>

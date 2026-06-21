@@ -37,3 +37,4 @@ pub mod promotions;
 pub mod orders;
 pub mod receipts;
 pub mod coupons;
+pub mod feedback;
