@@ -117,6 +117,14 @@ export function ReservationManagement() {
     } catch (e) { console.error(e) }
   }
 
+  const [showAddTable, setShowAddTable] = useState(false)
+  const [tableForm, setTableForm] = useState({ table_number: '', capacity: '4', location: '' })
+  const addTable = async () => {
+    try {
+      await invoke('create_table', { tableNumber: tableForm.table_number, capacity: parseInt(tableForm.capacity), location: tableForm.location || null })
+      setShowAddTable(false); setTableForm({ table_number: '', capacity: '4', location: '' }); loadTables()
+    } catch (e) { console.error(e) }
+  }
   const filteredReservations = search ? reservations.filter(r => r.customer_name.toLowerCase().includes(search.toLowerCase()) || r.customer_phone.includes(search)) : reservations
   const exportCSV = () => {
     if (!filteredReservations.length) return
@@ -152,6 +160,8 @@ export function ReservationManagement() {
             <Input type="date" value={availDate} onChange={e => setAvailDate(e.target.value)} className="w-40" />
             <Input type="time" value={availTime} onChange={e => setAvailTime(e.target.value)} className="w-32" />
             <Button onClick={checkAvailability} className="gradient-spice text-white">Check Availability</Button>
+            <Button variant="outline" onClick={() => setShowAddTable(true)}><Plus className="w-4 h-4 mr-1" />Add Table</Button>
+            <span className="text-sm text-muted-foreground ml-auto">{tables.length} tables configured</span>
           </div>
           {availTables.length > 0 && (
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
@@ -238,6 +248,17 @@ export function ReservationManagement() {
         )}
       </div>
 
+      <Dialog open={showAddTable} onOpenChange={setShowAddTable}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader><DialogTitle>Add Table</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <div><Label>Table Number *</Label><Input placeholder="e.g. 1, A1, Terrace-1" value={tableForm.table_number} onChange={e => setTableForm({ ...tableForm, table_number: e.target.value })} /></div>
+            <div><Label>Capacity</Label><Input type="number" min="1" value={tableForm.capacity} onChange={e => setTableForm({ ...tableForm, capacity: e.target.value })} /></div>
+            <div><Label>Location</Label><Input placeholder="e.g. Indoor, Terrace, Private" value={tableForm.location} onChange={e => setTableForm({ ...tableForm, location: e.target.value })} /></div>
+            <Button className="w-full gradient-spice text-white" onClick={addTable} disabled={!tableForm.table_number}>Add Table</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
       <Dialog open={showForm} onOpenChange={setShowForm}>
         <DialogContent>
           <DialogHeader><DialogTitle>{editingId ? 'Edit Reservation' : 'New Reservation'}</DialogTitle></DialogHeader>

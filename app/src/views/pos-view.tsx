@@ -122,10 +122,10 @@ export function PosView() {
     try {
       const [details, res] = await Promise.all([
         invoke<{ success: boolean; data: { items: { item_name: string; quantity: number; unit_price: number; menu_item_id?: number; notes?: string }[] } | null }>('get_order_details', { orderId: showConvert.id }),
-        invoke<{ success: boolean; bill_id: number }>('convert_order_to_bill', { orderId: showConvert.id, discountPercent, taxPercent }),
+        invoke<{ success: boolean; bill_id: number; total_amount: number }>('convert_order_to_bill', { orderId: showConvert.id, discountPercent, taxPercent }),
       ])
       if (res.success) {
-        await invoke('record_payment', { billId: res.bill_id, amount: 0, method: paymentMethod, upiReference: null, upiApp: null }).catch(console.error)
+        await invoke('record_payment', { billId: res.bill_id, amount: res.total_amount, method: paymentMethod, upiReference: null, upiApp: null }).catch(console.error)
         const receipt = await invoke<{ success: boolean; data: { receipt_id: number; content: string; receipt_number: string } }>('generate_receipt', { billId: res.bill_id })
         if (receipt.success) setShowReceipt({ id: receipt.data.receipt_id, content: receipt.data.content, number: receipt.data.receipt_number })
         const orderItems = (details.success && details.data?.items || []).filter(i => i.menu_item_id).map(i => ({ menu_item_id: i.menu_item_id!, quantity: i.quantity, notes: i.notes ?? null }))
