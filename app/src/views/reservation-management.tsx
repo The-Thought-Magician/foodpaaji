@@ -9,7 +9,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Calendar, Plus, Clock, Users, QrCode, CheckCircle, XCircle, Search } from 'lucide-react'
+import { Calendar, Plus, Clock, Users, QrCode, CheckCircle, XCircle, Search, Download } from 'lucide-react'
 import { TableQrManager } from '@/components/reservations/table-qr'
 
 interface Reservation {
@@ -118,6 +118,14 @@ export function ReservationManagement() {
   }
 
   const filteredReservations = search ? reservations.filter(r => r.customer_name.toLowerCase().includes(search.toLowerCase()) || r.customer_phone.includes(search)) : reservations
+  const exportCSV = () => {
+    if (!filteredReservations.length) return
+    const rows = ['Name,Phone,Date,Time,Duration,Party Size,Table,Status,Special Requests',
+      ...filteredReservations.map(r => `"${r.customer_name}","${r.customer_phone}","${r.date}","${r.time}",${r.duration},${r.party_size},"${r.table_number ?? ''}","${r.status}","${r.special_requests ?? ''}"`)
+    ]
+    const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(new Blob([rows.join('\n')], { type: 'text/csv' })), download: `reservations-${date}.csv` })
+    a.click()
+  }
   const seated = filteredReservations.filter(r => r.status === 'seated').length
   const confirmed = filteredReservations.filter(r => r.status === 'confirmed').length
   const pending = filteredReservations.filter(r => r.status === 'pending').length
@@ -181,6 +189,7 @@ export function ReservationManagement() {
         </div>
         <div className="flex items-center gap-2">
           <div className="relative"><Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" /><Input className="pl-8 h-8 w-44 text-sm" placeholder="Name or phone…" value={search} onChange={e => setSearch(e.target.value)} /></div>
+          <Button variant="outline" size="sm" onClick={exportCSV} disabled={!filteredReservations.length}><Download className="w-4 h-4 mr-1" />Export</Button>
           <Button onClick={openCreate} className="gradient-spice text-white"><Plus className="w-4 h-4 mr-2" />New Reservation</Button>
         </div>
       </div>
