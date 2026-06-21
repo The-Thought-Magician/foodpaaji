@@ -7,9 +7,10 @@ import { Input } from '@/components/ui/input'
 import { Card, CardContent } from '@/components/ui/card'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
-import { Plus, Search, Star, TrendingUp, Users, Download, Merge, Award, ShoppingBag, DollarSign } from 'lucide-react'
+import { Plus, Search, Star, TrendingUp, Users, Download, Merge, Award, ShoppingBag, DollarSign, MapPin } from 'lucide-react'
 import { CustomerOrderHistory } from '@/components/customers/order-history'
 import { CustomerProfitability } from '@/components/customers/profitability'
+import { AddressManagement } from '@/components/customers/address-management'
 
 interface Customer {
   id: number
@@ -52,6 +53,7 @@ export function CustomerManagement() {
   const [mergeTarget, setMergeTarget] = useState<Customer | null>(null)
   const [mergeSource, setMergeSource] = useState<Customer | null>(null)
   const [orderHistoryCustomer, setOrderHistoryCustomer] = useState<{ id: number; name: string } | null>(null)
+  const [addressCustomer, setAddressCustomer] = useState<{ id: number; name: string } | null>(null)
   const [showProfitability, setShowProfitability] = useState(false)
   const [analytics, setAnalytics] = useState<{
     top_spenders: { id: number; name: string; phone?: string; total_spent: number; visit_count: number; avg_order_value: number }[]
@@ -381,6 +383,7 @@ export function CustomerManagement() {
                 <Button variant="outline" size="sm" onClick={() => openLoyalty(c, 'add')}><Star className="w-3 h-3 mr-1" />+Pts</Button>
                 <Button variant="outline" size="sm" onClick={() => openLoyalty(c, 'redeem')}>Redeem</Button>
                 <Button variant="outline" size="sm" onClick={() => setOrderHistoryCustomer({ id: c.id, name: c.name })}><ShoppingBag className="w-3 h-3 mr-1" />Orders</Button>
+                <Button variant="outline" size="sm" onClick={() => setAddressCustomer({ id: c.id, name: c.name })}><MapPin className="w-3 h-3" /></Button>
                 <Button variant="outline" size="sm" className="text-destructive" onClick={() => deleteCustomer(c.id)}>Delete</Button>
               </div>
             </CardContent>
@@ -534,6 +537,15 @@ export function CustomerManagement() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {addressCustomer && (
+        <AddressManagement
+          customerId={addressCustomer.id}
+          customerName={addressCustomer.name}
+          open={true}
+          onClose={() => setAddressCustomer(null)}
+        />
+      )}
 
       {orderHistoryCustomer && (
         <CustomerOrderHistory

@@ -63,6 +63,7 @@ use modules::staff_performance::get_staff_performance;
 use modules::sales_export::export_sales_csv;
 use modules::menu_performance::get_menu_performance;
 use modules::bill_refunds::{cancel_bill, partial_refund, get_bill_refunds};
+use modules::customer_addresses::{get_customer_addresses, add_customer_address, delete_customer_address, set_default_address};
 use tauri::Manager;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -270,6 +271,10 @@ pub fn run() {
       cancel_bill,
       partial_refund,
       get_bill_refunds,
+      get_customer_addresses,
+      add_customer_address,
+      delete_customer_address,
+      set_default_address,
     ])
     .setup(|app| {
       let level = if cfg!(debug_assertions) { log::LevelFilter::Debug } else { log::LevelFilter::Info };
