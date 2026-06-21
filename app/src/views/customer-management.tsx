@@ -7,8 +7,9 @@ import { Input } from '@/components/ui/input'
 import { Card, CardContent } from '@/components/ui/card'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
-import { Plus, Search, Star, TrendingUp, Users, Download, Merge, Award, ShoppingBag } from 'lucide-react'
+import { Plus, Search, Star, TrendingUp, Users, Download, Merge, Award, ShoppingBag, DollarSign } from 'lucide-react'
 import { CustomerOrderHistory } from '@/components/customers/order-history'
+import { CustomerProfitability } from '@/components/customers/profitability'
 
 interface Customer {
   id: number
@@ -51,6 +52,7 @@ export function CustomerManagement() {
   const [mergeTarget, setMergeTarget] = useState<Customer | null>(null)
   const [mergeSource, setMergeSource] = useState<Customer | null>(null)
   const [orderHistoryCustomer, setOrderHistoryCustomer] = useState<{ id: number; name: string } | null>(null)
+  const [showProfitability, setShowProfitability] = useState(false)
   const [analytics, setAnalytics] = useState<{
     top_spenders: { id: number; name: string; phone?: string; total_spent: number; visit_count: number; avg_order_value: number }[]
     returning_customers: number; at_risk_customers: number; retention_rate: number; churn_rate: number
@@ -211,10 +213,15 @@ export function CustomerManagement() {
         <Button size="sm" variant={showLoyalty ? 'default' : 'outline'} onClick={() => { setShowLoyalty(s => !s); if (!loyaltyData) loadLoyaltyAnalytics() }}>
           <Award className="w-4 h-4 mr-1" />Loyalty
         </Button>
+        <Button size="sm" variant={showProfitability ? 'default' : 'outline'} onClick={() => setShowProfitability(s => !s)}>
+          <DollarSign className="w-4 h-4 mr-1" />Profitability
+        </Button>
         <Button size="sm" variant="outline" onClick={() => setShowMerge(true)}>
           <Merge className="w-4 h-4 mr-1" />Merge Duplicates
         </Button>
       </div>
+
+      {showProfitability && <CustomerProfitability />}
 
       {showLoyalty && loyaltyData && (
         <div className="space-y-3 p-4 border rounded-xl bg-muted/30">
